@@ -55,5 +55,5 @@ export function totalsByCurrency(accounts: Iterable<BalanceAccount>): Map<string
 export function adjustmentFor(current: MoneyLike, target: MoneyLike): { direction: FlowDirection; amount: FinDecimal } | null {
   const delta = money(target).minus(money(current));
   if (delta.isZero()) return null;
-  return delta.isPositive() ? { direction: "INFLOW", amount: delta } : { direction: "OUTFLOW", amount: delta.abs() };
+  return delta.gt(0) ? { direction: "INFLOW", amount: delta } : { direction: "OUTFLOW", amount: delta.abs() };
 }

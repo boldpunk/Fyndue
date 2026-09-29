@@ -21,7 +21,7 @@ export function Money({
 } & MoneyFormatOptions) {
   const value = money(amount);
   const toneClass =
-    tone === "positive" || (tone === "auto" && value.isPositive() && !value.isZero())
+    tone === "positive" || (tone === "auto" && value.gt(0))
       ? "text-success"
       : tone === "negative" || (tone === "auto" && value.isNegative())
         ? "text-danger"
