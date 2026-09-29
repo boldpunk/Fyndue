@@ -17,7 +17,8 @@
     "db:generate": "prisma generate",
     "db:seed": "tsx --conditions=react-server prisma/seed.ts",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:local": "node scripts/local-db.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -50,6 +51,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^18.0.4",
+    "embedded-postgres": "16.14.0-beta.17",
     "eslint": "^9",
     "eslint-config-next": "16.3.7",
     "prettier": "^3.9.9",

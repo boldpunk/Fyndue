@@ -45,3 +45,4 @@ next-env.d.ts
 
 # env files (.env.example is committed)
 !.env.example
+/.local/

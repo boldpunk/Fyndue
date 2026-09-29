@@ -23,7 +23,7 @@ Next.js 16 (App Router, Server Actions) · TypeScript strict · Tailwind CSS v4 
 
 Requirements: Node 22+, pnpm 10, PostgreSQL 16.
 
-**Windows shortcut:** `powershell -ExecutionPolicy Bypass -File scripts\setup-windows.ps1` installs anything missing (Node, pnpm, PostgreSQL via winget), creates the databases, writes `.env`, migrates, seeds and starts the app.
+**Windows shortcut:** `powershell -ExecutionPolicy Bypass -File scripts\setup-windows.ps1` installs anything missing (Node and pnpm via winget), uses your PostgreSQL 16 or starts a bundled one (`pnpm db:local`, port 5433), creates the databases, writes `.env`, migrates, seeds and starts the app.
 
 ```bash
 cp .env.example .env          # fill in DATABASE_URL, TEST_DATABASE_URL, BETTER_AUTH_SECRET

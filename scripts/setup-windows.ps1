@@ -2,8 +2,8 @@
 #
 #   powershell -ExecutionPolicy Bypass -File scripts\setup-windows.ps1
 #
-# Installs what is missing (Node.js LTS, pnpm, PostgreSQL 16) with winget,
-# creates the fyndue / fyndue_test databases, writes .env, installs
+# Installs what is missing (Node.js LTS, pnpm) with winget, uses an existing
+# PostgreSQL 16 or a bundled one from npm, creates the fyndue / fyndue_test databases, writes .env, installs
 # dependencies, migrates, seeds demo data and starts the dev server.
 # Safe to re-run: every step skips work that is already done.
 
@@ -39,63 +39,71 @@ if (-not (Has "pnpm")) {
 }
 Write-Host "pnpm $(pnpm -v)"
 
-# -- PostgreSQL ----------------------------------------------------------------
-Step "Checking PostgreSQL 16"
+# -- PostgreSQL -----------------------------------------
+# Uses an existing PostgreSQL 16 install if there is one; otherwise runs a
+# private PostgreSQL shipped through npm (no installer download needed).
+Step "Checking PostgreSQL"
 $pgBin = "C:\Program Files\PostgreSQL\16\bin"
-$pgPassword = $null
-if (-not (Test-Path "$pgBin\psql.exe")) {
-  $pgPassword = "fyndue-local"
-  Write-Host "Installing PostgreSQL 16 (password for user 'postgres' will be '$pgPassword')..."
-  winget install --id PostgreSQL.PostgreSQL.16 -e --accept-source-agreements --accept-package-agreements `
-    --override "--mode unattended --unattendedmodeui none --superpassword $pgPassword --serverport 5432"
-  if (-not (Test-Path "$pgBin\psql.exe")) { throw "PostgreSQL install did not finish. Re-run the script." }
-} else {
-  $secure = Read-Host "PostgreSQL is already installed. Enter the password of the 'postgres' user" -AsSecureString
+$useSystemPg = Test-Path "$pgBin\psql.exe"
+
+Step "Installing dependencies"
+pnpm install
+if ($LASTEXITCODE -ne 0) { throw "pnpm install failed" }
+
+if ($useSystemPg) {
+  $secure = Read-Host "PostgreSQL 16 is installed. Enter the password of the 'postgres' user" -AsSecureString
   $pgPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
     [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
-}
-
-$env:PGPASSWORD = $pgPassword
-foreach ($db in @("fyndue", "fyndue_test")) {
-  $exists = & "$pgBin\psql.exe" -U postgres -h localhost -tAc "SELECT 1 FROM pg_database WHERE datname='$db'"
-  if ($LASTEXITCODE -ne 0) { throw "Could not connect to PostgreSQL - check the password and that the service is running." }
-  if ($exists -ne "1") {
-    & "$pgBin\psql.exe" -U postgres -h localhost -c "CREATE DATABASE $db;" | Out-Null
-    Write-Host "Created database $db"
-  } else {
-    Write-Host "Database $db already exists"
+  $pgPort = 5432
+  $env:PGPASSWORD = $pgPassword
+  foreach ($db in @("fyndue", "fyndue_test")) {
+    $exists = & "$pgBin\psql.exe" -U postgres -h localhost -tAc "SELECT 1 FROM pg_database WHERE datname='$db'"
+    if ($LASTEXITCODE -ne 0) { throw "Could not connect to PostgreSQL - check the password and that the service is running." }
+    if ($exists -ne "1") { & "$pgBin\psql.exe" -U postgres -h localhost -c "CREATE DATABASE $db;" | Out-Null }
   }
+  Remove-Item Env:\PGPASSWORD
+} else {
+  $pgPassword = "fyndue-local"
+  $pgPort = 5433
+  Write-Host "No system PostgreSQL found - starting the bundled one in a separate window (keep it open)."
+  Start-Process -FilePath "cmd.exe" -ArgumentList "/k", "title Fyndue database && pnpm db:local" -WorkingDirectory (Get-Location)
+  $ready = $false
+  for ($i = 0; $i -lt 90; $i++) {
+    try {
+      $tcp = New-Object Net.Sockets.TcpClient
+      $tcp.Connect("127.0.0.1", $pgPort)
+      $tcp.Close(); $ready = $true; break
+    } catch { Start-Sleep -Seconds 2 }
+  }
+  if (-not $ready) { throw "The database window did not start. Look at the 'Fyndue database' window for the error." }
+  Start-Sleep -Seconds 3  # let it finish creating the databases
 }
-Remove-Item Env:\PGPASSWORD
 
-# -- .env ----------------------------------------------------------------------
+# -- .env -----------------------------------------------
 Step "Writing .env"
-$envFile = ".env"
-$hasRealEnv = (Test-Path $envFile) -and (Select-String -Path $envFile -Pattern '^BETTER_AUTH_SECRET="[^"]{32,}"' -Quiet)
-if ($hasRealEnv) {
-  Write-Host ".env already configured - leaving it as is"
+$encodedPw = [Uri]::EscapeDataString($pgPassword)
+$dbUrl = "postgresql://postgres:$encodedPw@localhost:$pgPort/fyndue"
+$current = if (Test-Path ".env") { Get-Content ".env" -Raw } else { "" }
+$secretMatch = [regex]::Match($current, 'BETTER_AUTH_SECRET="([^"]{32,})"')
+if ($secretMatch.Success) {
+  $secret = $secretMatch.Groups[1].Value
 } else {
   $bytes = New-Object byte[] 32
   [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
   $secret = [Convert]::ToBase64String($bytes)
-  $encodedPw = [Uri]::EscapeDataString($pgPassword)
-  @"
-DATABASE_URL="postgresql://postgres:$encodedPw@localhost:5432/fyndue"
-TEST_DATABASE_URL="postgresql://postgres:$encodedPw@localhost:5432/fyndue_test"
+}
+@"
+DATABASE_URL="$dbUrl"
+TEST_DATABASE_URL="postgresql://postgres:$encodedPw@localhost:$pgPort/fyndue_test"
 BETTER_AUTH_SECRET="$secret"
 BETTER_AUTH_URL="http://localhost:3000"
 GOOGLE_CLIENT_ID=""
 GOOGLE_CLIENT_SECRET=""
 ALLOW_REGISTRATION="true"
-"@ | Set-Content -Path $envFile -Encoding ascii
-  Write-Host ".env written"
-}
+"@ | Set-Content -Path ".env" -Encoding ascii
+Write-Host ".env written (database on port $pgPort)"
 
 # -- App -----------------------------------------------------------------------
-Step "Installing dependencies"
-pnpm install
-if ($LASTEXITCODE -ne 0) { throw "pnpm install failed" }
-
 Step "Applying database migrations"
 pnpm exec prisma migrate deploy
 if ($LASTEXITCODE -ne 0) { throw "Migration failed" }
