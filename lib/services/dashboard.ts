@@ -11,6 +11,8 @@ export type MonthOverview = {
   income: CurrencyTotals;
   expenses: CurrencyTotals;
   expectedIncome: CurrencyTotals;
+  /** Real account debits for debt payments (incl. card fees), per currency. */
+  debtPayments: CurrencyTotals;
   accountCount: number;
 };
 
@@ -29,12 +31,12 @@ export async function getMonthOverview(userId: string, month: YearMonth): Promis
     }),
     prisma.transaction.groupBy({
       by: ["type", "status", "currency"],
-      where: { userId, voidedAt: null, type: { in: ["INCOME", "EXPENSE"] }, transactionDate: dateRange },
+      where: { userId, voidedAt: null, type: { in: ["INCOME", "EXPENSE", "DEBT_PAYMENT"] }, transactionDate: dateRange },
       _sum: { amount: true },
     }),
   ]);
 
-  const pick = (type: "INCOME" | "EXPENSE", status: "ACTUAL" | "EXPECTED"): CurrencyTotals =>
+  const pick = (type: "INCOME" | "EXPENSE" | "DEBT_PAYMENT", status: "ACTUAL" | "EXPECTED"): CurrencyTotals =>
     flows
       .filter((f) => f.type === type && f.status === status)
       .map((f) => ({ currency: f.currency, amount: toMoneyString(f._sum.amount ?? 0) }))
@@ -45,6 +47,7 @@ export async function getMonthOverview(userId: string, month: YearMonth): Promis
     income: pick("INCOME", "ACTUAL"),
     expenses: pick("EXPENSE", "ACTUAL"),
     expectedIncome: pick("INCOME", "EXPECTED"),
+    debtPayments: pick("DEBT_PAYMENT", "ACTUAL"),
     accountCount: accounts.length,
   };
 }

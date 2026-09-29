@@ -14,11 +14,12 @@ function describe(t: TransactionDTO, perspectiveAccountId?: string) {
     return incoming ? `Transfer from ${t.counterpart?.accountName ?? "account"}` : `Transfer to ${t.counterpart?.accountName ?? "account"}`;
   }
   if (t.type === "EXPENSE" || t.type === "INCOME") return t.merchant ?? t.category?.name ?? TRANSACTION_TYPE_LABELS[t.type];
+  if (t.debt) return t.type === "LOAN_DISBURSEMENT" ? `${t.debt.name} · loan received` : t.debt.name;
   return TRANSACTION_TYPE_LABELS[t.type];
 }
 
 function RowIcon({ t }: { t: TransactionDTO }) {
-  if (t.category) return <CategoryIcon icon={t.category.icon} color={t.category.color} />;
+  if (t.category && t.type !== "DEBT_PAYMENT") return <CategoryIcon icon={t.category.icon} color={t.category.color} />;
   const Icon = t.type === "TRANSFER" ? ArrowLeftRight : t.type === "BALANCE_ADJUSTMENT" ? Scale : Landmark;
   return (
     <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
@@ -43,7 +44,7 @@ export function TransactionRow({
   const isTransferView = t.type === "TRANSFER" && !perspectiveAccountId;
   const sign = isTransferView ? undefined : t.direction === "INFLOW" ? "+" : "-";
   const secondary = [
-    t.type === "EXPENSE" || t.type === "INCOME" ? (t.merchant ? t.category?.name : null) : null,
+    t.type === "EXPENSE" || t.type === "INCOME" ? (t.merchant ? t.category?.name : null) : t.debt ? TRANSACTION_TYPE_LABELS[t.type] : null,
     t.account.name,
     showDate ? formatLocalDate(t.date, "en-US", { day: "numeric", month: "short" }) : null,
   ].filter(Boolean);

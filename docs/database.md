@@ -148,8 +148,8 @@ model Transaction {
   merchant        String?
   note            String?
   transferGroupId String?           // both legs of a transfer share it
-  debtId          String?           // Phase 2
-  debtPaymentId   String?  @unique  // Phase 2, 1:1 with DebtPayment
+  debtId          String?           // DEBT_PAYMENT and LOAN_DISBURSEMENT rows
+  debtPaymentId   String?  @unique  // 1:1 with DebtPayment
   source          TransactionSource @default(MANUAL)
   externalId      String?           // future import dedup
   clientRequestId String?           // idempotency key from the form
@@ -188,7 +188,7 @@ Semantics:
 - **Voiding:** sets `voidedAt`/`voidReason` and applies the opposite balance delta. Voided rows are shown struck-through in history and excluded from analytics. `DEBT_PAYMENT` rows can only be voided through *Reverse Payment* (Phase 2).
 - **Monthly summaries** are computed from these rows at query time, so history is always reproducible (SPEC §39).
 
-## 6. Debts (Phase 2)
+## 6. Debts (implemented in Phase 2)
 
 ```prisma
 model Debt {
@@ -235,7 +235,6 @@ model DebtScheduleVersion {
   reason        ScheduleVersionReason
   note          String?
   effectiveFrom DateTime @db.Date            // first due date this version (re)defines
-  createdById   String                       // = userId today; kept for future shared budgets
   createdAt     DateTime @default(now()) @db.Timestamptz(3)
   @@unique([debtId, version])
 }
@@ -316,6 +315,8 @@ CREATE UNIQUE INDEX schedule_item_current_installment
 ```
 
 The two equality checks make SPEC §53's "actual account debit inconsistent with the validated payment breakdown" and "processing fee applied to principal" impossible at the database level, not just in code.
+
+As built, `Debt` also stores `firstPaymentDate` (the first tracked due date) and `clientRequestId` (unique per user, for idempotent creation). The live definitions are in `prisma/schema.prisma` and `prisma/migrations/*_debt_engine/migration.sql`. The migration also adds `debt_amounts_valid`, `schedule_item_amounts_valid` (planned total and paid total add up; closing = opening − principal), `transaction_debt_payment_linked` (a `DEBT_PAYMENT` transaction always has its `DebtPayment`) and `transaction_debt_rows_have_debt`.
 
 Versioning, allocation and reversal semantics are in [debt-engine.md](debt-engine.md).
 
@@ -425,4 +426,4 @@ model AuditLog {            // Phase 1
 
 ## 11. Seed data
 
-`prisma/seed.ts` refuses to run when `NODE_ENV === "production"`. It creates a demo user through Better Auth's API (so the password is hashed by the library), default categories, accounts **Uzcard / Visa / Cash UZS**, and a few Fuel / Taxi / Groceries expenses. Debt seed data (Debt A 85,800,000 differential; Debt B 163,593,696 installment with 49,986,962.63 paid; demo microloan 2,000,000 + 100,000 fee, 15,000 processing fee, 2,115,000 debit) is added with the Phase 2 models. Real financial data is never hardcoded outside the dev seed.
+`prisma/seed.ts` refuses to run when `NODE_ENV === "production"`. It creates a demo user through Better Auth's API (so the password is hashed by the library), default categories, accounts **Uzcard / Visa / Cash UZS**, and a few Fuel / Taxi / Groceries expenses. It also seeds the SPEC debts: Debt A (85,800,000 differential; the 24% / 36 months terms are demo placeholders until the real contract is entered), Debt B (163,593,696 interest-free installment with 49,986,962.63 already paid, 3,500,000 a month), and a demo microloan (2,000,000 + 100,000 fee on top, repaid with a 15,000 card fee, so 2,115,000 is debited). Re-running the seed adds only what is missing. Real financial data is never hardcoded outside the dev seed.

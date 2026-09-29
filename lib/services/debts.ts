@@ -98,6 +98,8 @@ export type DebtDetailDTO = DebtSummaryDTO & {
   notes: string | null;
   disbursementAccountId: string | null;
   schedule: ScheduleItemDTO[];
+  /** Principal the open lines must amortise (excludes what partially paid lines still owe). */
+  principalToPlan: string;
   payments: DebtPaymentDTO[];
   versions: { id: string; version: number; reason: string; note: string | null; createdAt: string; isActive: boolean }[];
   cost: {
@@ -278,6 +280,11 @@ export async function getDebtDetail(userId: string, id: string): Promise<DebtDet
     notes: debt.notes,
     disbursementAccountId: debt.disbursementAccountId,
     schedule: debt.scheduleItems.map((i) => toItemDTO(i, ctx)),
+    principalToPlan: toMoneyString(
+      debt.scheduleItems
+        .filter((i) => i.status === "PARTIALLY_PAID")
+        .reduce((left, i) => left.minus(money(i.plannedPrincipal).minus(money(i.paidPrincipal))), money(debt.currentPrincipal)),
+    ),
     payments: debt.payments.map(toPaymentDTO),
     versions: debt.scheduleVersions.map((v) => ({
       id: v.id,
@@ -311,7 +318,7 @@ export async function getScheduleSnapshot(userId: string, debtId: string, versio
 }
 
 export type UpcomingPaymentDTO = ScheduleItemDTO & {
-  debt: { id: string; name: string; lender: string | null; currency: string; currentPrincipal: string };
+  debt: { id: string; name: string; lender: string | null; currency: string; currentPrincipal: string; feeMode: Debt["feeMode"] };
 };
 
 /** Open current lines of active debts due up to `until` (overdue included). */
@@ -326,7 +333,7 @@ export async function listUpcomingPayments(userId: string, options: { untilDays?
       dueDate: { lte: until },
       debt: { status: "ACTIVE" },
     },
-    include: { debt: { select: { id: true, name: true, lender: true, currency: true, currentPrincipal: true } } },
+    include: { debt: { select: { id: true, name: true, lender: true, currency: true, currentPrincipal: true, feeMode: true } } },
     orderBy: [{ dueDate: "asc" }, { installmentNumber: "asc" }],
   });
   return items.map((i) => ({
@@ -508,3 +515,39 @@ export async function recomputeDebtPrincipal(userId: string, debtId: string): Pr
   return toMoneyString(money(debt.principalBasis).minus(money(debt.paidBeforeTracking)).minus(money(paid._sum.principalAmount ?? 0)));
 }
 
+
+export type DebtTotalsDTO = {
+  currency: string;
+  principalBasis: string;
+  paidPrincipal: string;
+  remainingPrincipal: string;
+  paidPercent: string;
+  remainingPercent: string;
+  remainingInterestEstimate: string;
+  plannedFutureTotal: string;
+  hasEstimates: boolean;
+};
+
+/** Total Debt widget (SPEC §10): per currency, principal kept apart from future interest. */
+export function debtTotalsByCurrency(debts: DebtSummaryDTO[]): DebtTotalsDTO[] {
+  const groups = new Map<string, DebtSummaryDTO[]>();
+  for (const d of debts) groups.set(d.currency, [...(groups.get(d.currency) ?? []), d]);
+  return [...groups].map(([currency, list]) => {
+    const sum = (key: "principalBasis" | "paidPrincipal" | "currentPrincipal" | "remainingInterestEstimate" | "plannedFutureTotal") =>
+      list.reduce((s, d) => s.plus(money(d[key])), money(0));
+    const basis = sum("principalBasis");
+    const paid = sum("paidPrincipal");
+    const paidPct = basis.isZero() ? money(0) : paid.div(basis).times(100);
+    return {
+      currency,
+      principalBasis: toMoneyString(basis),
+      paidPrincipal: toMoneyString(paid),
+      remainingPrincipal: toMoneyString(sum("currentPrincipal")),
+      paidPercent: paidPct.toDecimalPlaces(2).toFixed(2),
+      remainingPercent: (basis.isZero() ? money(0) : money(100).minus(paidPct)).toDecimalPlaces(2).toFixed(2),
+      remainingInterestEstimate: toMoneyString(sum("remainingInterestEstimate")),
+      plannedFutureTotal: toMoneyString(sum("plannedFutureTotal")),
+      hasEstimates: list.some((d) => d.hasEstimates),
+    };
+  });
+}

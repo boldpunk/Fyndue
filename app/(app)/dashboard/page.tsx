@@ -86,8 +86,8 @@ export default async function DashboardPage() {
         <FinancialMetricCard label="Expenses this month" icon={ArrowUpRight} tone="danger" footer="Excludes transfers and debt payments">
           <CurrencyTotals totals={overview.expenses} primaryCurrency={user.baseCurrency} emptyLabel="0" />
         </FinancialMetricCard>
-        <FinancialMetricCard label="Debt payments this month" icon={Landmark} footer={<Link href="/debts" className="hover:underline">Debt tracking arrives in Phase 2</Link>}>
-          <span className="text-muted-foreground">No debts tracked</span>
+        <FinancialMetricCard label="Debt payments this month" icon={Landmark} footer={<Link href="/payments" className="hover:underline">Actual amounts debited, incl. card fees</Link>}>
+          <CurrencyTotals totals={overview.debtPayments} primaryCurrency={user.baseCurrency} emptyLabel="0" />
         </FinancialMetricCard>
       </section>
 

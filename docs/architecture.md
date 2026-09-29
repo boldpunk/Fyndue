@@ -1,6 +1,6 @@
 # Fyndue — Architecture
 
-> Status: Phase 0 (planning) and Phase 1 (foundation) complete. Next: Phase 2 (debt engine).
+> Status: Phases 0–2 complete (planning, foundation, debt engine). Next: Phase 3 (dashboard).
 > Source of truth for product requirements: [`SPEC.md`](../SPEC.md).
 > Related: [database](database.md) · [debt engine](debt-engine.md) · [security](security.md) · [telegram](telegram.md) · [roadmap](roadmap.md)
 
@@ -83,8 +83,11 @@ components/
 lib/
   auth/                   Better Auth server config, client, requireUser()
   db/                     Prisma client singleton
-  finance/                money.ts, dates.ts, balance.ts (+ Phase 2: differential.ts, annuity.ts, …)
-  services/               accounts.ts, categories.ts, transactions.ts, audit.ts, …
+  finance/                money, dates, balance, schedule, differential, annuity, installment,
+                          microloan, early-repayment, payment-allocation, payment-status,
+                          debt-progress, debt-cost, debt-plan
+  services/               accounts, categories, transactions, debts, debt-schedule,
+                          debt-payments, dashboard, settings, audit
   validations/            zod schemas
   notifications/ telegram/  (Phase 5)
   utils/                  cn(), result helpers, constants

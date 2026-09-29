@@ -34,22 +34,28 @@ Phase 1 notes:
 - Debts, Payments, Calendar, Budgets and Analytics routes are placeholders so navigation is complete.
 - Follow-ups: nonce-based CSP instead of `'unsafe-inline'`, per-user rate limits on actions, Playwright E2E suite (all Phase 7).
 
-## Phase 2 — Debt engine (next)
+## Phase 2 — Debt engine ✅
 
 Test-first. Pure engine before persistence.
 
-1. Schema: Debt, DebtScheduleVersion, DebtScheduleItem, DebtPayment + checks + partial unique index; `Transaction.debtId/debtPaymentId`.
-2. `schedule.ts`, `differential.ts`, `annuity.ts`, `installment.ts`, `microloan.ts` + unit tests (SPEC §59 list).
-3. `payment-allocation.ts`, `debt-progress.ts`, `payment-status.ts` + tests (Debt B = 30.56%).
-4. Debt create service (debt + version 1 + items + optional disbursement, atomic) and wizard UI.
-5. Debt list (tabs) and detail (overview, schedule table/cards).
-6. Record payment (full/partial, processing fee) + integration tests.
-7. Reverse payment + tests (round-trip returns all balances).
-8. Early repayment preview + apply (versioning) + tests.
-9. Manual schedule edit / bank-schedule override (new version).
-10. `/payments` page (upcoming, overdue, history). Seed Debt A, Debt B, demo microloan.
+1. ✅ Schema: Debt, DebtScheduleVersion, DebtScheduleItem, DebtPayment + checks + partial unique index; `Transaction.debtId/debtPaymentId`.
+2. ✅ `schedule.ts`, `differential.ts`, `annuity.ts`, `installment.ts`, `microloan.ts` + unit tests (SPEC §59 list).
+3. ✅ `payment-allocation.ts`, `debt-progress.ts`, `payment-status.ts` + tests (Debt B = 30.56%).
+4. ✅ Debt create service (debt + version 1 + items + optional disbursement, atomic) and wizard UI.
+5. ✅ Debt list (tabs) and detail (overview, schedule table/cards).
+6. ✅ Record payment (full/partial, processing fee) + integration tests.
+7. ✅ Reverse payment + tests (round-trip returns all balances).
+8. ✅ Early repayment preview + apply (versioning) + tests.
+9. ✅ Manual schedule edit / bank-schedule override (new version).
+10. ✅ `/payments` page (upcoming, overdue, history). Seed Debt A, Debt B, demo microloan.
 
-## Phase 3 — Dashboard
+Phase 2 notes:
+
+- Implemented: the debt creation wizard (7 steps, live schedule preview), debt list with Active / Paid off / Archived tabs and the Total Debt widget, and debt detail with Overview, Schedule (current version plus any past version), Payments (with reverse) and Settings (edit / archive) tabs. Also: Mark as paid with the full breakdown and card fee, partial payments, extra principal payment with a before/after preview, manual or bank schedule override, the `/payments` page (overdue, next 60 days, history), real "Debt payments this month" on the dashboard, and the seeded SPEC debts.
+- Placeholders: the debt Analytics tab (Phase 4) and Documents tab (Phase 6).
+- Next: make Phase 3 dashboard widgets (upcoming payments, Safe to Spend, projected balance) reuse `listUpcomingPayments`, `debtTotalsByCurrency` and `lib/finance/debt-progress`.
+
+## Phase 3 — Dashboard (next)
 
 Available balance (per currency), income/expenses/debt payments this month with previous-month comparison, Total Debt widget (principal vs. future interest clearly labelled), upcoming payments, Safe to Spend, projected balance, recent transactions. All from real data via `lib/finance/cash-flow.ts`.
 

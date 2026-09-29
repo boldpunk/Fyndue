@@ -1,7 +1,17 @@
 # Fyndue — Debt Engine
 
-> Design for Phase 2. Nothing in this document is implemented yet except the shared money/date primitives in `lib/finance/money.ts` and `lib/finance/dates.ts` (Phase 1).
+> Status: implemented in Phase 2. Pure engine: `lib/finance/{schedule,differential,annuity,installment,microloan,early-repayment,payment-allocation,payment-status,debt-progress,debt-cost,debt-plan}.ts`. Persistence: `lib/services/{debts,debt-schedule,debt-payments}.ts`. Tests: `tests/unit/debt-*.test.ts`, `tests/integration/debts.test.ts`.
 > Rule: tests are written before any change to debt calculation logic (SPEC §63.7).
+
+## 0. Implementation notes (Phase 2)
+
+- `decimal.js`'s `isPositive()` returns `true` for zero; the engine always uses explicit `gt(0)` / `lte(0)` comparisons.
+- `lib/finance/debt-plan.ts` builds a new debt's initial schedule. The wizard runs it in the browser for the live preview and `createDebt` runs it again on the server, so what you preview is what gets saved.
+- **Paid before tracking** (`paidBeforeTracking`) is principal repaid before Fyndue. It counts toward progress and reduces `currentPrincipal`, but moves no account. The first tracked line's interest accrues from the month before `firstPaymentDate`.
+- **Known total repayment:** principal is allocated to each amount due pro rata; the remainder is stored in the line's `plannedFees` and labelled "Interest & fees (not itemised)".
+- **Settling a line:** a line becomes `PAID` when its paid total reaches the planned total, or when the user ticks "This settles the installment" after paying at least its principal (for when the bank's actual interest was lower than the estimate).
+- **Partially paid lines are frozen** when the schedule is regenerated. The principal they still owe is reserved, so new lines amortise `currentPrincipal − reserved`.
+- **Reversing an early repayment** is allowed only while its version is the latest and no payment was made on its lines. It restores the lines that version replaced, by copying them into a new `CORRECTION` version.
 
 The debt engine answers: *what is owed, what was paid, how it split into principal / interest / fees, what is due next, and what changes when something unusual happens.* It is split into a **pure calculation layer** (`lib/finance`) and a **persistence layer** (`lib/services/debts*.ts`) that applies calculations inside database transactions.
 

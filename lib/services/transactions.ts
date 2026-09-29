@@ -33,6 +33,7 @@ export type TransactionDTO = {
   note: string | null;
   account: { id: string; name: string };
   category: { id: string; name: string; icon: string; color: string | null } | null;
+  debt: { id: string; name: string } | null;
   /** The other leg of a transfer. */
   counterpart: { transactionId: string; accountId: string; accountName: string; amount: string; currency: string } | null;
   isVoided: boolean;
@@ -43,6 +44,7 @@ export type TransactionDTO = {
 const transactionInclude = {
   account: { select: { id: true, name: true } },
   category: { select: { id: true, name: true, icon: true, color: true } },
+  debt: { select: { id: true, name: true } },
 } satisfies Prisma.TransactionInclude;
 
 type TransactionWithRelations = Prisma.TransactionGetPayload<{ include: typeof transactionInclude }>;
@@ -62,6 +64,7 @@ function toTransactionDTO(t: TransactionWithRelations, counterpart: TransactionW
     note: t.note,
     account: t.account,
     category: t.category,
+    debt: t.debt,
     counterpart: counterpart
       ? {
           transactionId: counterpart.id,

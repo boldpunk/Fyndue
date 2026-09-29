@@ -81,6 +81,11 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
                 ) : null}
               </Row>
             ) : null}
+            {t.debt ? (
+              <Row label="Debt">
+                <Link href={`/debts/${t.debt.id}?tab=payments`} className="hover:underline">{t.debt.name}</Link>
+              </Row>
+            ) : null}
             {t.category ? <Row label="Category">{t.category.name}</Row> : null}
             {t.merchant ? <Row label="Merchant">{t.merchant}</Row> : null}
             {t.note ? <Row label="Note">{t.note}</Row> : null}

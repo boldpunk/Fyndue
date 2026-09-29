@@ -16,7 +16,11 @@ export function TransactionDetailActions({ transaction }: { transaction: Transac
   const [reason, setReason] = useState("");
   const [pending, startTransition] = useTransition();
 
-  if (transaction.isVoided || transaction.type === "DEBT_PAYMENT" || transaction.type === "LOAN_DISBURSEMENT") return null;
+  if (transaction.isVoided || transaction.type === "DEBT_PAYMENT" || transaction.type === "LOAN_DISBURSEMENT") {
+    return transaction.type === "DEBT_PAYMENT" && !transaction.isVoided ? (
+      <p className="text-[13px] text-muted-foreground">Debt payments are reversed from the debt&apos;s Payments tab, so the principal and schedule are restored too.</p>
+    ) : null;
+  }
 
   const confirmIncome = () =>
     startTransition(async () => {
