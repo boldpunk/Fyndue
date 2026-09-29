@@ -18,12 +18,20 @@ export type AuditAction =
   | "TRANSACTION_VOIDED"
   | "TRANSACTION_CONFIRMED"
   | "TRANSFER_CREATED"
-  | "PROFILE_UPDATED";
+  | "PROFILE_UPDATED"
+  | "DEBT_CREATED"
+  | "DEBT_UPDATED"
+  | "DEBT_ARCHIVED"
+  | "DEBT_UNARCHIVED"
+  | "SCHEDULE_REGENERATED"
+  | "PAYMENT_RECORDED"
+  | "EARLY_REPAYMENT"
+  | "PAYMENT_REVERSED";
 
 export type AuditEntry = {
   userId: string;
   action: AuditAction;
-  entityType: "Account" | "Category" | "Transaction" | "User";
+  entityType: "Account" | "Category" | "Transaction" | "User" | "Debt" | "DebtPayment";
   entityId: string;
   /** Changed-field snapshots only. Never secrets, tokens or free-text notes. */
   metadata?: Prisma.InputJsonValue;
