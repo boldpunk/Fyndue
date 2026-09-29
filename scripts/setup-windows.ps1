@@ -65,8 +65,15 @@ if ($useSystemPg) {
 } else {
   $pgPassword = "fyndue-local"
   $pgPort = 5433
-  Write-Host "No system PostgreSQL found - starting the bundled one in a separate window (keep it open)."
-  Start-Process -FilePath "cmd.exe" -ArgumentList "/k", "title Fyndue database && pnpm db:local" -WorkingDirectory (Get-Location)
+  function Test-Port($port) {
+    try { $t = New-Object Net.Sockets.TcpClient; $t.Connect("127.0.0.1", $port); $t.Close(); return $true } catch { return $false }
+  }
+  if (Test-Port $pgPort) {
+    Write-Host "The bundled database is already running on port $pgPort - reusing it."
+  } else {
+    Write-Host "No system PostgreSQL found - starting the bundled one in a separate window (keep it open)."
+    Start-Process -FilePath "cmd.exe" -ArgumentList "/k", "title Fyndue database && pnpm db:local" -WorkingDirectory (Get-Location)
+  }
   $ready = $false
   for ($i = 0; $i -lt 90; $i++) {
     try {
