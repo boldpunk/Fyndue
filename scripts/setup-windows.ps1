@@ -1,4 +1,4 @@
-# Fyndue — one-shot local setup for Windows (PowerShell 5+ or pwsh 7).
+# Fyndue - one-shot local setup for Windows (PowerShell 5+ or pwsh 7).
 #
 #   powershell -ExecutionPolicy Bypass -File scripts\setup-windows.ps1
 #
@@ -21,7 +21,7 @@ if (-not (Has "winget")) {
   throw "winget is not available. Install 'App Installer' from the Microsoft Store, then re-run this script."
 }
 
-# ── Node.js ───────────────────────────────────────────────────────────────────
+# -- Node.js -------------------------------------------------------------------
 Step "Checking Node.js (needs v22+)"
 $nodeOk = $false
 if (Has "node") { $nodeOk = ([int]((node -v).TrimStart("v").Split(".")[0]) -ge 22) }
@@ -31,7 +31,7 @@ if (-not $nodeOk) {
 }
 Write-Host "Node $(node -v)"
 
-# ── pnpm ──────────────────────────────────────────────────────────────────────
+# -- pnpm ----------------------------------------------------------------------
 Step "Checking pnpm"
 if (-not (Has "pnpm")) {
   npm install -g pnpm
@@ -39,7 +39,7 @@ if (-not (Has "pnpm")) {
 }
 Write-Host "pnpm $(pnpm -v)"
 
-# ── PostgreSQL ────────────────────────────────────────────────────────────────
+# -- PostgreSQL ----------------------------------------------------------------
 Step "Checking PostgreSQL 16"
 $pgBin = "C:\Program Files\PostgreSQL\16\bin"
 $pgPassword = $null
@@ -58,7 +58,7 @@ if (-not (Test-Path "$pgBin\psql.exe")) {
 $env:PGPASSWORD = $pgPassword
 foreach ($db in @("fyndue", "fyndue_test")) {
   $exists = & "$pgBin\psql.exe" -U postgres -h localhost -tAc "SELECT 1 FROM pg_database WHERE datname='$db'"
-  if ($LASTEXITCODE -ne 0) { throw "Could not connect to PostgreSQL — check the password and that the service is running." }
+  if ($LASTEXITCODE -ne 0) { throw "Could not connect to PostgreSQL - check the password and that the service is running." }
   if ($exists -ne "1") {
     & "$pgBin\psql.exe" -U postgres -h localhost -c "CREATE DATABASE $db;" | Out-Null
     Write-Host "Created database $db"
@@ -68,12 +68,12 @@ foreach ($db in @("fyndue", "fyndue_test")) {
 }
 Remove-Item Env:\PGPASSWORD
 
-# ── .env ──────────────────────────────────────────────────────────────────────
+# -- .env ----------------------------------------------------------------------
 Step "Writing .env"
 $envFile = ".env"
 $hasRealEnv = (Test-Path $envFile) -and (Select-String -Path $envFile -Pattern '^BETTER_AUTH_SECRET="[^"]{32,}"' -Quiet)
 if ($hasRealEnv) {
-  Write-Host ".env already configured — leaving it as is"
+  Write-Host ".env already configured - leaving it as is"
 } else {
   $bytes = New-Object byte[] 32
   [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
@@ -91,7 +91,7 @@ ALLOW_REGISTRATION="true"
   Write-Host ".env written"
 }
 
-# ── App ───────────────────────────────────────────────────────────────────────
+# -- App -----------------------------------------------------------------------
 Step "Installing dependencies"
 pnpm install
 if ($LASTEXITCODE -ne 0) { throw "pnpm install failed" }
