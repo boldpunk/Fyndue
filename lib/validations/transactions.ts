@@ -2,6 +2,14 @@ import { z } from "zod";
 import { TRANSACTION_TYPES } from "@/lib/constants/finance";
 import { clientRequestIdSchema, idSchema, localDateSchema, moneySchema, optionalText } from "./common";
 
+/** Empty input → undefined; otherwise a validated positive amount. */
+const optionalMoney = () =>
+  z
+    .string()
+    .transform((v) => (v.trim() ? v : undefined))
+    .pipe(moneySchema().optional())
+    .optional();
+
 const cashFlowFields = {
   accountId: idSchema,
   categoryId: idSchema,
@@ -26,11 +34,7 @@ export const transferSchema = z
     toAccountId: idSchema,
     amount: moneySchema(),
     /** Amount credited to the destination; required when currencies differ. */
-    toAmount: z
-      .string()
-      .optional()
-      .transform((v) => (v && v.trim() ? v : undefined))
-      .pipe(moneySchema().optional()),
+    toAmount: optionalMoney(),
     date: localDateSchema,
     note: optionalText(500),
   })
@@ -59,11 +63,7 @@ export type CashFlowUpdateInput = z.output<typeof cashFlowUpdateSchema>;
 export const transferUpdateSchema = z.object({
   id: idSchema,
   amount: moneySchema(),
-  toAmount: z
-    .string()
-    .optional()
-    .transform((v) => (v && v.trim() ? v : undefined))
-    .pipe(moneySchema().optional()),
+  toAmount: optionalMoney(),
   date: localDateSchema,
   note: optionalText(500),
 });

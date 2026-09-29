@@ -20,8 +20,8 @@ export const optionalText = (max: number) =>
     .string()
     .trim()
     .max(max, `Must be ${max} characters or fewer`)
-    .optional()
-    .transform((value) => (value ? value : undefined));
+    .transform((value) => (value ? value : undefined))
+    .optional();
 
 export const colorSchema = z.enum(CATEGORY_COLORS);
 

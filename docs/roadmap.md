@@ -12,23 +12,29 @@ Small, reviewable milestones. Each milestone ends green: `pnpm typecheck && pnpm
 - [x] `docs/telegram.md` — notification architecture
 - [x] `docs/roadmap.md`
 
-## Phase 1 — Foundation (current)
+## Phase 1 — Foundation ✅
 
 | # | Milestone | Done when |
 |---|---|---|
-| 1.1 | Scaffold: Next.js 16, TS strict, pnpm, ESLint, Prettier, Vitest, env validation | `pnpm build` succeeds |
-| 1.2 | Design tokens (light/dark/system), Geist, shadcn/ui primitives, `Money`/`MoneyInput`/badges | tokens documented in `globals.css` |
-| 1.3 | Prisma 7 + Postgres, Phase 1 schema (User, auth tables, UserSettings, Account, Category, Transaction, AuditLog), SQL check constraints | migration applies on a clean DB |
-| 1.4 | Better Auth: register, login, logout, session, `proxy.ts`, `requireUser()`, user bootstrap (settings + default categories) | can sign up and reach `/dashboard` |
-| 1.5 | App shell: sidebar, mobile bottom nav, page header, theme toggle, Quick Add | navigation works at 375 px and desktop |
-| 1.6 | `lib/finance/money.ts`, `dates.ts`, `balance.ts` with unit tests | decimal precision tests pass |
-| 1.7 | Accounts: list (grouped by currency), create, edit, archive, balance adjustment | integration tests incl. authorization |
-| 1.8 | Categories: defaults, create, rename, reorder, archive, icon, colour | |
-| 1.9 | Transactions: expense, income (actual/expected), transfer (incl. cross-currency), adjustment, edit, void, filtered paginated list, Quick Add | balance invariant tests; A-cannot-touch-B tests |
-| 1.10 | Dashboard shell with real balances by currency and this-month income/expense totals (no hardcoded data) | |
-| 1.11 | Dev seed (demo user, Uzcard/Visa/Cash UZS, demo expenses) | `pnpm db:seed` refuses in production |
+| ✅ 1.1 | Scaffold: Next.js 16, TS strict, pnpm, ESLint, Prettier, Vitest, env validation | `pnpm build` succeeds |
+| ✅ 1.2 | Design tokens (light/dark/system), Geist, shadcn/ui primitives, `Money`/`MoneyInput`/badges | tokens documented in `globals.css` |
+| ✅ 1.3 | Prisma 7 + Postgres, Phase 1 schema (User, auth tables, UserSettings, Account, Category, Transaction, AuditLog), SQL check constraints | migration applies on a clean DB |
+| ✅ 1.4 | Better Auth: register, login, logout, session, `proxy.ts`, `requireUser()`, user bootstrap (settings + default categories) | can sign up and reach `/dashboard` |
+| ✅ 1.5 | App shell: sidebar, mobile bottom nav, page header, theme toggle, Quick Add | navigation works at 375 px and desktop |
+| ✅ 1.6 | `lib/finance/money.ts`, `dates.ts`, `balance.ts` with unit tests | decimal precision tests pass |
+| ✅ 1.7 | Accounts: list (grouped by currency), create, edit, archive, balance adjustment | integration tests incl. authorization |
+| ✅ 1.8 | Categories: defaults, create, rename, reorder, archive, icon, colour | |
+| ✅ 1.9 | Transactions: expense, income (actual/expected), transfer (incl. cross-currency), adjustment, edit, void, filtered paginated list, Quick Add | balance invariant tests; A-cannot-touch-B tests |
+| ✅ 1.10 | Dashboard shell with real balances by currency and this-month income/expense totals (no hardcoded data) | |
+| ✅ 1.11 | Dev seed (demo user, Uzcard/Visa/Cash UZS, demo expenses) | `pnpm db:seed` refuses in production |
 
-## Phase 2 — Debt engine
+Phase 1 notes:
+
+- The dashboard shows real balances, income and expenses per currency. Debt widgets, Safe to Spend and projections come in Phases 2–3.
+- Debts, Payments, Calendar, Budgets and Analytics routes are placeholders so navigation is complete.
+- Follow-ups: nonce-based CSP instead of `'unsafe-inline'`, per-user rate limits on actions, Playwright E2E suite (all Phase 7).
+
+## Phase 2 — Debt engine (next)
 
 Test-first. Pure engine before persistence.
 

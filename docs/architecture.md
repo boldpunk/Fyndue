@@ -1,6 +1,6 @@
 # Fyndue — Architecture
 
-> Status: Phase 0 (planning) complete, Phase 1 (foundation) in progress.
+> Status: Phase 0 (planning) and Phase 1 (foundation) complete. Next: Phase 2 (debt engine).
 > Source of truth for product requirements: [`SPEC.md`](../SPEC.md).
 > Related: [database](database.md) · [debt engine](debt-engine.md) · [security](security.md) · [telegram](telegram.md) · [roadmap](roadmap.md)
 
