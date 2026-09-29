@@ -1,0 +1,267 @@
+// Fyndue database schema — Phase 1 (foundation).
+// Full multi-phase design and rationale: docs/database.md
+//
+// Conventions:
+// - Every user-owned model has `userId` and is always queried with it.
+// - Money: Decimal(20, 2). Never floats.
+// - Business dates (transactionDate, …): @db.Date — no time zone, cannot drift a day.
+// - Instants: @db.Timestamptz(3).
+// - CHECK constraints Prisma cannot express live in the migrations (see migration.sql).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../lib/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Currency {
+  UZS
+  USD
+  EUR
+  RUB
+}
+
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum AccountType {
+  BANK_CARD
+  CASH
+  SAVINGS
+  DEPOSIT
+  DIGITAL_WALLET
+  OTHER
+}
+
+enum CategoryType {
+  EXPENSE
+  INCOME
+}
+
+enum TransactionType {
+  EXPENSE
+  INCOME
+  TRANSFER
+  DEBT_PAYMENT
+  BALANCE_ADJUSTMENT
+  LOAN_DISBURSEMENT
+}
+
+enum FlowDirection {
+  INFLOW
+  OUTFLOW
+}
+
+enum TransactionStatus {
+  ACTUAL
+  EXPECTED
+}
+
+enum TransactionSource {
+  MANUAL
+  IMPORT
+  BANK_SYNC
+  OCR
+  SYSTEM
+}
+
+// ─── Identity (tables shaped for Better Auth) ────────────────────────────────
+
+model User {
+  id            String   @id
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  baseCurrency  Currency @default(UZS)
+  timezone      String   @default("Asia/Tashkent")
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
+
+  sessions     Session[]
+  authAccounts AuthAccount[]
+  settings     UserSettings?
+  accounts     Account[]
+  categories   Category[]
+  transactions Transaction[]
+  auditLogs    AuditLog[]
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  token     String   @unique
+  expiresAt DateTime @db.Timestamptz(3)
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Better Auth's "account" (credential / OAuth link). Renamed so it cannot be
+/// confused with the financial Account model. Password hashes are written by
+/// Better Auth only.
+model AuthAccount {
+  id                    String    @id
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime? @db.Timestamptz(3)
+  refreshTokenExpiresAt DateTime? @db.Timestamptz(3)
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([identifier])
+}
+
+model UserSettings {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  theme            Theme    @default(SYSTEM)
+  locale           String   @default("en-US")
+  defaultAccountId String?
+  weekStartsOn     Int      @default(1)
+  dueSoonDays      Int      @default(7)
+  urgentDays       Int      @default(2)
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Money ────────────────────────────────────────────────────────────────────
+
+model Account {
+  id             String      @id @default(cuid())
+  userId         String
+  name           String
+  type           AccountType
+  currency       Currency
+  openingBalance Decimal     @db.Decimal(20, 2)
+  /// Denormalised: openingBalance + Σ inflow − Σ outflow over actual,
+  /// non-voided transactions. Only changed inside the same DB transaction
+  /// as the transaction that moves it.
+  currentBalance Decimal     @db.Decimal(20, 2)
+  includeInTotal Boolean     @default(true)
+  bank           String?
+  icon           String?
+  color          String?
+  sortOrder      Int         @default(0)
+  isArchived     Boolean     @default(false)
+  createdAt      DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime    @updatedAt @db.Timestamptz(3)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([userId, isArchived])
+}
+
+model Category {
+  id         String       @id @default(cuid())
+  userId     String
+  name       String
+  type       CategoryType
+  icon       String
+  color      String?
+  isDefault  Boolean      @default(false)
+  /// System categories (e.g. "Debt Payments") are used by the app itself
+  /// and cannot be archived.
+  isSystem   Boolean      @default(false)
+  isArchived Boolean      @default(false)
+  sortOrder  Int          @default(0)
+  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@unique([userId, type, name])
+  @@index([userId, type, isArchived, sortOrder])
+}
+
+model Transaction {
+  id              String            @id @default(cuid())
+  userId          String
+  accountId       String
+  categoryId      String?
+  type            TransactionType
+  direction       FlowDirection
+  status          TransactionStatus @default(ACTUAL)
+  /// Always > 0: the real movement of money on the account.
+  amount          Decimal           @db.Decimal(20, 2)
+  /// Always equals the account's currency.
+  currency        Currency
+  transactionDate DateTime          @db.Date
+  merchant        String?
+  note            String?
+  /// Shared by both legs of a transfer.
+  transferGroupId String?
+  source          TransactionSource @default(MANUAL)
+  externalId      String?
+  /// Idempotency key generated by the form; prevents double submits.
+  clientRequestId String?
+  voidedAt        DateTime?         @db.Timestamptz(3)
+  voidReason      String?
+  createdAt       DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime          @updatedAt @db.Timestamptz(3)
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account  Account   @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, clientRequestId])
+  @@index([userId, transactionDate])
+  @@index([userId, accountId])
+  @@index([userId, categoryId])
+  @@index([transferGroupId])
+}
+
+// ─── Audit ────────────────────────────────────────────────────────────────────
+
+/// Append-only. Written inside the same DB transaction as the change.
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+}
