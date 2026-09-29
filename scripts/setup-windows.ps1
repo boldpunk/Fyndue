@@ -68,22 +68,25 @@ if ($useSystemPg) {
   function Test-Port($port) {
     try { $t = New-Object Net.Sockets.TcpClient; $t.Connect("127.0.0.1", $port); $t.Close(); return $true } catch { return $false }
   }
-  if (Test-Port $pgPort) {
+  $readyFile = ".local\db-ready"
+  if ((Test-Port $pgPort) -and (Test-Path $readyFile)) {
     Write-Host "The bundled database is already running on port $pgPort - reusing it."
   } else {
+    if (Test-Port $pgPort) {
+      throw "Something else is using port $pgPort. Close any old 'Fyndue database' window and re-run this script."
+    }
     Write-Host "No system PostgreSQL found - starting the bundled one in a separate window (keep it open)."
+    Remove-Item $readyFile -ErrorAction SilentlyContinue
     Start-Process -FilePath "cmd.exe" -ArgumentList "/k", "title Fyndue database && pnpm db:local" -WorkingDirectory (Get-Location)
+    # Wait for the "ready" marker, not just the port: on first run the
+    # database may start, stop and restart while it is being prepared.
+    $ready = $false
+    for ($i = 0; $i -lt 120; $i++) {
+      if ((Test-Path $readyFile) -and (Test-Port $pgPort)) { $ready = $true; break }
+      Start-Sleep -Seconds 2
+    }
+    if (-not $ready) { throw "The database window did not become ready. Look at the 'Fyndue database' window for the error." }
   }
-  $ready = $false
-  for ($i = 0; $i -lt 90; $i++) {
-    try {
-      $tcp = New-Object Net.Sockets.TcpClient
-      $tcp.Connect("127.0.0.1", $pgPort)
-      $tcp.Close(); $ready = $true; break
-    } catch { Start-Sleep -Seconds 2 }
-  }
-  if (-not $ready) { throw "The database window did not start. Look at the 'Fyndue database' window for the error." }
-  Start-Sleep -Seconds 3  # let it finish creating the databases
 }
 
 # -- .env -----------------------------------------------

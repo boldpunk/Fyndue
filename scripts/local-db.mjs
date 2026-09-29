@@ -7,11 +7,14 @@
  * Data lives in .local/postgres (git-ignored). Listens on localhost:5433,
  * user "postgres", password "fyndue-local", databases fyndue + fyndue_test.
  */
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import EmbeddedPostgres from "embedded-postgres";
 
 const databaseDir = path.resolve(".local/postgres");
+// Written once the databases exist; the Windows setup script waits for it.
+const readyFile = path.resolve(".local/db-ready");
+rmSync(readyFile, { force: true });
 const pg = new EmbeddedPostgres({
   databaseDir,
   port: 5433,
@@ -59,9 +62,11 @@ for (const name of ["fyndue", "fyndue_test"]) {
 }
 await client.end();
 
+writeFileSync(readyFile, String(process.pid));
 console.log("PostgreSQL ready on localhost:5433 (Ctrl+C to stop)");
 
 const shutdown = async () => {
+  rmSync(readyFile, { force: true });
   await pg.stop();
   process.exit(0);
 };
