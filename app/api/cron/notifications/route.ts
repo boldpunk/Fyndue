@@ -12,7 +12,8 @@ async function handle(request: Request) {
   const presented = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!secretMatches(presented, env.CRON_SECRET)) return new Response(null, { status: 401 });
   const client = getTelegramClient();
-  if (!client) return Response.json({ ok: false, error: "Telegram is not configured" }, { status: 503 });
+  // Nothing to send through yet; not an error for the scheduler.
+  if (!client) return Response.json({ ok: true, skipped: "Telegram is not configured" });
   const summary = await runReminders({ sender: client });
   return Response.json({ ok: true, ...summary });
 }

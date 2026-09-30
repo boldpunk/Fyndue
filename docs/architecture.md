@@ -2,7 +2,7 @@
 
 > Status: Phases 0–6 complete (planning, foundation, debt engine, dashboard, calendar/analytics/budgets, Telegram reminders, documents). Next: Phase 7 (PWA & polish).
 > Source of truth for product requirements: [`SPEC.md`](../SPEC.md).
-> Related: [database](database.md) · [debt engine](debt-engine.md) · [security](security.md) · [telegram](telegram.md) · [roadmap](roadmap.md)
+> Related: [deployment](deployment.md) · [database](database.md) · [debt engine](debt-engine.md) · [security](security.md) · [telegram](telegram.md) · [roadmap](roadmap.md)
 
 ## 1. Guiding decisions
 

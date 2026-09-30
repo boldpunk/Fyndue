@@ -13,6 +13,7 @@ The full product and technical specification lives in [`SPEC.md`](SPEC.md). Read
 | [docs/debt-engine.md](docs/debt-engine.md) | Financial calculation layer, schedule versioning, payment & reversal safety |
 | [docs/security.md](docs/security.md) | Authentication, authorization, validation, headers, audit log |
 | [docs/telegram.md](docs/telegram.md) | Reminder & bot architecture |
+| [docs/deployment.md](docs/deployment.md) | Production on a server (Docker Compose, nginx/Caddy, backups) |
 | [docs/roadmap.md](docs/roadmap.md) | Phases and milestones |
 
 ## Stack

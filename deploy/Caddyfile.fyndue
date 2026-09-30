@@ -1,0 +1,13 @@
+# Add to the server's existing Caddyfile if it uses Caddy instead of nginx
+# (docs/deployment.md, step 5). Caddy gets the certificate automatically.
+
+www.fyndue.uz {
+	redir https://fyndue.uz{uri} permanent
+}
+
+fyndue.uz {
+	request_body {
+		max_size 12MB
+	}
+	reverse_proxy 127.0.0.1:3100
+}

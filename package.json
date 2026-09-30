@@ -19,7 +19,8 @@
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
     "db:local": "node scripts/local-db.mjs",
-    "telegram:dev": "tsx --conditions=react-server scripts/telegram-dev.ts"
+    "telegram:dev": "tsx --conditions=react-server scripts/telegram-dev.ts",
+    "telegram:webhook": "tsx --conditions=react-server scripts/telegram-webhook.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

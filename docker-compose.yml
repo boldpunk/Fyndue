@@ -1,0 +1,87 @@
+# Fyndue on a shared server (docs/deployment.md).
+#   docker compose up -d --build
+# Only the web app is published, and only on 127.0.0.1, for the server's
+# existing reverse proxy (nginx / Caddy) to forward fyndue.uz to.
+name: fyndue
+
+x-app-env: &app-env
+  DATABASE_URL: postgresql://fyndue:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/fyndue
+  BETTER_AUTH_URL: ${APP_URL:?set APP_URL in .env}
+  BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in .env}
+  ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-false}
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+  TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+  TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-}
+  TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-}
+  CRON_SECRET: ${CRON_SECRET:?set CRON_SECRET in .env}
+  STORAGE_DIR: /app/storage
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fyndue
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: fyndue
+      POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=C
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fyndue -d fyndue"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Applies pending migrations, then exits. `web` starts only if it succeeded.
+  migrate:
+    build: .
+    image: fyndue-app
+    command: ["prisma", "migrate", "deploy"]
+    environment: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    image: fyndue-app
+    restart: unless-stopped
+    environment: *app-env
+    ports:
+      - "127.0.0.1:${FYNDUE_PORT:-3100}:3000"
+    volumes:
+      - documents:/app/storage
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+  # Payment reminders: calls the cron route every 15 minutes (docs/telegram.md §4).
+  scheduler:
+    image: alpine:3.22
+    restart: unless-stopped
+    environment:
+      CRON_SECRET: ${CRON_SECRET}
+    command:
+      - sh
+      - -c
+      - |
+        while true; do
+          sleep 900
+          wget -q -O - --header "Authorization: Bearer $$CRON_SECRET" http://web:3000/api/cron/notifications || echo "reminder run failed"
+          echo
+        done
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  db-data:
+  documents:

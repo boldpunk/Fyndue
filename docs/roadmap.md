@@ -116,6 +116,11 @@ Phase 6 notes:
 - Back up `STORAGE_DIR` together with the database; the rows hold hashes to verify a restore.
 - An S3-compatible driver (for hosting without a persistent disk) is left for deployment time; the interface is ready for it.
 
+## Deployment ✅
+
+- ✅ `Dockerfile` + `docker-compose.yml` (own PostgreSQL, migrations before start, reminder scheduler, documents volume), published on `127.0.0.1` only for the server's reverse proxy.
+- ✅ nginx and Caddy configs for fyndue.uz, production env template, Telegram webhook script, nightly backup with a tested restore. See [deployment.md](deployment.md).
+
 ## Phase 7 — PWA & polish (next)
 
 Manifest, icons, standalone mode, safe areas, command palette (⌘K), onboarding flow, skeletons/empty/error states audit, accessibility audit, performance (lazy charts, pagination review), rate limiting on actions, email verification & password reset, Playwright E2E for critical flows.
