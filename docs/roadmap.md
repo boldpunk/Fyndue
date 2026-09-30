@@ -101,11 +101,22 @@ Phase 5 notes:
 - In-app notifications (`channel = IN_APP`) share the log and planner but have no UI yet (Phase 7 candidate).
 - Future bot commands `/expense`, `/income`, `/paid` should reuse the existing services and zod schemas.
 
-## Phase 6 — Documents (next)
+## Phase 6 — Documents ✅
 
-Private storage adapter, upload/download with ownership checks, debt documents tab.
+- ✅ Schema: `Document` (debt and optional payment link, sniffed MIME type, size, SHA-256) + CHECK constraints.
+- ✅ `lib/documents/files.ts` (test-first): magic-byte type detection, safe display names, `Content-Disposition`.
+- ✅ `lib/storage`: private storage adapter, local-disk driver (`STORAGE_DIR`), traversal-proof keys, atomic writes.
+- ✅ Service: upload (10 MB, PDF/JPG/PNG only, duplicate check, per-user cap, no orphan files), rename / retype / relink, delete, read. All scoped by `userId` and audited.
+- ✅ `GET /api/documents/[id]`: session + ownership, inline or `?download=1`, `nosniff`, `no-store`.
+- ✅ Debt **Documents** tab: drag-and-drop upload, grouped by type (loan agreement, payment receipt, bank schedule, other), image thumbnails, open / download / edit / delete. Payments show their receipts and an **Attach receipt** shortcut.
+- ✅ Tests: type spoofing, size limits, duplicates, payment linking, storage failure, path traversal, and user A cannot read, list, edit, delete or upload to user B's documents.
 
-## Phase 7 — PWA & polish
+Phase 6 notes:
+
+- Back up `STORAGE_DIR` together with the database; the rows hold hashes to verify a restore.
+- An S3-compatible driver (for hosting without a persistent disk) is left for deployment time; the interface is ready for it.
+
+## Phase 7 — PWA & polish (next)
 
 Manifest, icons, standalone mode, safe areas, command palette (⌘K), onboarding flow, skeletons/empty/error states audit, accessibility audit, performance (lazy charts, pagination review), rate limiting on actions, email verification & password reset, Playwright E2E for critical flows.
 

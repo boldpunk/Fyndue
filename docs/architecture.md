@@ -1,6 +1,6 @@
 # Fyndue — Architecture
 
-> Status: Phases 0–5 complete (planning, foundation, debt engine, dashboard, calendar/analytics/budgets, Telegram reminders). Next: Phase 6 (documents).
+> Status: Phases 0–6 complete (planning, foundation, debt engine, dashboard, calendar/analytics/budgets, Telegram reminders, documents). Next: Phase 7 (PWA & polish).
 > Source of truth for product requirements: [`SPEC.md`](../SPEC.md).
 > Related: [database](database.md) · [debt engine](debt-engine.md) · [security](security.md) · [telegram](telegram.md) · [roadmap](roadmap.md)
 
@@ -70,7 +70,7 @@ app/
     auth/[...all]/        Better Auth handler
     cron/notifications/   (Phase 5)
     telegram/webhook/     (Phase 5)
-    documents/[id]/       (Phase 6, signed/private download)
+    documents/[id]/       (Phase 6, private download; session + ownership checked)
   layout.tsx              fonts, ThemeProvider, <Toaster/>
   manifest.ts             PWA manifest
 
@@ -91,6 +91,8 @@ lib/
   validations/            zod schemas
   notifications/          planner (pure: which reminders are due, quiet hours)
   telegram/               client (Bot API), messages (pure formatting), commands, server (env wiring)
+  documents/              files (pure: type sniffing, display names, Content-Disposition)
+  storage/                private object storage adapter (local disk driver)
   utils/                  cn(), result helpers, constants
 
 prisma/
@@ -132,7 +134,7 @@ The SPEC's `app/(dashboard)/` group is named `(app)/` here so that the group nam
 | `/api/auth/[...all]` | route handler | 1 | Better Auth |
 | `/api/cron/notifications` | route handler | 5 | Protected by `CRON_SECRET` bearer |
 | `/api/telegram/webhook` | route handler | 5 | Protected by Telegram secret-token header |
-| `/api/documents/[id]` | route handler | 6 | Ownership-checked streaming / short-lived signed URL |
+| `/api/documents/[id]` | route handler | 6 | Session + `{ id, userId }` lookup; `?download=1` for attachment |
 
 Mutations use **Server Actions** (built-in origin check, progressive enhancement). Route handlers are reserved for third parties (auth callbacks, Telegram, cron, file streaming).
 
@@ -197,7 +199,7 @@ Responsive behaviour: `Dialog` on ≥ `md`, `Sheet side="bottom"` below (`Respon
 
 ## 9. Configuration
 
-Environment variables are validated at startup by `lib/env.ts` (zod). Phase 1 needs `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`; optional `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`. Phase 5 adds optional `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME` (both needed to turn the feature on), `TELEGRAM_WEBHOOK_SECRET` (webhook only) and `CRON_SECRET` (cron route only); empty values count as unset. Phase 6 adds storage credentials. See `.env.example`.
+Environment variables are validated at startup by `lib/env.ts` (zod). Phase 1 needs `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`; optional `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`. Phase 5 adds optional `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME` (both needed to turn the feature on), `TELEGRAM_WEBHOOK_SECRET` (webhook only) and `CRON_SECRET` (cron route only); empty values count as unset. Phase 6 adds `STORAGE_DIR` (default `.local/storage`) for the local-disk document store. See `.env.example`.
 
 ## 10. Extensibility (SPEC §3)
 

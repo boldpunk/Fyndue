@@ -48,6 +48,10 @@ The dev seed creates `demo@fyndue.dev` / `fyndue-demo-2026` with Uzcard, Visa an
 | `pnpm db:migrate` / `db:deploy` / `db:seed` / `db:studio` | Prisma |
 | `pnpm telegram:dev` | Local Telegram bot: polls for messages and sends reminders every 5 minutes (needs `TELEGRAM_BOT_TOKEN` / `TELEGRAM_BOT_USERNAME`, see [docs/telegram.md](docs/telegram.md#8-setting-up-a-bot)) |
 
+## Backups
+
+Your data lives in two places: the PostgreSQL database and the uploaded documents folder (`STORAGE_DIR`, default `.local/storage`). Back up both together.
+
 ## Rules of the codebase
 
 - Money is never a JS `number`: `Decimal` in `lib/finance`, `NUMERIC(20,2)` in Postgres, strings across the client boundary.

@@ -395,9 +395,16 @@ model NotificationLog {
 ```prisma
 model Document {            // Phase 6
   id, userId, debtId?, debtPaymentId?, type DocumentType, name, storageKey @unique,
-  mimeType, size Int, sha256 String, createdAt
-  @@index([userId, debtId])
+  mimeType, size Int, sha256 String, createdAt, updatedAt
+  @@index([userId, debtId]) @@index([debtPaymentId])
 }
+```
+
+- `debtId` cascades (a debt's documents go with it), `debtPaymentId` is `SET NULL` (a receipt outlives the payment link).
+- CHECK `document_valid`: size 1 B–10 MB, `mimeType` ∈ {PDF, JPEG, PNG}, lowercase hex `sha256`, name 1–120 characters. CHECK `document_payment_needs_debt`: a payment link requires a debt link. The service also checks that the payment belongs to that debt and user.
+- Documents are the one user-owned record that is hard-deleted: they are evidence, not financial facts. The `DOCUMENT_DELETED` audit row keeps the type and hash.
+
+```prisma
 
 model AuditLog {            // Phase 1
   id         String   @id @default(cuid())

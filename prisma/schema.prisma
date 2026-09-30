@@ -166,6 +166,13 @@ enum NotificationStatus {
   CANCELLED
 }
 
+enum DocumentType {
+  LOAN_AGREEMENT
+  PAYMENT_RECEIPT
+  BANK_SCHEDULE
+  OTHER
+}
+
 enum TelegramConnectionStatus {
   PENDING
   CONNECTED
@@ -202,6 +209,7 @@ model User {
   notificationPreference NotificationPreference?
   telegramConnection     TelegramConnection?
   notificationLogs       NotificationLog[]
+  documents              Document[]
 }
 
 model Session {
@@ -424,6 +432,7 @@ model Debt {
   scheduleItems         DebtScheduleItem[]
   payments              DebtPayment[]
   transactions          Transaction[]
+  documents             Document[]
 
   @@unique([userId, clientRequestId])
   @@index([userId, status])
@@ -520,6 +529,7 @@ model DebtPayment {
   account                  Account              @relation(fields: [accountId], references: [id], onDelete: Restrict)
   resultingScheduleVersion DebtScheduleVersion? @relation(fields: [resultingScheduleVersionId], references: [id], onDelete: SetNull)
   transaction              Transaction?
+  documents                Document[]
 
   @@unique([userId, clientRequestId])
   @@index([userId, paymentDate])
@@ -674,4 +684,33 @@ model AuditLog {
 
   @@index([userId, createdAt])
   @@index([entityType, entityId])
+}
+
+// ─── Documents (Phase 6, docs/security.md §7) ────────────────────────────────
+
+/// A private file (PDF/JPEG/PNG). The bytes live in the storage adapter under
+/// `storageKey` (users/{userId}/{random}); nothing is ever publicly addressable.
+model Document {
+  id            String       @id @default(cuid())
+  userId        String
+  debtId        String?
+  /// A receipt can point at the payment it proves.
+  debtPaymentId String?
+  type          DocumentType
+  /// Display name (sanitised); never used in the storage path.
+  name          String
+  storageKey    String       @unique
+  /// Sniffed from the file's bytes, not taken from the browser.
+  mimeType      String
+  size          Int
+  sha256        String
+  createdAt     DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime     @updatedAt @db.Timestamptz(3)
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  debt        Debt?        @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  debtPayment DebtPayment? @relation(fields: [debtPaymentId], references: [id], onDelete: SetNull)
+
+  @@index([userId, debtId])
+  @@index([debtPaymentId])
 }

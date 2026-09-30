@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DebtIcon } from "@/components/debts/debt-card";
 import { DebtActions } from "@/components/debts/debt-actions";
+import { DebtDocuments } from "@/components/debts/debt-documents";
 import { DebtSettings } from "@/components/debts/debt-settings";
 import { PaymentHistory } from "@/components/debts/payment-history";
 import { ScheduleEditor } from "@/components/debts/schedule-editor";
@@ -23,6 +24,7 @@ import { money, toMoneyString } from "@/lib/finance/money";
 import { ColumnChart } from "@/components/charts/column-chart";
 import { listAccounts } from "@/lib/services/accounts";
 import { getDebtDetail, getScheduleSnapshot, type DebtDetailDTO } from "@/lib/services/debts";
+import { listDebtDocuments } from "@/lib/services/documents";
 import { cn } from "@/lib/utils/cn";
 
 export const metadata: Metadata = { title: "Debt" };
@@ -191,7 +193,7 @@ export default async function DebtPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; version?: string }>;
+  searchParams: Promise<{ tab?: string; version?: string; payment?: string }>;
 }) {
   const user = await requireUser();
   const { id } = await params;
@@ -207,6 +209,7 @@ export default async function DebtPage({
   const activeVersion = debt.versions.find((v) => v.isActive);
   const requestedVersion = Number.parseInt(query.version ?? "", 10);
   const viewingVersion = debt.versions.find((v) => v.version === requestedVersion && !v.isActive);
+  const documents = tab === "documents" || tab === "payments" ? await listDebtDocuments(user.id, debt.id) : [];
   const snapshot = tab === "schedule" && viewingVersion ? await getScheduleSnapshot(user.id, debt.id, viewingVersion.version) : null;
 
   const paymentDebt = { id: debt.id, name: debt.name, currency: debt.currency, feeMode: debt.feeMode, currentPrincipal: debt.currentPrincipal };
@@ -322,12 +325,28 @@ export default async function DebtPage({
         </section>
       ) : null}
 
-      {tab === "payments" ? <PaymentHistory payments={debt.payments} currency={debt.currency} /> : null}
+      {tab === "payments" ? (
+        <PaymentHistory
+          payments={debt.payments}
+          currency={debt.currency}
+          debtId={debt.id}
+          receipts={documents.reduce<Record<string, { id: string; name: string }[]>>((byPayment, d) => {
+            if (d.payment) (byPayment[d.payment.id] ??= []).push({ id: d.id, name: d.name });
+            return byPayment;
+          }, {})}
+        />
+      ) : null}
 
       {tab === "analytics" ? <DebtAnalytics debt={debt} /> : null}
 
       {tab === "documents" ? (
-        <EmptyState icon={FileText} title="Documents arrive in Phase 6" description="Private storage for loan agreements, receipts and bank schedules." />
+        <DebtDocuments
+          debtId={debt.id}
+          currency={debt.currency}
+          documents={documents}
+          payments={debt.payments.map((p) => ({ id: p.id, paymentDate: p.paymentDate, amount: p.actualAccountDebit, isReversed: p.isReversed }))}
+          initialPaymentId={query.payment && debt.payments.some((p) => p.id === query.payment) ? query.payment : undefined}
+        />
       ) : null}
 
       {tab === "settings" ? <DebtSettings debt={debt} /> : null}

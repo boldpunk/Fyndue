@@ -28,6 +28,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: {
+    // Document uploads (≤ 10 MB) go through a Server Action; leave room for multipart overhead.
+    serverActions: { bodySizeLimit: "11mb" },
+    proxyClientMaxBodySize: "11mb",
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

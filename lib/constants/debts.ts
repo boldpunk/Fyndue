@@ -54,3 +54,10 @@ export const SCHEDULE_REASON_LABELS = {
   RESTRUCTURE: "Restructure",
   CORRECTION: "Correction",
 } as const;
+
+export const DOCUMENT_TYPE_LABELS = {
+  LOAN_AGREEMENT: "Loan agreement",
+  PAYMENT_RECEIPT: "Payment receipt",
+  BANK_SCHEDULE: "Bank schedule",
+  OTHER: "Other",
+} as const;

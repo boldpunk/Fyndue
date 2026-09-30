@@ -39,12 +39,15 @@ export type AuditAction =
   | "EXCHANGE_RATE_DELETED"
   | "TELEGRAM_CONNECTED"
   | "TELEGRAM_DISCONNECTED"
-  | "NOTIFICATION_PREFERENCES_UPDATED";
+  | "NOTIFICATION_PREFERENCES_UPDATED"
+  | "DOCUMENT_UPLOADED"
+  | "DOCUMENT_UPDATED"
+  | "DOCUMENT_DELETED";
 
 export type AuditEntry = {
   userId: string;
   action: AuditAction;
-  entityType: "Account" | "Category" | "Transaction" | "User" | "Debt" | "DebtPayment" | "RecurringTransaction" | "Budget" | "ExchangeRate" | "TelegramConnection" | "NotificationPreference";
+  entityType: "Account" | "Category" | "Transaction" | "User" | "Debt" | "DebtPayment" | "RecurringTransaction" | "Budget" | "ExchangeRate" | "TelegramConnection" | "NotificationPreference" | "Document";
   entityId: string;
   /** Changed-field snapshots only. Never secrets, tokens or free-text notes. */
   metadata?: Prisma.InputJsonValue;

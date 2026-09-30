@@ -1,5 +1,5 @@
 "use client";
-import { Undo2 } from "lucide-react";
+import { Paperclip, Undo2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -42,7 +42,18 @@ function Breakdown({ p, currency }: { p: DebtPaymentDTO; currency: string }) {
   );
 }
 
-export function PaymentHistory({ payments, currency }: { payments: DebtPaymentDTO[]; currency: string }) {
+export function PaymentHistory({
+  payments,
+  currency,
+  debtId,
+  receipts = {},
+}: {
+  payments: DebtPaymentDTO[];
+  currency: string;
+  debtId: string;
+  /** Documents linked to each payment, by payment id. */
+  receipts?: Partial<Record<string, { id: string; name: string }[]>>;
+}) {
   const router = useRouter();
   const [reversing, setReversing] = useState<DebtPaymentDTO | null>(null);
   const [reason, setReason] = useState("");
@@ -98,13 +109,29 @@ export function PaymentHistory({ payments, currency }: { payments: DebtPaymentDT
             </div>
             <Breakdown p={p} currency={currency} />
             {p.isReversed && p.reversalReason ? <p className="text-[13px] text-muted-foreground">Reversed: {p.reversalReason}</p> : null}
-            {!p.isReversed ? (
-              <div>
+            {receipts[p.id]?.length ? (
+              <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[13px]">
+                {receipts[p.id]!.map((r) => (
+                  <li key={r.id}>
+                    <a href={`/api/documents/${r.id}`} target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-primary hover:underline">
+                      <Paperclip className="size-3.5" aria-hidden /> {r.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <div className="flex flex-wrap gap-1">
+              <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+                <Link href={`/debts/${debtId}?tab=documents&payment=${p.id}`}>
+                  <Paperclip /> Attach receipt
+                </Link>
+              </Button>
+              {!p.isReversed ? (
                 <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setReversing(p)}>
                   <Undo2 /> Reverse
                 </Button>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </Card>
         ))}
       </div>

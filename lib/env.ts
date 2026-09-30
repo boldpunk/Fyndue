@@ -19,6 +19,8 @@ const envSchema = z.object({
   TELEGRAM_BOT_TOKEN: optional(z.string()),
   TELEGRAM_BOT_USERNAME: optional(z.string().regex(/^[A-Za-z0-9_]{5,32}$/, "TELEGRAM_BOT_USERNAME is the bot's @username without the @")),
   TELEGRAM_WEBHOOK_SECRET: optional(z.string().regex(/^[A-Za-z0-9_-]{16,256}$/, "TELEGRAM_WEBHOOK_SECRET: 16-256 characters of A-Z a-z 0-9 _ -")),
+  // Documents (Phase 6): private directory for uploaded files, outside public/.
+  STORAGE_DIR: z.preprocess((v) => (v === "" ? undefined : v), z.string().default(".local/storage")),
   CRON_SECRET: optional(z.string().min(16, "CRON_SECRET must be at least 16 characters")),
 });
 
