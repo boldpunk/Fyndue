@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { prisma, type Tx } from "@/lib/db";
 import { DomainError, NotFoundError } from "@/lib/errors";
 import { balanceEffect } from "@/lib/finance/balance";
-import { dbToLocalDate, localDateToDb, monthBounds, parseYearMonth } from "@/lib/finance/dates";
+import { dbToLocalDate, localDateToDb, monthBounds, parseYearMonth, type LocalDate } from "@/lib/finance/dates";
 import { money, toMoneyString } from "@/lib/finance/money";
 import type { Prisma, Transaction } from "@/lib/generated/prisma/client";
 import type {
@@ -200,13 +200,20 @@ async function findByRequestId(userId: string, clientRequestId: string) {
  * Creates an expense, income or transfer. Idempotent per `clientRequestId`:
  * a retried or double-clicked submit returns the first result.
  */
-export async function createTransaction(userId: string, input: TransactionCreateInput): Promise<{ id: string }> {
+/** Links a transaction to the recurring occurrence it records. */
+export type RecurringLink = { recurringId: string; occurrenceDate: LocalDate };
+
+export async function createTransaction(
+  userId: string,
+  input: TransactionCreateInput,
+  recurring?: RecurringLink,
+): Promise<{ id: string }> {
   const existing = await findByRequestId(userId, input.clientRequestId);
   if (existing) return existing;
   try {
     return input.kind === "TRANSFER"
       ? await createTransfer(userId, input, input.clientRequestId)
-      : await createCashFlow(userId, input, input.clientRequestId);
+      : await createCashFlow(userId, input, input.clientRequestId, recurring);
   } catch (error) {
     if (isUniqueViolation(error, "clientRequestId")) {
       const winner = await findByRequestId(userId, input.clientRequestId);
@@ -220,6 +227,7 @@ async function createCashFlow(
   userId: string,
   input: ExpenseInput | IncomeInput,
   clientRequestId: string,
+  recurring?: RecurringLink,
 ): Promise<{ id: string }> {
   return prisma.$transaction(async (tx) => {
     const account = await ownedUsableAccount(tx, userId, input.accountId);
@@ -241,6 +249,8 @@ async function createCashFlow(
         merchant: input.merchant ?? null,
         note: input.note ?? null,
         clientRequestId,
+        recurringId: recurring?.recurringId ?? null,
+        occurrenceDate: recurring ? localDateToDb(recurring.occurrenceDate) : null,
       },
     });
     await applyBalanceDelta(tx, account.id, balanceEffect({ direction, amount: input.amount, status }));

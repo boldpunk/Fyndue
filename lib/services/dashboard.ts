@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { totalsByCurrency } from "@/lib/finance/balance";
 import { debtToIncomeRatio, monthChange, projectedBalance, safeToSpend } from "@/lib/finance/cash-flow";
+import { combineInBase, type RateRow } from "@/lib/finance/fx";
 import {
   addDays,
   dbToLocalDate,
@@ -15,6 +16,8 @@ import {
 import { money, toMoneyString, type FinDecimal } from "@/lib/finance/money";
 import { listAccounts, type AccountDTO } from "./accounts";
 import { debtTotalsByCurrency, listDebts, listUpcomingPayments, type DebtTotalsDTO, type UpcomingPaymentDTO } from "./debts";
+import { listExchangeRates } from "./exchange-rates";
+import { listOccurrences } from "./recurring";
 import { recentTransactions, type TransactionDTO } from "./transactions";
 
 export type CurrencyTotals = { currency: string; amount: string }[];
@@ -111,6 +114,8 @@ export type DashboardDTO = {
   debtTotals: DebtTotalsDTO[];
   recent: TransactionDTO[];
   accounts: AccountDTO[];
+  /** All balances in the primary currency using the user's manual rates; null when a rate is missing. */
+  combinedBalance: { amount: string; rateDate: string | null } | null;
 };
 
 /** Horizon for obligations and expected income considered by Safe to Spend. */
@@ -129,7 +134,7 @@ export async function getDashboard(userId: string): Promise<DashboardDTO> {
   const monthEnd = addDays(bounds.endExclusive, -1);
   const lookahead = localDateToDb(addDays(today, LOOKAHEAD_DAYS));
 
-  const [accounts, thisMonth, lastMonth, expectedRows, openItems, upcoming, activeDebts, recent] = await Promise.all([
+  const [accounts, thisMonth, lastMonth, expectedRows, openItems, upcoming, activeDebts, recent, occurrences, rates] = await Promise.all([
     listAccounts(userId),
     flowTotals(userId, bounds.start, bounds.endExclusive),
     flowTotals(userId, previous.start, previous.endExclusive),
@@ -151,7 +156,11 @@ export async function getDashboard(userId: string): Promise<DashboardDTO> {
     listUpcomingPayments(userId, { untilDays: 30 }),
     listDebts(userId, "active"),
     recentTransactions(userId, 6),
+    listOccurrences(userId, today, addDays(today, LOOKAHEAD_DAYS)),
+    listExchangeRates(userId),
   ]);
+  // Planned recurring items that have not been recorded yet (from today on).
+  const planned = occurrences.filter((o) => o.transactionId === null && o.includeInTotal);
 
   const balances = totalsByCurrency(accounts);
   const currencies = new Set<string>([...balances.keys(), ...activeDebts.map((d) => d.currency), ...thisMonth.keys()]);
@@ -162,8 +171,12 @@ export async function getDashboard(userId: string): Promise<DashboardDTO> {
       .filter((i) => i.debt.currency === currency)
       .map((i) => ({ dueDate: dbToLocalDate(i.dueDate), amount: money(i.plannedTotal).minus(money(i.paidTotal)) }))
       .filter((o) => o.amount.gt(0));
-  const incomeFor = (currency: string) =>
-    expectedRows.filter((r) => r.currency === currency).map((r) => ({ date: dbToLocalDate(r.transactionDate), amount: r.amount }));
+  const incomeFor = (currency: string) => [
+    ...expectedRows.filter((r) => r.currency === currency).map((r) => ({ date: dbToLocalDate(r.transactionDate), amount: r.amount })),
+    ...planned.filter((o) => o.kind === "INCOME" && o.currency === currency).map((o) => ({ date: o.date, amount: o.amount })),
+  ];
+  const plannedExpensesFor = (currency: string) =>
+    planned.filter((o) => o.kind === "EXPENSE" && o.currency === currency).map((o) => ({ date: o.date, amount: o.amount }));
 
   const change = (now: FinDecimal, before: FinDecimal): ChangeDTO => {
     if (before.isZero() && now.isZero()) return null;
@@ -180,11 +193,10 @@ export async function getDashboard(userId: string): Promise<DashboardDTO> {
       const obligations = obligationsFor(currency);
       const expected = incomeFor(currency);
       const sts = safeToSpend({ balance, obligations, expectedIncome: expected, today, monthEnd });
-      // Planned expenses come from recurring transactions (Phase 4); none yet.
       const projection = projectedBalance({
         balance,
         expectedIncome: expected.filter((e) => e.date >= bounds.start),
-        plannedExpenses: [],
+        plannedExpenses: plannedExpensesFor(currency),
         obligations,
         until: monthEnd,
       });
@@ -240,7 +252,14 @@ export async function getDashboard(userId: string): Promise<DashboardDTO> {
     debtTotals: debtTotalsByCurrency(activeDebts),
     recent,
     accounts,
+    combinedBalance: combinedBalance(perCurrency, primary, rates, today),
   };
+}
+
+function combinedBalance(rows: CurrencyDashboard[], base: string, rates: RateRow[], today: string): DashboardDTO["combinedBalance"] {
+  if (rows.length < 2) return null;
+  const combined = combineInBase(rows.map((r) => ({ currency: r.currency, amount: r.balance })), base, rates, today);
+  return combined.total ? { amount: toMoneyString(combined.total), rateDate: combined.oldestRateDate } : null;
 }
 
 type Flows = { income: FinDecimal; expenses: FinDecimal; debtPayments: FinDecimal; expectedIncome: FinDecimal; hasActivity: boolean };

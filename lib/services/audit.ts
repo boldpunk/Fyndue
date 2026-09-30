@@ -26,12 +26,22 @@ export type AuditAction =
   | "SCHEDULE_REGENERATED"
   | "PAYMENT_RECORDED"
   | "EARLY_REPAYMENT"
-  | "PAYMENT_REVERSED";
+  | "PAYMENT_REVERSED"
+  | "RECURRING_CREATED"
+  | "RECURRING_UPDATED"
+  | "RECURRING_PAUSED"
+  | "RECURRING_RESUMED"
+  | "RECURRING_DELETED"
+  | "BUDGET_SET"
+  | "BUDGET_DELETED"
+  | "BUDGETS_COPIED"
+  | "EXCHANGE_RATE_ADDED"
+  | "EXCHANGE_RATE_DELETED";
 
 export type AuditEntry = {
   userId: string;
   action: AuditAction;
-  entityType: "Account" | "Category" | "Transaction" | "User" | "Debt" | "DebtPayment";
+  entityType: "Account" | "Category" | "Transaction" | "User" | "Debt" | "DebtPayment" | "RecurringTransaction" | "Budget" | "ExchangeRate";
   entityId: string;
   /** Changed-field snapshots only. Never secrets, tokens or free-text notes. */
   metadata?: Prisma.InputJsonValue;
