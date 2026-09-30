@@ -320,7 +320,7 @@ As built, `Debt` also stores `firstPaymentDate` (the first tracked due date) and
 
 Versioning, allocation and reversal semantics are in [debt-engine.md](debt-engine.md).
 
-## 7. Budgets, recurring, FX (Phase 4)
+## 7. Budgets, recurring, FX (implemented in Phase 4)
 
 ```prisma
 model Budget {
@@ -351,6 +351,8 @@ model ExchangeRate {        // manual only; never fetched
 ```
 
 Recurring items feed the calendar and cash-flow forecast as *planned* events; they never create actual transactions without user confirmation.
+
+As built: `RecurringTransaction` has `name` and `kind` (EXPENSE | INCOME) and no stored `nextOccurrence` (occurrences are computed by `lib/finance/recurrence.ts`). `Transaction.recurringId` + `occurrenceDate` link a recorded occurrence, with a partial unique index `WHERE voidedAt IS NULL`. Budgets use two partial unique indexes: one for category budgets and one for the overall budget (`categoryId IS NULL`). `ExchangeRate` has `CHECK (rate > 0 AND fromCurrency <> toCurrency)`.
 
 ## 8. Notifications & Telegram (Phase 5)
 

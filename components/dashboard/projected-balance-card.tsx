@@ -1,4 +1,5 @@
 import { TrendingUp } from "lucide-react";
+import Link from "next/link";
 import { Money } from "@/components/finance/money";
 import { Card } from "@/components/ui/card";
 import { formatLocalDate } from "@/lib/finance/dates";
@@ -49,7 +50,11 @@ export function ProjectedBalanceCard({ primary, others }: { primary: CurrencyDas
         </ul>
       ) : null}
       <p className="text-xs text-muted-foreground">
-        Projected, not guaranteed. Recurring expenses will be included once they arrive (Phase 4).
+        Projected, not guaranteed. Planned expenses and recurring income come from your{" "}
+        <Link href="/transactions/recurring" className="text-primary hover:underline">
+          recurring items
+        </Link>
+        .
       </p>
     </Card>
   );

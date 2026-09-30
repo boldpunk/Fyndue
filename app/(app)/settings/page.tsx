@@ -1,4 +1,4 @@
-import { Bell, ChevronRight, Shapes } from "lucide-react";
+import { ArrowRightLeft, Bell, ChevronRight, Repeat, Shapes } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/page-header";
@@ -42,6 +42,16 @@ export default async function SettingsPage() {
         <Link href="/settings/categories" className="flex items-center gap-3 p-4 hover:bg-muted/60">
           <Shapes className="size-5 text-muted-foreground" aria-hidden />
           <span className="flex-1 text-sm font-medium">Categories</span>
+          <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+        </Link>
+        <Link href="/settings/exchange-rates" className="flex items-center gap-3 p-4 hover:bg-muted/60">
+          <ArrowRightLeft className="size-5 text-muted-foreground" aria-hidden />
+          <span className="flex-1 text-sm font-medium">Exchange rates</span>
+          <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+        </Link>
+        <Link href="/transactions/recurring" className="flex items-center gap-3 p-4 hover:bg-muted/60">
+          <Repeat className="size-5 text-muted-foreground" aria-hidden />
+          <span className="flex-1 text-sm font-medium">Recurring items</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
         <div className="flex items-center gap-3 p-4">

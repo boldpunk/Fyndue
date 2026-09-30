@@ -1,6 +1,6 @@
 # Fyndue — Architecture
 
-> Status: Phases 0–3 complete (planning, foundation, debt engine, dashboard). Next: Phase 4 (calendar, analytics, budgets).
+> Status: Phases 0–4 complete (planning, foundation, debt engine, dashboard, calendar/analytics/budgets). Next: Phase 5 (Telegram).
 > Source of truth for product requirements: [`SPEC.md`](../SPEC.md).
 > Related: [database](database.md) · [debt engine](debt-engine.md) · [security](security.md) · [telegram](telegram.md) · [roadmap](roadmap.md)
 
@@ -17,7 +17,7 @@
 | Money math | `decimal.js` in `lib/finance`, `NUMERIC(20,2)` in Postgres | Never IEEE-754 floats for money (SPEC §45). |
 | Validation | Zod schemas in `lib/validations`, shared by forms and server actions | One definition, validated again on the server. |
 | UI | Tailwind CSS v4, shadcn/ui (Radix primitives), Lucide, Geist font | SPEC §48. |
-| Charts | Recharts, lazy loaded | SPEC §58. |
+| Charts | Hand-built SVG components (`components/charts/`) | Lighter than Recharts and exact control over the validated dataviz mark specs; every chart has a table view. |
 | Tests | Vitest (unit + DB integration), Playwright for critical E2E later | Financial engine is test-first. |
 
 ## 2. Layered structure

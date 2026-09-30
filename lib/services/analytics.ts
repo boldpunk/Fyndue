@@ -7,6 +7,27 @@ import { money, percentage, sumMoney, toMoneyString, ZERO, type FinDecimal } fro
 import type { Currency } from "@/lib/generated/prisma/client";
 import { listDebts } from "./debts";
 
+export type CategoryShare = { id: string | null; name: string; icon: string | null; color: string | null; amount: string; share: string };
+
+/** Keeps the first `max − 1` rows and folds the rest into one "Other" row, in exact decimals. */
+function foldTail(rows: CategoryShare[], total: FinDecimal, max = 8): CategoryShare[] {
+  if (rows.length <= max) return rows;
+  const head = rows.slice(0, max - 1);
+  const tail = rows.slice(max - 1);
+  const amount = sumMoney(tail.map((r) => r.amount));
+  return [
+    ...head,
+    {
+      id: "other",
+      name: `Other (${tail.length})`,
+      icon: null,
+      color: null,
+      amount: toMoneyString(amount),
+      share: (percentage(amount, total) ?? ZERO).toDecimalPlaces(1).toFixed(1),
+    },
+  ];
+}
+
 export type SeriesPoint = { key: string; income: string; expenses: string; debtPayments: string; net: string };
 
 export type AnalyticsDTO = {
@@ -15,7 +36,9 @@ export type AnalyticsDTO = {
   currency: Currency;
   currencies: Currency[];
   totals: { income: string; expenses: string; debtPayments: string; net: string; debtToIncome: string | null };
-  byCategory: { id: string | null; name: string; icon: string | null; color: string | null; amount: string; share: string }[];
+  byCategory: CategoryShare[];
+  /** Top categories with the tail folded into "Other" (for charts). */
+  byCategoryTop: CategoryShare[];
   /** One point per month in range. */
   monthly: SeriesPoint[];
   /** One point per day, only for ranges up to ~2 months. */
@@ -191,6 +214,7 @@ export async function getAnalytics(userId: string, input: { from: LocalDate; to:
       debtToIncome: dti ? dti.toDecimalPlaces(1).toFixed(1) : null,
     },
     byCategory,
+    byCategoryTop: foldTail(byCategory, totalCat),
     monthly,
     daily,
     debt: {

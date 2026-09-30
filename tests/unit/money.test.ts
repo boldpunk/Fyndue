@@ -83,3 +83,13 @@ describe("formatMoney", () => {
     expect(formatMoney("12", "USD", { alwaysShowDecimals: true })).toBe("12.00 USD");
   });
 });
+
+describe("formatCompactMoney", () => {
+  it("shortens large values for axes", async () => {
+    const { formatCompactMoney } = await import("@/lib/finance/money");
+    expect(formatCompactMoney("12500000")).toBe("12.5M");
+    expect(formatCompactMoney("850000")).toBe("850K");
+    expect(formatCompactMoney("0")).toBe("0");
+    expect(formatCompactMoney("-2115000")).toBe("-2.1M");
+  });
+});

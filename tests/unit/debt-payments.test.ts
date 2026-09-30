@@ -119,3 +119,18 @@ describe("debt cost (SPEC §19A Total Cost of Debt)", () => {
     expect(cost.feesPaid.toFixed(2)).toBe("116000.00");
   });
 });
+
+describe("groupByMonth", () => {
+  it("sums principal, interest and fees per calendar month", async () => {
+    const { groupByMonth } = await import("@/lib/finance/debt-cost");
+    const g = groupByMonth([
+      { date: "2026-10-22", principal: "2383333.33", interest: "1716000", fees: "0" },
+      { date: "2026-09-15", principal: "3500000", interest: "0", fees: "15000" },
+      { date: "2026-10-03", principal: "0.01", interest: "0", fees: "0" },
+    ]);
+    expect(g.map((m) => [m.key, m.principal.toFixed(2), m.interest.toFixed(2), m.fees.toFixed(2)])).toEqual([
+      ["2026-09", "3500000.00", "0.00", "15000.00"],
+      ["2026-10", "2383333.34", "1716000.00", "0.00"],
+    ]);
+  });
+});

@@ -1,4 +1,4 @@
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, Repeat } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/finance/empty-state";
@@ -43,10 +43,17 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
         title="Transactions"
         description={`${result.total} ${result.total === 1 ? "transaction" : "transactions"}${filtered ? " match the filters" : ""}`}
         actions={
-          <div className="hidden gap-2 sm:flex">
-            <QuickAddButton kind="INCOME" label="Income" className="bg-secondary text-secondary-foreground hover:bg-secondary/70" />
-            <QuickAddButton kind="TRANSFER" label="Transfer" className="bg-secondary text-secondary-foreground hover:bg-secondary/70" />
-            <QuickAddButton kind="EXPENSE" label="Expense" />
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/transactions/recurring">
+                <Repeat /> Recurring
+              </Link>
+            </Button>
+            <span className="hidden gap-2 sm:flex">
+              <QuickAddButton kind="INCOME" label="Income" className="bg-secondary text-secondary-foreground hover:bg-secondary/70" />
+              <QuickAddButton kind="TRANSFER" label="Transfer" className="bg-secondary text-secondary-foreground hover:bg-secondary/70" />
+              <QuickAddButton kind="EXPENSE" label="Expense" />
+            </span>
           </div>
         }
       />

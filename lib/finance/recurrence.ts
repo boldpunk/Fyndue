@@ -4,6 +4,7 @@
  * 28/29 Feb → 31 Mar).
  */
 import { addDays, addMonthsClamped, daysBetween, parseLocalDate, type LocalDate } from "./dates";
+import { money, type FinDecimal, type MoneyLike } from "./money";
 
 export type RecurrenceFrequency = "WEEKLY" | "MONTHLY" | "YEARLY";
 
@@ -64,4 +65,12 @@ export const FREQUENCY_LABELS: Record<RecurrenceFrequency, [string, string]> = {
 export function describeRule(rule: Pick<RecurrenceRule, "frequency" | "interval">): string {
   const [one, many] = FREQUENCY_LABELS[rule.frequency];
   return rule.interval === 1 ? `Every ${one}` : `Every ${rule.interval} ${many}`;
+}
+
+/** Average cost per month (weekly × 52 / 12, yearly / 12), unrounded except for display. */
+export function monthlyEquivalent(amount: MoneyLike, frequency: RecurrenceFrequency, interval: number): FinDecimal {
+  const base = money(amount).div(Math.max(1, interval));
+  if (frequency === "WEEKLY") return base.times(52).div(12);
+  if (frequency === "YEARLY") return base.div(12);
+  return base;
 }

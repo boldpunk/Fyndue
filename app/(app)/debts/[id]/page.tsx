@@ -1,4 +1,4 @@
-import { ArrowLeft, BarChart3, FileText } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -18,7 +18,9 @@ import { requireUser } from "@/lib/auth/session";
 import { DAY_COUNT_LABELS, DEBT_TYPE_LABELS, FEE_MODE_LABELS, REPAYMENT_TYPE_LABELS, SCHEDULE_REASON_LABELS } from "@/lib/constants/debts";
 import { NotFoundError } from "@/lib/errors";
 import { formatLocalDate, todayIn } from "@/lib/finance/dates";
-import { money } from "@/lib/finance/money";
+import { groupByMonth } from "@/lib/finance/debt-cost";
+import { money, toMoneyString } from "@/lib/finance/money";
+import { ColumnChart } from "@/components/charts/column-chart";
 import { listAccounts } from "@/lib/services/accounts";
 import { getDebtDetail, getScheduleSnapshot, type DebtDetailDTO } from "@/lib/services/debts";
 import { cn } from "@/lib/utils/cn";
@@ -119,6 +121,66 @@ function Overview({ debt }: { debt: DebtDetailDTO }) {
           {debt.knownTotalRepayment ? <Stat label="Schedule note">{feeLabel} are shown in the fees column</Stat> : null}
         </dl>
         {debt.notes ? <p className="text-sm whitespace-pre-line text-muted-foreground">{debt.notes}</p> : null}
+      </Card>
+    </div>
+  );
+}
+
+function DebtAnalytics({ debt }: { debt: DebtDetailDTO }) {
+  const cur = debt.currency;
+  const paid = groupByMonth(
+    debt.payments
+      .filter((p) => !p.isReversed)
+      .map((p) => ({
+        date: p.paymentDate,
+        principal: p.principal,
+        interest: p.interest,
+        fees: money(p.originationFee).plus(money(p.processingFee)).plus(money(p.penalty)).plus(money(p.otherFee)),
+      })),
+  );
+  const ahead = groupByMonth(
+    debt.schedule
+      .filter((i) => i.isOpen)
+      .map((i) => ({
+        date: i.dueDate,
+        principal: money(i.plannedPrincipal).minus(money(i.paidPrincipal)),
+        interest: money(i.plannedInterest).minus(money(i.paidInterest)),
+        fees: money(i.plannedFees).minus(money(i.paidFees)),
+      })),
+  ).slice(0, 24);
+  const toSeries = (rows: typeof paid, feesLabel: string) => [
+    { key: "principal", label: "Principal", color: "var(--viz-1)", values: rows.map((r) => toMoneyString(r.principal)) },
+    { key: "interest", label: debt.hasEstimates ? "Interest (estimate)" : "Interest", color: "var(--viz-2)", values: rows.map((r) => toMoneyString(r.interest)) },
+    { key: "fees", label: feesLabel, color: "var(--viz-3)", values: rows.map((r) => toMoneyString(r.fees)) },
+  ];
+  const cats = (rows: typeof paid) =>
+    rows.map((r) => ({
+      key: r.key,
+      label: formatLocalDate(`${r.key}-01`, "en-US", { month: "short" }),
+      fullLabel: formatLocalDate(`${r.key}-01`, "en-US", { month: "long", year: "numeric" }),
+    }));
+  return (
+    <div className="grid gap-4">
+      <Card className="p-5">
+        {paid.length ? (
+          <ColumnChart title="Payments made" description="Non-reversed payments by month, split by what they paid" mode="stacked" categories={cats(paid)} series={toSeries(paid, "Fees & penalties")} currency={cur} />
+        ) : (
+          <p className="py-8 text-center text-sm text-muted-foreground">No payments recorded yet.</p>
+        )}
+      </Card>
+      <Card className="p-5">
+        {ahead.length ? (
+          <ColumnChart
+            title="Payments ahead"
+            description={`Still owed per month on the current schedule${ahead.length === 24 ? " (next 24 months)" : ""}`}
+            mode="stacked"
+            categories={cats(ahead)}
+            series={toSeries(ahead, debt.knownTotalRepayment ? "Interest & fees (not itemised)" : "Fees")}
+            currency={cur}
+          />
+        ) : (
+          <p className="py-8 text-center text-sm text-muted-foreground">Nothing left on the schedule.</p>
+        )}
       </Card>
     </div>
   );
@@ -262,9 +324,7 @@ export default async function DebtPage({
 
       {tab === "payments" ? <PaymentHistory payments={debt.payments} currency={debt.currency} /> : null}
 
-      {tab === "analytics" ? (
-        <EmptyState icon={BarChart3} title="Debt analytics arrive in Phase 4" description="Monthly payments, interest vs principal over time and cost trends. The cost breakdown is already on the Overview tab." />
-      ) : null}
+      {tab === "analytics" ? <DebtAnalytics debt={debt} /> : null}
 
       {tab === "documents" ? (
         <EmptyState icon={FileText} title="Documents arrive in Phase 6" description="Private storage for loan agreements, receipts and bank schedules." />

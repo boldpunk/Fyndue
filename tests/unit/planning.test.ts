@@ -92,3 +92,13 @@ describe("manual exchange rates (SPEC §46)", () => {
     expect(missing.missing).toEqual(["RUB"]);
   });
 });
+
+describe("monthly equivalent of recurring items", () => {
+  it("normalises weekly, monthly and yearly amounts", async () => {
+    const { monthlyEquivalent } = await import("@/lib/finance/recurrence");
+    expect(monthlyEquivalent("150000", "MONTHLY", 1).toFixed(2)).toBe("150000.00");
+    expect(monthlyEquivalent("300000", "MONTHLY", 3).toFixed(2)).toBe("100000.00");
+    expect(monthlyEquivalent("1200000", "YEARLY", 1).toFixed(2)).toBe("100000.00");
+    expect(monthlyEquivalent("12000", "WEEKLY", 1).toFixed(2)).toBe("52000.00");
+  });
+});

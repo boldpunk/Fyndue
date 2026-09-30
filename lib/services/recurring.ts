@@ -2,8 +2,8 @@ import "server-only";
 import { prisma, type Tx } from "@/lib/db";
 import { DomainError, NotFoundError } from "@/lib/errors";
 import { dbToLocalDate, localDateToDb, todayIn, type LocalDate } from "@/lib/finance/dates";
-import { toMoneyString } from "@/lib/finance/money";
-import { nextOccurrence, occurrencesBetween } from "@/lib/finance/recurrence";
+import { money, toMoneyString } from "@/lib/finance/money";
+import { monthlyEquivalent, nextOccurrence, occurrencesBetween } from "@/lib/finance/recurrence";
 import type { RecurringTransaction } from "@/lib/generated/prisma/client";
 import type { RecordOccurrenceInput, RecurringInput } from "@/lib/validations/planning";
 import { writeAudit } from "./audit";
@@ -26,6 +26,8 @@ export type RecurringDTO = {
   account: { id: string; name: string };
   category: { id: string; name: string; icon: string; color: string | null } | null;
   nextOccurrence: string | null;
+  /** Average per month, for totals. */
+  monthlyEquivalent: string;
 };
 
 const include = {
@@ -62,6 +64,7 @@ function toDTO(r: RuleWithRelations, today: LocalDate): RecurringDTO {
     account: r.account,
     category: r.category,
     nextOccurrence: r.isActive ? nextOccurrence(ruleOf(r), today) : null,
+    monthlyEquivalent: toMoneyString(monthlyEquivalent(r.amount, r.frequency, r.interval)),
   };
 }
 
@@ -241,4 +244,16 @@ export async function recordOccurrence(userId: string, input: RecordOccurrenceIn
     if (isUniqueViolation(error)) throw new DomainError("This occurrence is already recorded.", "ALREADY_RECORDED");
     throw error;
   }
+}
+
+/** Active items' average monthly outflow and inflow, per currency. */
+export function recurringMonthlyTotals(items: RecurringDTO[]) {
+  const totals = new Map<string, { expenses: ReturnType<typeof money>; income: ReturnType<typeof money> }>();
+  for (const item of items.filter((i) => i.isActive)) {
+    const t = totals.get(item.currency) ?? { expenses: money(0), income: money(0) };
+    if (item.kind === "EXPENSE") t.expenses = t.expenses.plus(money(item.monthlyEquivalent));
+    else t.income = t.income.plus(money(item.monthlyEquivalent));
+    totals.set(item.currency, t);
+  }
+  return [...totals].map(([currency, t]) => ({ currency, expenses: toMoneyString(t.expenses), income: toMoneyString(t.income) }));
 }

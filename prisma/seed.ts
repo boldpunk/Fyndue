@@ -190,6 +190,62 @@ async function main() {
     console.log("Seeded salary (actual and expected) and last month's expenses");
   }
 
+  // ── Recurring items, budgets, exchange rate (Phase 4) ─────────────────────
+  if ((await prisma.recurringTransaction.count({ where: { userId } })) === 0) {
+    const { createRecurring } = await import("../lib/services/recurring");
+    const { setBudget } = await import("../lib/services/budgets");
+    const { addExchangeRate } = await import("../lib/services/exchange-rates");
+    const cat = async (name: string, type: "EXPENSE" | "INCOME") => (await prisma.category.findFirstOrThrow({ where: { userId, name, type } })).id;
+    const month = yearMonthOf(today);
+    const { start } = monthBounds(month);
+    const rule = (name: string, kind: "EXPENSE" | "INCOME", category: string, amount: string, day: number, isSubscription = false) =>
+      createRecurring(userId, {
+        name,
+        kind,
+        accountId: uzcard.id,
+        categoryId: category,
+        amount,
+        frequency: "MONTHLY",
+        interval: 1,
+        startDate: addDays(start, day - 1),
+        endDate: undefined,
+        isSubscription,
+        note: undefined,
+      });
+    await rule("Internet", "EXPENSE", await cat("Internet", "EXPENSE"), "150000.00", 5);
+    await rule("Mobile plan", "EXPENSE", await cat("Mobile", "EXPENSE"), "60000.00", 10, true);
+    await rule("Streaming", "EXPENSE", await cat("Subscriptions", "EXPENSE"), "45000.00", 18, true);
+    await rule("Utilities", "EXPENSE", await cat("Utilities", "EXPENSE"), "420000.00", 25);
+    // Salary repeats from the month after the already-seeded expected payday.
+    const expected = await prisma.transaction.findFirst({ where: { userId, type: "INCOME", status: "EXPECTED" }, orderBy: { transactionDate: "desc" } });
+    const payday = expected ? addMonthsClamped(expected.transactionDate.toISOString().slice(0, 10), 1) : nextOnDay(5);
+    await createRecurring(userId, {
+      name: "Salary",
+      kind: "INCOME",
+      accountId: uzcard.id,
+      categoryId: await cat("Salary", "INCOME"),
+      amount: "14000000.00",
+      frequency: "MONTHLY",
+      interval: 1,
+      startDate: payday,
+      endDate: undefined,
+      isSubscription: false,
+      note: undefined,
+    });
+
+    for (const [name, amount] of [
+      ["Fuel", "1500000.00"],
+      ["Groceries", "2500000.00"],
+      ["Taxi", "300000.00"],
+      ["Restaurants", "800000.00"],
+    ] as const) {
+      await setBudget(userId, { ...month, categoryId: await cat(name, "EXPENSE"), currency: "UZS", amount });
+    }
+    await setBudget(userId, { ...month, categoryId: undefined, currency: "UZS", amount: "8000000.00" });
+    await addExchangeRate(userId, { fromCurrency: "USD", toCurrency: "UZS", rate: "12700", effectiveDate: today });
+    console.log("Seeded recurring items, this month's budgets and a USD/UZS rate");
+  }
+
   console.log(`Demo login: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
 }
 

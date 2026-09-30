@@ -68,11 +68,24 @@ Phase 3 notes:
 - Projected balance runs to the end of the month. Planned expenses are 0 until recurring transactions exist (Phase 4); the card says so.
 - Both cards are labelled as estimates, "Projected, not guaranteed" and "not financial advice" (SPEC §13, §14).
 
-## Phase 4 — Calendar, analytics, budgets (next)
+## Phase 4 — Calendar, analytics, budgets ✅
 
-Recurring transactions & expected income; calendar month + timeline; expense analytics (by category, trend, income vs expenses); debt analytics (cost above principal, fees, cash outflow, DTI with N/A on zero income); budgets (overall + category); monthly summary; manual exchange rates.
+- ✅ Schema: `RecurringTransaction`, `Budget`, `ExchangeRate`. Transactions link to the recurring occurrence they record. Partial unique indexes allow one live recording per occurrence and one budget per month/category/currency.
+- ✅ `lib/finance` (test-first): `recurrence` (month-end clamping, leap years, intervals, monthly equivalent), `budget`, `fx` (latest manual rate on or before a date; inverse allowed; never invented), `monthGrid`, `resolveRange`, `groupByMonth`, `formatCompactMoney`.
+- ✅ Recurring items at `/transactions/recurring`: bills, subscriptions and income. They stay plans until recorded, and each occurrence can be recorded once (again if its transaction is voided).
+- ✅ Calendar at `/calendar`: month grid and timeline; a day panel with Mark as paid, Record and Mark received.
+- ✅ Budgets at `/budgets`: overall and per-category limits; on-track / near-limit / over states with icon and label; spending without a budget; copy last month's budgets.
+- ✅ Analytics at `/analytics`: range presets and custom range, currency switch; income vs expenses, daily spending, spending by category, net cash flow, debt analytics, and the SPEC §39 monthly summary (reproducible from source rows). The debt detail page has an Analytics tab.
+- ✅ Dashboard: planned recurring expenses feed the projection; recurring income counts as expected income; a combined balance is shown at the user's own rates.
+- ✅ Manual exchange rates at `/settings/exchange-rates`.
 
-## Phase 5 — Telegram
+Phase 4 notes:
+
+- Charts are plain SVG (`components/charts/`), not Recharts. They are small, need no client bundle beyond the page, and follow the dataviz mark specs: bars ≤ 24px, 4px rounded data ends, 2px gaps, hairline grid, a legend for ≥ 2 series, a hover/focus tooltip, and a table view on every chart. The palette (categorical slots 1–3 plus a blue/red diverging pair) was validated for colour-blind safety in light and dark mode against Fyndue's card surfaces. Light-mode aqua is below 3:1 contrast, which the legend and table view cover.
+- Safe to Spend still reserves only debt payments. Recurring expenses reduce the projected balance but are not treated as mandatory.
+- Planned occurrences dated before today that were never recorded are not counted in projections (they may have been paid without being recorded).
+
+## Phase 5 — Telegram (next)
 
 Bot + webhook, connection codes, notification preferences, planner, idempotent dispatcher, cron endpoint, retries, commands (`/today`, `/upcoming`, `/debts`, `/month`). Notification tests from SPEC §59.
 

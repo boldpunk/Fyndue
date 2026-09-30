@@ -135,3 +135,57 @@ export function formatLocalDate(
 export function formatYearMonthLabel(value: YearMonth, locale = "en-US"): string {
   return formatLocalDate(makeLocalDate(value.year, value.month, 1), locale, { month: "long", year: "numeric" });
 }
+
+/** 0 = Sunday … 6 = Saturday. */
+export function weekday(value: LocalDate): number {
+  return localDateToDb(value).getUTCDay();
+}
+
+/**
+ * Whole weeks covering a month for a calendar grid, starting on
+ * `weekStartsOn` (0 = Sunday, 1 = Monday). Days outside the month are
+ * included so every row has 7 cells.
+ */
+export function monthGrid(month: YearMonth, weekStartsOn = 1): { date: LocalDate; inMonth: boolean }[] {
+  const { start, endExclusive } = monthBounds(month);
+  const lead = (weekday(start) - weekStartsOn + 7) % 7;
+  const first = addDays(start, -lead);
+  const last = addDays(endExclusive, -1);
+  const trail = (weekStartsOn + 6 - weekday(last) + 7) % 7;
+  const total = daysBetween(first, addDays(last, trail)) + 1;
+  return Array.from({ length: total }, (_, i) => {
+    const date = addDays(first, i);
+    return { date, inMonth: date >= start && date < endExclusive };
+  });
+}
+
+export const RANGE_PRESETS = ["this-month", "last-month", "3m", "6m", "year", "custom"] as const;
+export type RangePreset = (typeof RANGE_PRESETS)[number];
+
+/**
+ * Analytics date ranges (SPEC §36), inclusive. "3m"/"6m" include the current
+ * month; "year" is the calendar year to date.
+ */
+export function resolveRange(preset: RangePreset, today: LocalDate, custom?: { from?: string; to?: string }): { from: LocalDate; to: LocalDate } {
+  const month = yearMonthOf(today);
+  const startOf = (m: YearMonth) => monthBounds(m).start;
+  switch (preset) {
+    case "this-month":
+      return { from: startOf(month), to: today };
+    case "last-month": {
+      const b = monthBounds(shiftYearMonth(month, -1));
+      return { from: b.start, to: addDays(b.endExclusive, -1) };
+    }
+    case "3m":
+      return { from: startOf(shiftYearMonth(month, -2)), to: today };
+    case "6m":
+      return { from: startOf(shiftYearMonth(month, -5)), to: today };
+    case "year":
+      return { from: makeLocalDate(month.year, 1, 1), to: today };
+    case "custom": {
+      const from = custom?.from && isLocalDate(custom.from) ? custom.from : startOf(month);
+      const to = custom?.to && isLocalDate(custom.to) ? custom.to : today;
+      return daysBetween(from, to) >= 0 ? { from, to } : { from: to, to: from };
+    }
+  }
+}

@@ -59,3 +59,40 @@ describe("dates", () => {
     expect(shiftYearMonth({ year: 2026, month: 1 }, -1)).toEqual({ year: 2025, month: 12 });
   });
 });
+
+describe("monthGrid", () => {
+  it("covers whole weeks starting on Monday", async () => {
+    const { monthGrid } = await import("@/lib/finance/dates");
+    const grid = monthGrid({ year: 2026, month: 10 }, 1); // 1 Oct 2026 is a Thursday
+    expect(grid[0]).toEqual({ date: "2026-09-28", inMonth: false });
+    expect(grid.length % 7).toBe(0);
+    expect(grid.filter((d) => d.inMonth)).toHaveLength(31);
+    expect(grid.at(-1)?.date).toBe("2026-11-01");
+  });
+
+  it("supports Sunday starts and leap Februaries", async () => {
+    const { monthGrid } = await import("@/lib/finance/dates");
+    const feb = monthGrid({ year: 2024, month: 2 }, 0);
+    expect(feb[0]?.date).toBe("2024-01-28");
+    expect(feb.filter((d) => d.inMonth)).toHaveLength(29);
+    expect(feb.length).toBe(35);
+  });
+});
+
+describe("resolveRange (SPEC §36)", () => {
+  it("resolves presets relative to today", async () => {
+    const { resolveRange } = await import("@/lib/finance/dates");
+    const today = "2026-03-15";
+    expect(resolveRange("this-month", today)).toEqual({ from: "2026-03-01", to: today });
+    expect(resolveRange("last-month", today)).toEqual({ from: "2026-02-01", to: "2026-02-28" });
+    expect(resolveRange("3m", today)).toEqual({ from: "2026-01-01", to: today });
+    expect(resolveRange("6m", today)).toEqual({ from: "2025-10-01", to: today });
+    expect(resolveRange("year", today)).toEqual({ from: "2026-01-01", to: today });
+  });
+
+  it("validates and orders custom ranges", async () => {
+    const { resolveRange } = await import("@/lib/finance/dates");
+    expect(resolveRange("custom", "2026-03-15", { from: "2026-02-10", to: "2026-01-05" })).toEqual({ from: "2026-01-05", to: "2026-02-10" });
+    expect(resolveRange("custom", "2026-03-15", { from: "nope" })).toEqual({ from: "2026-03-01", to: "2026-03-15" });
+  });
+});

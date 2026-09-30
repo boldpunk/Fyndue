@@ -144,3 +144,9 @@ export function percentage(part: MoneyLike, whole: MoneyLike): FinDecimal | null
   if (denominator.isZero()) return null;
   return money(part).div(denominator).times(100);
 }
+
+/** Short display form for axes and dense lists: 12,500,000 → "12.5M". Display only. */
+export function formatCompactMoney(value: MoneyLike, locale = "en-US"): string {
+  const formatter = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 });
+  return formatter.format(roundMoney(value, 0).toFixed(0) as unknown as number);
+}

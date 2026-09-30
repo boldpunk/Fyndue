@@ -109,7 +109,21 @@ export default async function DashboardPage() {
       ) : null}
 
       <section aria-label="This month" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <FinancialMetricCard label="Available balance" icon={Wallet} tone="primary" footer={`${d.accountCount} active account${d.accountCount === 1 ? "" : "s"}`}>
+        <FinancialMetricCard
+          label="Available balance"
+          icon={Wallet}
+          tone="primary"
+          footer={
+            d.combinedBalance ? (
+              <span>
+                ≈ <Money amount={d.combinedBalance.amount} currency={d.primaryCurrency} className="font-medium text-foreground" /> combined at your rates
+                {d.combinedBalance.rateDate ? ` (${formatLocalDate(d.combinedBalance.rateDate, "en-US", { day: "numeric", month: "short" })})` : ""}
+              </span>
+            ) : (
+              `${d.accountCount} active account${d.accountCount === 1 ? "" : "s"}`
+            )
+          }
+        >
           <PerCurrency rows={d.currencies.filter(nonZero((c) => c.balance))} pick={(c) => c.balance} />
         </FinancialMetricCard>
         <FinancialMetricCard
