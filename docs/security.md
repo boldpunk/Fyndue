@@ -71,6 +71,15 @@ Private bucket (S3-compatible or Supabase Storage), object keys `users/{userId}/
 
 Webhook authenticated by `X-Telegram-Bot-Api-Secret-Token`; one-time connection codes are random, stored hashed, expire in 10 minutes, single-use; commands resolve the user **only** through `TelegramConnection.telegramChatId`. Cron endpoint requires `Authorization: Bearer $CRON_SECRET`. See [telegram.md](telegram.md).
 
+Implemented (Phase 5):
+
+- Both secrets are compared in constant time (SHA-256 of each side, then `timingSafeEqual`). Each route returns 404 while its secret is unset, so the feature is off by default.
+- Codes are 8 characters from a 32-letter alphabet (40 bits) with `crypto.randomInt`. A code is single-use through a conditional update. A wrong, used or expired code gets the same generic reply.
+- A chat belongs to one account: linking it to a new account disconnects the old link.
+- Only private chats are answered; group messages and bots are ignored. `/stop` or blocking the bot (Telegram 403) disconnects and cancels pending reminders.
+- Stored `failureReason` is the Telegram error text only. The bot token is in the request URL and never logged. The UI shows only a status, not the raw reason.
+- Messages escape all user text (HTML parse mode) and never include account numbers, emails or links with tokens.
+
 ## 9. Data integrity (SPEC §53)
 
 Enforced at two levels — service validation *and* database constraints — so a bug in one layer can't corrupt money:

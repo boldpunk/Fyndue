@@ -9,11 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth/session";
 import { TIMEZONES } from "@/lib/constants/finance";
+import { getTelegramConnection } from "@/lib/services/telegram-connection";
 
 export const metadata: Metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
   const user = await requireUser();
+  const connection = await getTelegramConnection(user.id);
   const timezone = (TIMEZONES as readonly string[]).includes(user.timezone) ? (user.timezone as (typeof TIMEZONES)[number]) : "Asia/Tashkent";
 
   return (
@@ -54,11 +56,12 @@ export default async function SettingsPage() {
           <span className="flex-1 text-sm font-medium">Recurring items</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
-        <div className="flex items-center gap-3 p-4">
+        <Link href="/settings/notifications" className="flex items-center gap-3 p-4 hover:bg-muted/60">
           <Bell className="size-5 text-muted-foreground" aria-hidden />
-          <span className="flex-1 text-sm font-medium">Telegram reminders</span>
-          <Badge>Phase 5</Badge>
-        </div>
+          <span className="flex-1 text-sm font-medium">Notifications &amp; Telegram</span>
+          {connection.status === "CONNECTED" ? <Badge tone="success">Connected</Badge> : null}
+          <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+        </Link>
       </Card>
 
       <div className="lg:hidden">

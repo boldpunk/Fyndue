@@ -18,7 +18,8 @@
     "db:seed": "tsx --conditions=react-server prisma/seed.ts",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
-    "db:local": "node scripts/local-db.mjs"
+    "db:local": "node scripts/local-db.mjs",
+    "telegram:dev": "tsx --conditions=react-server scripts/telegram-dev.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

@@ -85,11 +85,23 @@ Phase 4 notes:
 - Safe to Spend still reserves only debt payments. Recurring expenses reduce the projected balance but are not treated as mandatory.
 - Planned occurrences dated before today that were never recorded are not counted in projections (they may have been paid without being recorded).
 
-## Phase 5 — Telegram (next)
+## Phase 5 — Telegram ✅
 
-Bot + webhook, connection codes, notification preferences, planner, idempotent dispatcher, cron endpoint, retries, commands (`/today`, `/upcoming`, `/debts`, `/month`). Notification tests from SPEC §59.
+- ✅ Schema: `NotificationPreference`, `TelegramConnection`, `NotificationLog` (unique `deduplicationKey`) + CHECK constraints.
+- ✅ `lib/notifications/planner.ts` (test-first): 7/3/1-day windows with catch-up, due today, overdue rounds, quiet hours across midnight.
+- ✅ `lib/telegram/messages.ts`: SPEC §34 formats, HTML-escaped, one digest per user per run.
+- ✅ Dispatcher `runReminders`: claim-before-send, retries with backoff (max 5 attempts), stale-pending recovery, cancellation of reminders no longer planned, 403 → disconnected, ≤ 25 msg/s.
+- ✅ Connection: one-time 8-character code (hashed, 10 minutes, single use), `t.me` deep link, audit log; commands `/start`, `/today`, `/upcoming`, `/debts`, `/month`, `/help`, `/stop`.
+- ✅ Routes: `/api/telegram/webhook` (secret token) and `/api/cron/notifications` (Bearer `CRON_SECRET`).
+- ✅ `pnpm telegram:dev`: long polling and a 5-minute reminder loop for a local install.
+- ✅ `/settings/notifications`: connect / test / disconnect, reminder preferences, recent reminders.
 
-## Phase 6 — Documents
+Phase 5 notes:
+
+- In-app notifications (`channel = IN_APP`) share the log and planner but have no UI yet (Phase 7 candidate).
+- Future bot commands `/expense`, `/income`, `/paid` should reuse the existing services and zod schemas.
+
+## Phase 6 — Documents (next)
 
 Private storage adapter, upload/download with ownership checks, debt documents tab.
 

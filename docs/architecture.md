@@ -1,6 +1,6 @@
 # Fyndue — Architecture
 
-> Status: Phases 0–4 complete (planning, foundation, debt engine, dashboard, calendar/analytics/budgets). Next: Phase 5 (Telegram).
+> Status: Phases 0–5 complete (planning, foundation, debt engine, dashboard, calendar/analytics/budgets, Telegram reminders). Next: Phase 6 (documents).
 > Source of truth for product requirements: [`SPEC.md`](../SPEC.md).
 > Related: [database](database.md) · [debt engine](debt-engine.md) · [security](security.md) · [telegram](telegram.md) · [roadmap](roadmap.md)
 
@@ -89,7 +89,8 @@ lib/
   services/               accounts, categories, transactions, debts, debt-schedule,
                           debt-payments, dashboard, settings, audit
   validations/            zod schemas
-  notifications/ telegram/  (Phase 5)
+  notifications/          planner (pure: which reminders are due, quiet hours)
+  telegram/               client (Bot API), messages (pure formatting), commands, server (env wiring)
   utils/                  cn(), result helpers, constants
 
 prisma/
@@ -158,6 +159,8 @@ Actions return a discriminated union `{ ok: true, data } | { ok: false, error, f
 
 Summarised here, detailed in [telegram.md](telegram.md). A cron-triggered route handler (Vercel Cron or any external scheduler) computes due reminders, **claims** each one by inserting a `NotificationLog` row with a unique `deduplicationKey`, and only then sends. A second run finds the key already claimed and skips it — the job is idempotent by construction. The Telegram bot uses a webhook route with a secret-token header.
 
+For a local install (the app on your PC, which Telegram can't reach), `pnpm telegram:dev` long-polls `getUpdates` into the same command handler and runs the reminder job every 5 minutes. On a public deployment, use the webhook and call `/api/cron/notifications` every 15 minutes instead.
+
 ## 8. Design system & component architecture
 
 Detailed tokens live in `app/globals.css`; this is the contract.
@@ -194,7 +197,7 @@ Responsive behaviour: `Dialog` on ≥ `md`, `Sheet side="bottom"` below (`Respon
 
 ## 9. Configuration
 
-Environment variables are validated at startup by `lib/env.ts` (zod). Phase 1 needs `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`; optional `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`. Later phases add `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `CRON_SECRET`, storage credentials. See `.env.example`.
+Environment variables are validated at startup by `lib/env.ts` (zod). Phase 1 needs `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`; optional `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`. Phase 5 adds optional `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME` (both needed to turn the feature on), `TELEGRAM_WEBHOOK_SECRET` (webhook only) and `CRON_SECRET` (cron route only); empty values count as unset. Phase 6 adds storage credentials. See `.env.example`.
 
 ## 10. Extensibility (SPEC §3)
 

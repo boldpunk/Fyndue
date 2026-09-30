@@ -354,16 +354,16 @@ Recurring items feed the calendar and cash-flow forecast as *planned* events; th
 
 As built: `RecurringTransaction` has `name` and `kind` (EXPENSE | INCOME) and no stored `nextOccurrence` (occurrences are computed by `lib/finance/recurrence.ts`). `Transaction.recurringId` + `occurrenceDate` link a recorded occurrence, with a partial unique index `WHERE voidedAt IS NULL`. Budgets use two partial unique indexes: one for category budgets and one for the overall budget (`categoryId IS NULL`). `ExchangeRate` has `CHECK (rate > 0 AND fromCurrency <> toCurrency)`.
 
-## 8. Notifications & Telegram (Phase 5)
+## 8. Notifications & Telegram (implemented in Phase 5)
 
 ```prisma
 model NotificationPreference {
   id, userId @unique,
-  telegramEnabled Boolean @default(false), inAppEnabled Boolean @default(true),
+  telegramEnabled Boolean @default(true), inAppEnabled Boolean @default(true),
   notifyDaysBefore Int[] @default([7, 3, 1]),
   notifyOnDueDate Boolean @default(true), notifyWhenOverdue Boolean @default(true),
   overdueRepeatDays Int @default(3),
-  quietHoursStart String?, quietHoursEnd String?,   // "22:00", user timezone
+  quietHoursStart String? @default("22:00"), quietHoursEnd String? @default("09:00"),   // user timezone; null = no quiet hours
   createdAt, updatedAt
 }
 
@@ -380,12 +380,15 @@ model NotificationLog {
   deduplicationKey String @unique,
   scheduledAt DateTime, sentAt DateTime?, status NotificationStatus,
   attempts Int @default(0), externalMessageId String?, failureReason String?,
-  createdAt
-  @@index([userId, createdAt]) @@index([status, scheduledAt])
+  createdAt, updatedAt
+  @@index([userId, createdAt]) @@index([status, scheduledAt]) @@index([scheduleItemId])
 }
 ```
 
-Only a *hash* of the one-time Telegram connection code is stored.
+- Only a *hash* (SHA-256) of the one-time Telegram connection code is stored; linking clears it, so a code works once.
+- CHECK constraints: `notification_preference_valid` (`overdueRepeatDays` 1–30, quiet hours `HH:MM`) and `notification_attempts_valid` (`attempts ≥ 0`).
+- No preference row means the defaults above; the row is created on the first save.
+- `deduplicationKey` is the idempotency lock: the dispatcher inserts it with `ON CONFLICT DO NOTHING` (Prisma `createMany({ skipDuplicates })`) *before* sending. Keys: `due:{itemId}:{dueDate}:d{n}:tg`, `today:{itemId}:{dueDate}:tg`, `overdue:{itemId}:{dueDate}:r{round}:tg`, `test:{userId}:{minute}:tg`.
 
 ## 9. Documents & audit
 

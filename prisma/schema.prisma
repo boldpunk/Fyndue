@@ -147,6 +147,31 @@ enum RecurringKind {
   INCOME
 }
 
+enum NotificationType {
+  DUE_IN_DAYS
+  DUE_TODAY
+  OVERDUE
+  TEST
+}
+
+enum NotificationChannel {
+  TELEGRAM
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum TelegramConnectionStatus {
+  PENDING
+  CONNECTED
+  DISCONNECTED
+}
+
 // ─── Identity (tables shaped for Better Auth) ────────────────────────────────
 
 model User {
@@ -160,20 +185,23 @@ model User {
   createdAt     DateTime @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime @updatedAt @db.Timestamptz(3)
 
-  sessions              Session[]
-  authAccounts          AuthAccount[]
-  settings              UserSettings?
-  accounts              Account[]
-  categories            Category[]
-  transactions          Transaction[]
-  auditLogs             AuditLog[]
-  debts                 Debt[]
-  debtPayments          DebtPayment[]
-  scheduleVersions      DebtScheduleVersion[]
-  scheduleItems         DebtScheduleItem[]
-  recurringTransactions RecurringTransaction[]
-  budgets               Budget[]
-  exchangeRates         ExchangeRate[]
+  sessions               Session[]
+  authAccounts           AuthAccount[]
+  settings               UserSettings?
+  accounts               Account[]
+  categories             Category[]
+  transactions           Transaction[]
+  auditLogs              AuditLog[]
+  debts                  Debt[]
+  debtPayments           DebtPayment[]
+  scheduleVersions       DebtScheduleVersion[]
+  scheduleItems          DebtScheduleItem[]
+  recurringTransactions  RecurringTransaction[]
+  budgets                Budget[]
+  exchangeRates          ExchangeRate[]
+  notificationPreference NotificationPreference?
+  telegramConnection     TelegramConnection?
+  notificationLogs       NotificationLog[]
 }
 
 model Session {
@@ -564,6 +592,70 @@ model ExchangeRate {
 
   @@unique([userId, fromCurrency, toCurrency, effectiveDate])
   @@index([userId, fromCurrency, toCurrency])
+}
+
+// ─── Notifications (Phase 5, docs/telegram.md) ─────────────────────────────────
+
+model NotificationPreference {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  telegramEnabled   Boolean  @default(true)
+  inAppEnabled      Boolean  @default(true)
+  /// Remind this many days before a due date (default 7, 3, 1).
+  notifyDaysBefore  Int[]    @default([7, 3, 1])
+  notifyOnDueDate   Boolean  @default(true)
+  notifyWhenOverdue Boolean  @default(true)
+  /// After the first overdue reminder, repeat every N days.
+  overdueRepeatDays Int      @default(3)
+  /// "HH:MM" in the user's time zone; the window may wrap midnight.
+  quietHoursStart   String?  @default("22:00")
+  quietHoursEnd     String?  @default("09:00")
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TelegramConnection {
+  id                      String                   @id @default(cuid())
+  userId                  String                   @unique
+  telegramChatId          String?                  @unique
+  telegramUsername        String?
+  /// SHA-256 of the one-time code; the code itself is never stored.
+  connectionCodeHash      String?                  @unique
+  connectionCodeExpiresAt DateTime?                @db.Timestamptz(3)
+  connectedAt             DateTime?                @db.Timestamptz(3)
+  status                  TelegramConnectionStatus @default(PENDING)
+  createdAt               DateTime                 @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime                 @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// One row per reminder. The unique deduplicationKey is claimed *before*
+/// sending, so running the job twice can never send twice.
+model NotificationLog {
+  id                String              @id @default(cuid())
+  userId            String
+  debtId            String?
+  scheduleItemId    String?
+  type              NotificationType
+  channel           NotificationChannel
+  deduplicationKey  String              @unique
+  scheduledAt       DateTime            @db.Timestamptz(3)
+  sentAt            DateTime?           @db.Timestamptz(3)
+  status            NotificationStatus  @default(PENDING)
+  attempts          Int                 @default(0)
+  externalMessageId String?
+  failureReason     String?
+  createdAt         DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime            @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, scheduledAt])
+  @@index([scheduleItemId])
 }
 
 // ─── Audit ────────────────────────────────────────────────────────────────────

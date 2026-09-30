@@ -46,6 +46,7 @@ The dev seed creates `demo@fyndue.dev` / `fyndue-demo-2026` with Uzcard, Visa an
 | `pnpm test:unit` | Pure finance/validation tests (no DB) |
 | `pnpm test:integration` | Service tests against `TEST_DATABASE_URL` (the run truncates it) |
 | `pnpm db:migrate` / `db:deploy` / `db:seed` / `db:studio` | Prisma |
+| `pnpm telegram:dev` | Local Telegram bot: polls for messages and sends reminders every 5 minutes (needs `TELEGRAM_BOT_TOKEN` / `TELEGRAM_BOT_USERNAME`, see [docs/telegram.md](docs/telegram.md#8-setting-up-a-bot)) |
 
 ## Rules of the codebase
 
