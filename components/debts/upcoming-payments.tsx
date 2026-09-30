@@ -18,7 +18,10 @@ export function UpcomingPayments({ items, accounts, today }: { items: UpcomingPa
     <>
       <Card className="divide-y">
         {items.map((item) => (
-          <div key={item.id} className={cn("flex flex-wrap items-center gap-3 p-4", item.displayStatus === "OVERDUE" && "bg-danger-subtle/40")}>
+          <div
+            key={item.id}
+            className={cn("grid gap-3 p-4 sm:flex sm:items-center", item.displayStatus === "OVERDUE" && "bg-danger-subtle/40")}
+          >
             <div className="grid min-w-0 flex-1 gap-0.5">
               <Link href={`/debts/${item.debt.id}?tab=schedule`} className="truncate text-sm font-medium hover:underline">
                 {item.debt.name}
@@ -28,13 +31,15 @@ export function UpcomingPayments({ items, accounts, today }: { items: UpcomingPa
                 {daysLabel(item.days)}
               </p>
             </div>
-            <div className="grid justify-items-end gap-1">
-              <Money amount={item.remainingTotal} currency={item.debt.currency} className="font-semibold" />
-              <PaymentStatusBadge status={item.displayStatus} />
+            <div className="flex items-center justify-between gap-3 sm:contents">
+              <div className="grid gap-1 sm:justify-items-end">
+                <Money amount={item.remainingTotal} currency={item.debt.currency} className="font-semibold" />
+                <PaymentStatusBadge status={item.displayStatus} className="w-fit" />
+              </div>
+              <Button size="sm" variant={item.days <= 0 ? "default" : "outline"} onClick={() => setPaying(item)}>
+                Mark as paid
+              </Button>
             </div>
-            <Button size="sm" variant={item.days <= 0 ? "default" : "outline"} onClick={() => setPaying(item)}>
-              Mark as paid
-            </Button>
           </div>
         ))}
       </Card>

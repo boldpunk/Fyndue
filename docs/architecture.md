@@ -1,6 +1,6 @@
 # Fyndue — Architecture
 
-> Status: Phases 0–2 complete (planning, foundation, debt engine). Next: Phase 3 (dashboard).
+> Status: Phases 0–3 complete (planning, foundation, debt engine, dashboard). Next: Phase 4 (calendar, analytics, budgets).
 > Source of truth for product requirements: [`SPEC.md`](../SPEC.md).
 > Related: [database](database.md) · [debt engine](debt-engine.md) · [security](security.md) · [telegram](telegram.md) · [roadmap](roadmap.md)
 

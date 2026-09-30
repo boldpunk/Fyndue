@@ -29,7 +29,7 @@ async function main() {
   const { createTransaction } = await import("../lib/services/transactions");
   const { createDebt, getDebtDetail } = await import("../lib/services/debts");
   const { recordDebtPayment } = await import("../lib/services/debt-payments");
-  const { addDays, addMonthsClamped, makeLocalDate, parseLocalDate, todayIn } = await import("../lib/finance/dates");
+  const { addDays, addMonthsClamped, makeLocalDate, monthBounds, parseLocalDate, todayIn, yearMonthOf } = await import("../lib/finance/dates");
 
   const today = todayIn("Asia/Tashkent");
   /** Next date (today or later) falling on `day` of a month. */
@@ -170,6 +170,24 @@ async function main() {
       note: "Demo repayment incl. card fee",
     });
     console.log("Seeded Debt A, Debt B and a paid-off demo microloan");
+  }
+
+  // ── Income & last month (Phase 3 dashboard) ───────────────────────────────
+  if ((await prisma.transaction.count({ where: { userId, type: "INCOME" } })) === 0) {
+    const categoryOf = async (name: string, type: "EXPENSE" | "INCOME") =>
+      (await prisma.category.findFirstOrThrow({ where: { userId, name, type } })).id;
+    const salary = await categoryOf("Salary", "INCOME");
+    const { start } = monthBounds(yearMonthOf(today));
+    const lastMonth = addMonthsClamped(start, -1);
+    const add = (input: Record<string, unknown>) => createTransaction(userId, { clientRequestId: randomUUID(), merchant: undefined, note: undefined, ...input } as never);
+
+    await add({ kind: "INCOME", accountId: uzcard.id, categoryId: salary, amount: "14000000.00", date: addDays(lastMonth, 4), status: "ACTUAL" });
+    await add({ kind: "EXPENSE", accountId: uzcard.id, categoryId: await categoryOf("Groceries", "EXPENSE"), amount: "1850000.00", date: addDays(lastMonth, 9) });
+    await add({ kind: "EXPENSE", accountId: uzcard.id, categoryId: await categoryOf("Fuel", "EXPENSE"), amount: "760000.00", date: addDays(lastMonth, 15) });
+    await add({ kind: "INCOME", accountId: uzcard.id, categoryId: salary, amount: "14000000.00", date: addDays(start, 4) <= today ? addDays(start, 4) : start, status: "ACTUAL" });
+    // Next payday: expected, so it never counts as actual until confirmed.
+    await add({ kind: "INCOME", accountId: uzcard.id, categoryId: salary, amount: "14000000.00", date: nextOnDay(5) === today ? addMonthsClamped(today, 1) : nextOnDay(5), status: "EXPECTED" });
+    console.log("Seeded salary (actual and expected) and last month's expenses");
   }
 
   console.log(`Demo login: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);

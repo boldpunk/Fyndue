@@ -55,11 +55,20 @@ Phase 2 notes:
 - Placeholders: the debt Analytics tab (Phase 4) and Documents tab (Phase 6).
 - Next: make Phase 3 dashboard widgets (upcoming payments, Safe to Spend, projected balance) reuse `listUpcomingPayments`, `debtTotalsByCurrency` and `lib/finance/debt-progress`.
 
-## Phase 3 — Dashboard (next)
+## Phase 3 — Dashboard ✅
 
-Available balance (per currency), income/expenses/debt payments this month with previous-month comparison, Total Debt widget (principal vs. future interest clearly labelled), upcoming payments, Safe to Spend, projected balance, recent transactions. All from real data via `lib/finance/cash-flow.ts`.
+- ✅ `lib/finance/cash-flow.ts` (test-first): Safe to Spend, projected balance, month-over-month change, debt-to-income ratio.
+- ✅ `getDashboard()`: one service returning every figure per currency, with no conversion between currencies.
+- ✅ Dashboard: available balance; income, expenses and debt payments this month with a previous-month comparison (shown only when last month has activity); debt payments as a share of income (N/A without income); Safe to Spend; projected month-end balance; overdue alert; upcoming payments (next 30 days, Mark as paid inline); Total Debt widget; recent transactions; accounts.
+- ✅ Dev seed adds last month's and this month's salary, an expected next payday, and last month's expenses.
 
-## Phase 4 — Calendar, analytics, budgets
+Phase 3 notes:
+
+- Safe to Spend = available balance − open debt payments due up to and including the next expected income date. Without expected income, the horizon is the end of the month. Overdue payments always count. Only accounts marked "include in total" are used.
+- Projected balance runs to the end of the month. Planned expenses are 0 until recurring transactions exist (Phase 4); the card says so.
+- Both cards are labelled as estimates, "Projected, not guaranteed" and "not financial advice" (SPEC §13, §14).
+
+## Phase 4 — Calendar, analytics, budgets (next)
 
 Recurring transactions & expected income; calendar month + timeline; expense analytics (by category, trend, income vs expenses); debt analytics (cost above principal, fees, cash outflow, DTI with N/A on zero income); budgets (overall + category); monthly summary; manual exchange rates.
 
