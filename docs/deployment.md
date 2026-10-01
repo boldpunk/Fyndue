@@ -119,7 +119,7 @@ sudo certbot --nginx -d fyndue.uz -d www.fyndue.uz    # HTTPS certificate + redi
    COMPOSE_FILE=docker-compose.yml:deploy/docker-compose.shared-caddy.yml
    EDGE_NETWORK=dcau-hub_default
    ```
-2. Append to the other project's Caddyfile (a new block; its existing blocks stay as they are):
+2. Back it up, then append to the other project's Caddyfile (on the Oracle VM: `/opt/dcau-hub/Caddyfile`, bind-mounted as a single file). Append with `sudo tee -a` — tools that replace the file (`sed -i`, some editors) give it a new inode, and the container keeps seeing the old file:
    ```
    fyndue.uz {
    	request_body {
