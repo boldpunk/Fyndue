@@ -1,0 +1,19 @@
+# Server where another project's Caddy container owns ports 80/443
+# (the Oracle VM: dcau-hub-caddy-1 serves boldpunk.uz). Attaches Fyndue's
+# web container to that Caddy's Docker network under the name
+# `fyndue-web`, so its Caddyfile can say `reverse_proxy fyndue-web:3000`.
+# Nothing in the other project changes; Fyndue's database stays on its own
+# private network. Enabled from .env:
+#   COMPOSE_FILE=docker-compose.yml:deploy/docker-compose.shared-caddy.yml
+#   EDGE_NETWORK=<that Caddy's network, e.g. dcau-hub_default>
+services:
+  web:
+    networks:
+      default: {}
+      edge:
+        aliases: [fyndue-web]
+
+networks:
+  edge:
+    external: true
+    name: ${EDGE_NETWORK:?set EDGE_NETWORK in .env}

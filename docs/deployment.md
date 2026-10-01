@@ -112,7 +112,35 @@ sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d fyndue.uz -d www.fyndue.uz    # HTTPS certificate + redirect
 ```
 
-**Caddy:** append `deploy/Caddyfile.fyndue` to the Caddyfile (usually `/etc/caddy/Caddyfile`), then `sudo systemctl reload caddy`. Caddy obtains the certificate itself.
+**Caddy in another project's Docker container** (the Oracle VM: `dcau-hub-caddy-1` serves boldpunk.uz). That Caddy can't reach `127.0.0.1:3100` from inside its container, so Fyndue's `web` joins Caddy's Docker network instead (`deploy/docker-compose.shared-caddy.yml`). Fyndue's database stays on its own private network, and nothing in the other project's compose file changes.
+
+1. Add to Fyndue's `.env`, then `docker compose up -d`:
+   ```
+   COMPOSE_FILE=docker-compose.yml:deploy/docker-compose.shared-caddy.yml
+   EDGE_NETWORK=dcau-hub_default
+   ```
+2. Append to the other project's Caddyfile (a new block; its existing blocks stay as they are):
+   ```
+   fyndue.uz {
+   	request_body {
+   		max_size 12MB
+   	}
+   	reverse_proxy fyndue-web:3000
+   }
+
+   www.fyndue.uz {
+   	redir https://fyndue.uz{uri} permanent
+   }
+   ```
+3. Check, then reload without downtime (an invalid file is refused and the running config stays):
+   ```bash
+   docker exec dcau-hub-caddy-1 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+   docker exec dcau-hub-caddy-1 caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
+   ```
+
+Note: while Fyndue is attached, `docker compose down` in the other project prints "network … still in use" and keeps the network. That is harmless; its sites come back on `up` as usual, and Fyndue keeps working.
+
+**Caddy (installed on the host):** append `deploy/Caddyfile.fyndue` to the Caddyfile (usually `/etc/caddy/Caddyfile`), then `sudo systemctl reload caddy`. Caddy obtains the certificate itself.
 
 Open **https://fyndue.uz** — the login page should load with a padlock.
 
