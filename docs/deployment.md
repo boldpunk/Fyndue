@@ -1,6 +1,8 @@
-# Fyndue — Deployment (fyndue.uz on a shared Hetzner server)
+# Fyndue — Deployment (fyndue.uz on a shared server)
 
-Fyndue runs as its own Docker Compose project (`fyndue`) next to the other apps on the server. It brings its **own** PostgreSQL, so it never touches another app's database. Only one port is opened, on `127.0.0.1`, for the server's existing web server (nginx or Caddy) to forward `fyndue.uz` to.
+Production target: the Oracle Cloud VM in Dubai (`84.235.245.27`, Ubuntu 24.04 **ARM64**, 4 OCPU / 24 GB) that already serves **boldpunk.uz**. Fyndue must not disturb that site.
+
+Fyndue runs as its own Docker Compose project (`fyndue`) next to the other apps on the server: its own containers (`fyndue-*`), network and volumes. It brings its **own** PostgreSQL, so it never touches another app's database. Only one port is opened, on `127.0.0.1`, for the server's existing web server (nginx or Caddy) to forward `fyndue.uz` to.
 
 ```
 Internet ──443──► nginx / Caddy (already on the server, also serves the other sites)
@@ -23,20 +25,23 @@ Telegram ──► https://fyndue.uz/api/telegram/webhook
 | `deploy/production.env.example` | Every setting; copy to `.env` on the server |
 | `deploy/nginx-fyndue.uz.conf` | nginx site (if the server uses nginx) |
 | `deploy/Caddyfile.fyndue` | Caddy block (if the server uses Caddy) |
+| `deploy/Caddyfile` | Bundled Caddy, **only** for a server with nothing else on 80/443 (`COMPOSE_PROFILES=proxy`); not used on the shared server |
 | `deploy/backup.sh` | Nightly database + documents backup |
 
-> **Data location.** Hetzner servers are in Germany and Finland. Uzbekistan's personal data law expects Uzbek citizens' personal data to be stored in Uzbekistan. For personal or family use this is usually not an issue; before opening Fyndue to the public, check the law (or move to an Uzbek host — the same files work anywhere with Docker).
+**What Fyndue touches on the shared server, and nothing else:** a new folder `/opt/fyndue`, Docker containers/volumes prefixed `fyndue`, port `127.0.0.1:3100`, one **new** web-server site file for `fyndue.uz` (checked with `nginx -t` / `caddy validate` before any reload, so a typo is rejected instead of taking boldpunk.uz down) and one certificate for `fyndue.uz`. It does not change boldpunk.uz's config, its database, Docker networks or the firewall (80/443 are already open because boldpunk.uz works).
 
-## 1. DNS (at your .uz registrar)
+> **Data location.** The server is in the UAE. Uzbekistan's personal data law expects Uzbek citizens' personal data to be stored in Uzbekistan. For personal or family use this is usually not an issue; before opening Fyndue to the public, check the law (or move to an Uzbek host — the same files work anywhere with Docker).
 
-Create two records pointing at the server's IPv4 address (the one MebelFlow and molly.uz already use):
+## 1. DNS (Eskiz → DNS записи → fyndue.uz)
 
-| Type | Name | Value |
-|---|---|---|
-| `A` | `@` (fyndue.uz) | `<server IPv4>` |
-| `A` | `www` | `<server IPv4>` |
+Change **only one** record — the `A` record for `fyndue.uz.` — from `45.138.159.4` to the Oracle server:
 
-Add matching `AAAA` records only if the other sites already use IPv6. Check (from Windows: `nslookup fyndue.uz`):
+| Name | Type | Record (now) | Record (new) |
+|---|---|---|---|
+| `fyndue.uz.` | `A` | `45.138.159.4` | **`84.235.245.27`** |
+| `www.fyndue.uz.` | `CNAME` | `fyndue.uz.` | unchanged (follows the A record) |
+
+Leave `mail`, `webmail`, `ftp`, `MX`, `_dmarc` and the SPF `TXT` records as they are — they belong to Eskiz's mail hosting. Check (from Windows: `nslookup fyndue.uz`):
 
 ```bash
 dig +short fyndue.uz        # must print the server IP before step 5
@@ -45,7 +50,8 @@ dig +short fyndue.uz        # must print the server IP before step 5
 ## 2. Look at the server (SSH)
 
 ```bash
-sudo ss -ltnp '( sport = :80 or sport = :443 )'   # which web server owns 80/443: nginx, caddy, or docker-proxy (Traefik)?
+sudo ss -ltnp '( sport = :80 or sport = :443 )'   # which web server serves boldpunk.uz: nginx, caddy, or docker-proxy?
+docker ps --format '{{.Names}}\t{{.Ports}}'        # what already runs in Docker
 sudo ss -ltn | grep -E ':3100\b' || echo "port 3100 is free"
 docker compose version                           # Docker with the compose plugin
 free -h; df -h /                                 # building needs ~2 GB RAM and ~6 GB disk
@@ -54,7 +60,9 @@ free -h; df -h /                                 # building needs ~2 GB RAM and 
 - Port 3100 taken → pick another and set `FYNDUE_PORT` in step 4 (and in the nginx/Caddy config).
 - Less than ~2 GB free RAM → add swap for the build:
   `sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile`
-- If 80/443 belong to Traefik (Docker labels) rather than nginx/Caddy, stop here and share the output; the config differs.
+- If 80/443 belong to `docker-proxy` (boldpunk.uz's web server runs inside Docker, e.g. Traefik or a Caddy/nginx container), stop here and share the output; the config differs.
+- Ubuntu **Minimal** has no editor: `sudo apt-get install -y nano`.
+- No Docker yet → `curl -fsSL https://get.docker.com | sudo sh && sudo usermod -aG docker ubuntu`, then log out and in. (If boldpunk.uz already uses Docker, skip this.)
 
 ## 3. Get the code
 
@@ -85,12 +93,12 @@ for i in 1 2 3 4; do openssl rand -hex 32; done   # four secrets
 nano .env
 ```
 
-Fill in `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, `CRON_SECRET`, `TELEGRAM_WEBHOOK_SECRET` (one secret each), keep `APP_URL=https://fyndue.uz`, and set `ALLOW_REGISTRATION=true` **for now** (step 6 turns it off). Leave the Telegram lines empty until step 7 if you like.
+Keep `COMPOSE_PROFILES` **empty** (boldpunk.uz owns ports 80/443). Fill in `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, `CRON_SECRET`, `TELEGRAM_WEBHOOK_SECRET` (one secret each), keep `APP_URL=https://fyndue.uz`, and set `ALLOW_REGISTRATION=true` **for now** (step 6 turns it off). Leave the Telegram lines empty until step 7 if you like.
 
 ## 5. Start and publish
 
 ```bash
-docker compose up -d --build        # first build takes a few minutes
+docker compose up -d --build        # first build takes a few minutes (ARM64 is supported)
 docker compose ps                   # db healthy, migrate exited (0), web healthy, scheduler up
 curl -sI http://127.0.0.1:3100/login | head -1   # HTTP/1.1 200 OK
 ```
@@ -136,7 +144,7 @@ sudo crontab -e
 sudo /opt/fyndue/deploy/backup.sh      # try it once now
 ```
 
-Backups go to `/var/backups/fyndue` (14 days kept). That is the same disk, so also copy them off the server (Hetzner Storage Box, or download them now and then) or enable Hetzner's server backups.
+Backups go to `/var/backups/fyndue` (14 days kept). That is the same disk, so also copy them off the server: download them now and then, or use Oracle's free Object Storage (20 GB in the Always Free tier) or boot-volume backups.
 
 Restore (into an empty stack):
 

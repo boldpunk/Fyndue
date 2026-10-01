@@ -119,6 +119,7 @@ Phase 6 notes:
 ## Deployment ✅
 
 - ✅ `Dockerfile` + `docker-compose.yml` (own PostgreSQL, migrations before start, reminder scheduler, documents volume), published on `127.0.0.1` only for the server's reverse proxy.
+- ✅ Verified on x86-64 and ARM64 (Oracle Ampere). Optional bundled Caddy (`COMPOSE_PROFILES=proxy`) for a server with nothing else on 80/443.
 - ✅ nginx and Caddy configs for fyndue.uz, production env template, Telegram webhook script, nightly backup with a tested restore. See [deployment.md](deployment.md).
 
 ## Phase 7 — PWA & polish (next)

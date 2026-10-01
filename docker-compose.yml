@@ -1,7 +1,8 @@
 # Fyndue on a shared server (docs/deployment.md).
 #   docker compose up -d --build
-# Only the web app is published, and only on 127.0.0.1, for the server's
-# existing reverse proxy (nginx / Caddy) to forward fyndue.uz to.
+# The web app is published only on 127.0.0.1. HTTPS comes either from the
+# server's existing nginx / Caddy (shared server, the default) or, on a
+# server of its own, from the bundled Caddy (COMPOSE_PROFILES=proxy).
 name: fyndue
 
 x-app-env: &app-env
@@ -82,6 +83,29 @@ services:
       web:
         condition: service_healthy
 
+  # HTTPS on ports 80/443, ONLY for a server that runs nothing else there.
+  # Off unless COMPOSE_PROFILES=proxy; a server shared with other sites
+  # keeps it off and uses its existing nginx/Caddy.
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["proxy"]
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-fyndue.uz}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+
 volumes:
   db-data:
   documents:
+  caddy-data:
+  caddy-config:

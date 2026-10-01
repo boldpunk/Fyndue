@@ -1,0 +1,16 @@
+# Built-in HTTPS for a server that runs only Fyndue (docker compose profile
+# "proxy", docs/deployment.md, Oracle Cloud). Caddy obtains and renews the
+# Let's Encrypt certificate by itself once DNS points at the server.
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+	# Document uploads are up to 10 MB.
+	request_body {
+		max_size 12MB
+	}
+	reverse_proxy web:3000
+}
+
+www.{$APP_DOMAIN} {
+	redir https://{$APP_DOMAIN}{uri} permanent
+}
