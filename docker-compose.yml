@@ -6,7 +6,10 @@
 name: fyndue
 
 x-app-env: &app-env
-  DATABASE_URL: postgresql://fyndue:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/fyndue
+  # `fyndue-db`, not `db`: when `web` also joins another project's network
+  # (deploy/docker-compose.shared-caddy.yml), a plain `db` could resolve to
+  # that project's database.
+  DATABASE_URL: postgresql://fyndue:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@fyndue-db:5432/fyndue
   BETTER_AUTH_URL: ${APP_URL:?set APP_URL in .env}
   BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in .env}
   ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-false}
@@ -29,6 +32,9 @@ services:
       POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=C
     volumes:
       - db-data:/var/lib/postgresql/data
+    networks:
+      default:
+        aliases: [fyndue-db]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U fyndue -d fyndue"]
       interval: 5s
