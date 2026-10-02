@@ -140,7 +140,7 @@ export function CategoryManager({ categories }: { categories: CategoryDTO[] }) {
             <span className="flex-1 truncate text-sm font-medium">{category.name}</span>
             {category.isSystem ? (
               <Badge>
-                <Lock /> System
+                <Lock /> Системная
               </Badge>
             ) : null}
             <div className="flex items-center">

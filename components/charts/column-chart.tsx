@@ -157,7 +157,7 @@ export function ColumnChart({
 
   const activeCat = active !== null ? categories[active] : null;
   // Tooltip sits beside the hovered column (never on top of the marks it describes).
-  const TOOLTIP_W = 216;
+  const TOOLTIP_W = 264;
   const bandLeft = active !== null ? MARGIN.left + band * active : 0;
   const tooltipLeft =
     bandLeft + band + 8 + TOOLTIP_W <= width ? bandLeft + band + 8 : Math.max(0, bandLeft - 8 - TOOLTIP_W);
@@ -271,7 +271,7 @@ export function ColumnChart({
                 const color = signedColors ? (Number(value) >= 0 ? signedColors.positive : signedColors.negative) : s.color;
                 return (
                   <span key={s.key} className="flex items-center justify-between gap-3">
-                    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-muted-foreground">
                       <span aria-hidden className="h-0.5 w-3 rounded-full" style={{ background: color }} />
                       {s.label}
                     </span>

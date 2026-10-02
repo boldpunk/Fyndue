@@ -131,7 +131,8 @@ export function formatLocalDate(
   locale = APP_LOCALE,
   options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" },
 ): string {
-  return new Intl.DateTimeFormat(locale, { ...options, timeZone: "UTC" }).format(localDateToDb(value));
+  // ru-RU appends " г." to dates with a year ("22 нояб. 2026 г."); the bare year reads cleaner.
+  return new Intl.DateTimeFormat(locale, { ...options, timeZone: "UTC" }).format(localDateToDb(value)).replace(/\s?г\.$/, "");
 }
 
 /** "Октябрь 2026" (standalone month name, no "г." suffix). */

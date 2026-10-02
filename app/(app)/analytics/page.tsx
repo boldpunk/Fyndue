@@ -104,7 +104,7 @@ export default async function AnalyticsPage({
           {cur !== user.baseCurrency ? <input type="hidden" name="currency" value={cur} /> : null}
           {tab !== "overview" ? <input type="hidden" name="tab" value={tab} /> : null}
           <Input type="date" name="from" defaultValue={range.from} aria-label="С" className="h-8 w-auto px-2 text-xs md:text-xs" />
-          <span className="text-xs text-muted-foreground">to</span>
+          <span className="text-xs text-muted-foreground">—</span>
           <Input type="date" name="to" defaultValue={range.to} aria-label="По" className="h-8 w-auto px-2 text-xs md:text-xs" />
           <Button type="submit" size="sm" variant={preset === "custom" ? "default" : "outline"}>
             Применить

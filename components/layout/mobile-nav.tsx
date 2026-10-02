@@ -58,7 +58,7 @@ export function MobileNav({ user }: { user: { name: string; email: string } }) {
             className={cn("flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium", moreActive ? "text-primary" : "text-muted-foreground")}
           >
             <Menu className="size-5" aria-hidden />
-            More
+            Ещё
           </button>
         </div>
       </nav>
@@ -66,7 +66,7 @@ export function MobileNav({ user }: { user: { name: string; email: string } }) {
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
         <SheetContent side="bottom">
           <SheetHeader>
-            <SheetTitle>More</SheetTitle>
+            <SheetTitle>Ещё</SheetTitle>
             <SheetDescription className="sr-only">Другие разделы Fyndue</SheetDescription>
           </SheetHeader>
           <div className="grid grid-cols-3 gap-2">

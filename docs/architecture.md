@@ -150,6 +150,10 @@ Access control is enforced in three places: `proxy.ts` (Next 16 middleware) does
 
 Actions return a discriminated union `{ ok: true, data } | { ok: false, error, fieldErrors? }`. Errors are sanitised: domain errors (`DomainError`) carry a user-safe message; anything else is logged server-side and surfaced as a generic message.
 
+## 5a. Language
+
+The interface is Russian. Strings live in the components and services that show them; number and date formatting goes through `lib/finance/money.ts` / `dates.ts`, whose default locale is `APP_LOCALE` (`ru-RU`). Plurals use `pluralRu` (`lib/finance/recurrence.ts`), validation messages a Russian zod error map.
+
 ## 6. Money, currency, time
 
 - **Storage:** `NUMERIC(20,2)` for amounts (UZS, USD, EUR, RUB all use 2 minor digits), `NUMERIC(9,6)` for annual rates in percent, `NUMERIC(20,8)` for manual FX rates.

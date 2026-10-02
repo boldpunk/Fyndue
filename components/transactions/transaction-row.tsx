@@ -67,8 +67,8 @@ export function TransactionRow({
           tone={t.status === "EXPECTED" ? "muted" : sign === "+" ? "positive" : "neutral"}
           className={cn("text-sm font-medium", t.isVoided && "line-through")}
         />
-        {t.status === "EXPECTED" ? <Badge tone="info">Expected</Badge> : null}
-        {t.isVoided ? <Badge>Voided</Badge> : null}
+        {t.status === "EXPECTED" ? <Badge tone="info">Ожидается</Badge> : null}
+        {t.isVoided ? <Badge>Аннулирована</Badge> : null}
       </div>
     </Link>
   );

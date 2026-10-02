@@ -122,6 +122,14 @@ Phase 6 notes:
 - ✅ Verified on x86-64 and ARM64 (Oracle Ampere). Optional bundled Caddy (`COMPOSE_PROFILES=proxy`) for a server with nothing else on 80/443.
 - ✅ nginx and Caddy configs for fyndue.uz, production env template, Telegram webhook script, nightly backup with a tested restore. See [deployment.md](deployment.md).
 
+## Russian interface & clearer dashboard ✅
+
+- The whole interface, server messages, validation and the Telegram bot are in Russian. Numbers and dates use ru-RU formatting (`APP_LOCALE` in `lib/constants/locale.ts`): `3 500 000 UZS`, `30,56%`, `15 октября`, with Russian plurals (`pluralRu`).
+- zod's built-in messages go through a Russian error map (`lib/validations/zod-ru.ts`).
+- Default categories are Russian. A data migration renames the untouched English defaults of existing accounts.
+- The dashboard leads with the four SPEC §2 answers (how much money I have, how much I owe, the next payment, safe to spend) and shows a "С чего начать" checklist until the account is set up.
+- Adding another language later means extracting these strings into dictionaries; the formatting layer already takes a locale.
+
 ## Phase 7 — PWA & polish (next)
 
 Manifest, icons, standalone mode, safe areas, command palette (⌘K), onboarding flow, skeletons/empty/error states audit, accessibility audit, performance (lazy charts, pagination review), rate limiting on actions, email verification & password reset, Playwright E2E for critical flows.

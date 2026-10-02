@@ -55,7 +55,7 @@ function Overview({ debt }: { debt: DebtDetailDTO }) {
   const feeLabel = debt.knownTotalRepayment ? "Проценты и комиссии (без разбивки)" : "Комиссии";
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card className="grid gap-4 p-5">
+      <Card className="grid content-start gap-4 p-5">
         <h2 className="text-sm font-medium text-muted-foreground">Основной долг</h2>
         <dl className="grid grid-cols-2 gap-4">
           <Stat label="Сумма долга">{m(debt.originalPrincipal)}</Stat>
@@ -69,7 +69,7 @@ function Overview({ debt }: { debt: DebtDetailDTO }) {
         </dl>
       </Card>
 
-      <Card className="grid gap-4 p-5">
+      <Card className="grid content-start gap-4 p-5">
         <h2 className="text-sm font-medium text-muted-foreground">Что впереди</h2>
         <dl className="grid grid-cols-2 gap-4">
           <Stat label="Платежей сделано">{debt.paymentsCompleted}</Stat>
@@ -93,7 +93,7 @@ function Overview({ debt }: { debt: DebtDetailDTO }) {
         </dl>
       </Card>
 
-      <Card className="grid gap-4 p-5">
+      <Card className="grid content-start gap-4 p-5">
         <h2 className="text-sm font-medium text-muted-foreground">Во что этот долг уже обошёлся</h2>
         <dl className="grid grid-cols-2 gap-4">
           <Stat label="Уплачено процентов">{m(debt.cost.interestPaid)}</Stat>
@@ -108,7 +108,7 @@ function Overview({ debt }: { debt: DebtDetailDTO }) {
         </dl>
       </Card>
 
-      <Card className="grid gap-4 p-5">
+      <Card className="grid content-start gap-4 p-5">
         <h2 className="text-sm font-medium text-muted-foreground">Условия</h2>
         <dl className="grid grid-cols-2 gap-4">
           <Stat label="Схема погашения">{REPAYMENT_TYPE_LABELS[debt.repaymentType]}</Stat>
@@ -220,7 +220,7 @@ export default async function DebtPage({
   return (
     <div className="grid gap-6">
       <Link href="/debts" className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" /> Debts
+        <ArrowLeft className="size-4" /> Долги
       </Link>
 
       <header className="grid gap-5">
