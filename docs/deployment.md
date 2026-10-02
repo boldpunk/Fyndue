@@ -138,6 +138,8 @@ sudo certbot --nginx -d fyndue.uz -d www.fyndue.uz    # HTTPS certificate + redi
    docker exec dcau-hub-caddy-1 caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
    ```
 
+**If `caddy reload` says `config is unchanged`:** the container is still reading an older copy of the bind-mounted file (the host file was replaced after the container started). Compare first: `docker exec dcau-hub-caddy-1 cat /etc/caddy/Caddyfile | diff - /opt/dcau-hub/Caddyfile`. On the Oracle VM the host file had been reset to the project's template (`your-domain.com`) while Caddy still ran the real `boldpunk.uz` config, so applying the host file would have taken boldpunk.uz offline. Build the new file from the **running** config instead (`docker exec … cat /etc/caddy/Caddyfile` + the Fyndue block), reload it from a copy inside the container (`/tmp/Caddyfile`), then write it back to the host file so a container restart keeps both sites.
+
 Note: while Fyndue is attached, `docker compose down` in the other project prints "network … still in use" and keeps the network. That is harmless; its sites come back on `up` as usual, and Fyndue keeps working.
 
 **Caddy (installed on the host):** append `deploy/Caddyfile.fyndue` to the Caddyfile (usually `/etc/caddy/Caddyfile`), then `sudo systemctl reload caddy`. Caddy obtains the certificate itself.
