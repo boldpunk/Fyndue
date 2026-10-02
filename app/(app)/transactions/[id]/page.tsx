@@ -67,7 +67,7 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
             </div>
           </div>
           <dl className="divide-y">
-            <Row label="Date">{formatLocalDate(t.date, "en-US", { weekday: "short", day: "numeric", month: "long", year: "numeric" })}</Row>
+            <Row label="Date">{formatLocalDate(t.date, undefined, { weekday: "short", day: "numeric", month: "long", year: "numeric" })}</Row>
             <Row label={t.type === "TRANSFER" ? "From" : "Account"}>
               <Link href={`/accounts/${t.account.id}`} className="hover:underline">{t.account.name}</Link>
             </Row>

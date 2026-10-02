@@ -35,8 +35,8 @@ function toCategoryDTO(c: Category): CategoryDTO {
 }
 
 const duplicateName = () =>
-  new DomainError("A category with this name already exists.", "DUPLICATE", {
-    name: "A category with this name already exists",
+  new DomainError("Категория с таким названием уже есть.", "DUPLICATE", {
+    name: "Такое название уже есть",
   });
 
 export async function listCategories(
@@ -116,7 +116,7 @@ export async function setCategoryArchived(userId: string, id: string, archived: 
     const category = await tx.category.findFirst({ where: { id, userId } });
     if (!category) throw new NotFoundError("Category");
     if (category.isSystem && archived) {
-      throw new DomainError(`"${category.name}" is used by Fyndue and can't be archived.`, "SYSTEM_CATEGORY");
+      throw new DomainError(`«${category.name}» используется приложением, её нельзя архивировать.`, "SYSTEM_CATEGORY");
     }
     await tx.category.update({ where: { id: category.id }, data: { isArchived: archived } });
     await writeAudit(tx, {

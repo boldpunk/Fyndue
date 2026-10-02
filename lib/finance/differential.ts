@@ -19,9 +19,9 @@ export function generateDifferentialSchedule(terms: DifferentialTerms): Schedule
   const part = terms.principalPerPeriod !== undefined
     ? roundMoney(terms.principalPerPeriod, scale)
     : roundMoney(principal.div(terms.count), scale);
-  if (part.lte(0)) throw new RangeError("Principal per period must be positive");
+  if (part.lte(0)) throw new RangeError("Основной долг за период должен быть больше нуля");
   const count = terms.count ?? Math.ceil(principal.div(part).toNumber());
-  if (count < 1 || count > MAX_LINES) throw new RangeError(`A schedule needs between 1 and ${MAX_LINES} payments`);
+  if (count < 1 || count > MAX_LINES) throw new RangeError(`В графике должно быть от 1 до ${MAX_LINES} платежей`);
 
   const lines: ScheduleLine[] = [];
   let opening = principal;

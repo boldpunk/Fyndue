@@ -14,10 +14,23 @@ export class DomainError extends Error {
   }
 }
 
+const NOT_FOUND: Record<string, string> = {
+  Account: "Счёт не найден.",
+  Budget: "Бюджет не найден.",
+  Category: "Категория не найдена.",
+  Debt: "Долг не найден.",
+  Document: "Документ не найден.",
+  "Exchange rate": "Курс не найден.",
+  Installment: "Платёж по графику не найден.",
+  Payment: "Платёж не найден.",
+  "Recurring item": "Регулярный платёж не найден.",
+  Transaction: "Операция не найдена.",
+};
+
 /** Also used for resources owned by another user — never reveal existence. */
 export class NotFoundError extends DomainError {
   constructor(entity = "Resource") {
-    super(`${entity} not found.`, "NOT_FOUND");
+    super(NOT_FOUND[entity] ?? "Не найдено.", "NOT_FOUND");
     this.name = "NotFoundError";
   }
 }

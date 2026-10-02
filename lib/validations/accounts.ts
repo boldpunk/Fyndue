@@ -3,7 +3,7 @@ import { ACCOUNT_TYPES } from "@/lib/constants/finance";
 import { colorSchema, currencySchema, idSchema, localDateSchema, moneySchema, optionalText } from "./common";
 
 const accountFields = {
-  name: z.string().trim().min(1, "Name is required").max(60),
+  name: z.string().trim().min(1, "Введите название").max(60),
   type: z.enum(ACCOUNT_TYPES),
   includeInTotal: z.boolean(),
   bank: optionalText(60),

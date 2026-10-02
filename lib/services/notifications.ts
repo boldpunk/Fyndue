@@ -153,7 +153,7 @@ async function openItemsFor(userId: string, today: string): Promise<PlannerItem[
 function failureReason(error: unknown): string {
   // TelegramApiError messages never contain the token; anything else is reduced to its type.
   if (error instanceof TelegramApiError) return error.message.slice(0, 300);
-  return error instanceof Error ? `Unexpected error: ${error.name}` : "Unexpected error";
+  return error instanceof Error ? `Непредвиденная ошибка: ${error.name}` : "Непредвиденная ошибка";
 }
 
 export type RunSummary = { users: number; sent: number; failed: number; deferred: number; cancelled: number };
@@ -242,18 +242,18 @@ export async function runReminders({ sender, now = new Date(), sleep = realSleep
 export async function sendTestNotification(userId: string, sender: TelegramSender, now: Date = new Date()): Promise<void> {
   const connection = await prisma.telegramConnection.findUnique({ where: { userId } });
   if (!connection || connection.status !== "CONNECTED" || !connection.telegramChatId) {
-    throw new DomainError("Connect Telegram first.");
+    throw new DomainError("Сначала подключите Telegram.");
   }
   const key = `test:${userId}:${Math.floor(now.getTime() / 60_000)}:tg`;
   const { count } = await prisma.notificationLog.createMany({
     data: [{ userId, type: "TEST", channel: "TELEGRAM", deduplicationKey: key, scheduledAt: now, createdAt: now, updatedAt: now }],
     skipDuplicates: true,
   });
-  if (count !== 1) throw new DomainError("A test message was just sent. Try again in a minute.");
+  if (count !== 1) throw new DomainError("Тестовое сообщение только что отправлено. Попробуйте через минуту.");
   try {
     const { messageId } = await sender.sendMessage(
       connection.telegramChatId,
-      "✅ <b>Fyndue is connected</b>\n\nPayment reminders will arrive in this chat. Send /help to see what I can do.",
+      "✅ <b>Fyndue подключён</b>\n\nНапоминания о платежах будут приходить в этот чат. Отправьте /help, чтобы узнать, что я умею.",
     );
     await prisma.notificationLog.update({
       where: { deduplicationKey: key },
@@ -266,9 +266,9 @@ export async function sendTestNotification(userId: string, sender: TelegramSende
     });
     if (error instanceof TelegramApiError && error.isBlocked) {
       await disconnectChat(connection.telegramChatId);
-      throw new DomainError("Telegram says the bot is blocked. Unblock it and connect again.");
+      throw new DomainError("Бот заблокирован в Telegram. Разблокируйте его и подключите снова.");
     }
-    throw new DomainError("Telegram did not accept the message. Try again later.");
+    throw new DomainError("Telegram не принял сообщение. Попробуйте позже.");
   }
 }
 

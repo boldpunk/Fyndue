@@ -20,9 +20,9 @@ export function generateInstallmentSchedule(terms: InstallmentTerms): ScheduleLi
   const principal = money(terms.principal);
   if (principal.isZero()) return [];
   const part = terms.fixedAmount !== undefined ? roundMoney(terms.fixedAmount, scale) : roundMoney(principal.div(terms.count), scale);
-  if (part.lte(0)) throw new RangeError("Installment amount must be positive");
+  if (part.lte(0)) throw new RangeError("Сумма платежа должна быть больше нуля");
   const count = terms.count ?? Math.ceil(principal.div(part).toNumber());
-  if (count < 1 || count > MAX_LINES) throw new RangeError(`A schedule needs between 1 and ${MAX_LINES} payments`);
+  if (count < 1 || count > MAX_LINES) throw new RangeError(`В графике должно быть от 1 до ${MAX_LINES} платежей`);
 
   const lines: ScheduleLine[] = [];
   let opening = principal;
@@ -51,7 +51,7 @@ export type ManualLineInput = {
 
 function assertOrdered(dates: LocalDate[]) {
   for (let i = 1; i < dates.length; i++) {
-    if (daysBetween(dates[i - 1]!, dates[i]!) <= 0) throw new RangeError("Due dates must be in order, one line per date");
+    if (daysBetween(dates[i - 1]!, dates[i]!) <= 0) throw new RangeError("Даты платежей должны идти по порядку, по одной строке на дату");
   }
 }
 
@@ -60,12 +60,12 @@ function assertOrdered(dates: LocalDate[]) {
  * taken as given; only structure is checked.
  */
 export function manualSchedule(inputs: ManualLineInput[], expectedPrincipal: MoneyLike, firstInstallmentNumber = 1): ScheduleLine[] {
-  if (inputs.length === 0) throw new RangeError("Add at least one payment");
-  if (inputs.length > MAX_LINES) throw new RangeError(`At most ${MAX_LINES} payments`);
+  if (inputs.length === 0) throw new RangeError("Добавьте хотя бы один платёж");
+  if (inputs.length > MAX_LINES) throw new RangeError(`Не больше ${MAX_LINES} платежей`);
   assertOrdered(inputs.map((l) => l.dueDate));
   const total = sumMoney(inputs.map((l) => l.principal));
   if (!total.equals(money(expectedPrincipal))) {
-    throw new RangeError(`Principal in the lines (${total.toFixed(2)}) must add up to ${money(expectedPrincipal).toFixed(2)}`);
+    throw new RangeError(`Основной долг в строках (${total.toFixed(2)}) должен давать в сумме ${money(expectedPrincipal).toFixed(2)}`);
   }
   return rechain(
     inputs.map((l, i) => ({
@@ -91,11 +91,11 @@ export function knownTotalSchedule(
   roundingScale = 2,
   firstInstallmentNumber = 1,
 ): ScheduleLine[] {
-  if (inputs.length === 0) throw new RangeError("Add at least one payment");
+  if (inputs.length === 0) throw new RangeError("Добавьте хотя бы один платёж");
   assertOrdered(inputs.map((l) => l.dueDate));
   const p = money(principal);
   const grandTotal = sumMoney(inputs.map((l) => l.total));
-  if (grandTotal.lessThan(p)) throw new RangeError("The total repayment is less than the principal");
+  if (grandTotal.lessThan(p)) throw new RangeError("Общая сумма выплат меньше суммы долга");
 
   let allocated = ZERO;
   let opening = p;

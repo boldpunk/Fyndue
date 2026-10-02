@@ -16,14 +16,14 @@ export const documentUploadSchema = z.object({
   debtId: idSchema,
   debtPaymentId: optionalId,
   type: documentTypeSchema,
-  name: z.string().trim().max(MAX_NAME_LENGTH, `At most ${MAX_NAME_LENGTH} characters`).optional(),
+  name: z.string().trim().max(MAX_NAME_LENGTH, `Не больше ${MAX_NAME_LENGTH} символов`).optional(),
 });
 export type DocumentUploadInput = z.output<typeof documentUploadSchema>;
 
 export const documentUpdateSchema = z.object({
   id: idSchema,
   type: documentTypeSchema,
-  name: z.string().trim().min(1, "Name is required").max(MAX_NAME_LENGTH, `At most ${MAX_NAME_LENGTH} characters`),
+  name: z.string().trim().min(1, "Введите название").max(MAX_NAME_LENGTH, `Не больше ${MAX_NAME_LENGTH} символов`),
   debtPaymentId: optionalId,
 });
 export type DocumentUpdateInput = z.output<typeof documentUpdateSchema>;

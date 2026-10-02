@@ -183,7 +183,7 @@ describe("annuity loan (SPEC §18)", () => {
   it("rejects a payment that does not cover interest", () => {
     expect(() =>
       generateAnnuitySchedule({ principal: "10000", annualRatePercent: "24", fixedPayment: "100", periodStart: "2026-01-01", firstDueDate: "2026-02-01" }),
-    ).toThrow(/interest/);
+    ).toThrow(/проценты/);
   });
 });
 
@@ -218,7 +218,7 @@ describe("interest-free installment (SPEC §19)", () => {
   });
 
   it("rejects manual lines that do not add up", () => {
-    expect(() => manualSchedule([{ dueDate: "2026-11-01", principal: "10" }], "11")).toThrow(/add up/);
+    expect(() => manualSchedule([{ dueDate: "2026-11-01", principal: "10" }], "11")).toThrow(/должен давать в сумме/);
     expect(() =>
       manualSchedule(
         [
@@ -227,7 +227,7 @@ describe("interest-free installment (SPEC §19)", () => {
         ],
         "10",
       ),
-    ).toThrow(/order/);
+    ).toThrow(/по порядку/);
   });
 });
 
@@ -272,7 +272,7 @@ describe("microloan fees (SPEC §19A)", () => {
     ]);
     expect(col(lines, "principal")).toEqual(["500.00", "500.00"]);
     expect(col(lines, "fees")).toEqual(["100.00", "100.00"]);
-    expect(() => knownTotalSchedule("1000", [{ dueDate: "2026-11-01", total: "900" }])).toThrow(/less than/);
+    expect(() => knownTotalSchedule("1000", [{ dueDate: "2026-11-01", total: "900" }])).toThrow(/меньше суммы долга/);
   });
 });
 

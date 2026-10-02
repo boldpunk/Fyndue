@@ -15,10 +15,10 @@ describe("categories", () => {
     const user = await createUser();
     const expense = await listCategories(user.id, { type: "EXPENSE" });
     const income = await listCategories(user.id, { type: "INCOME" });
-    expect(expense.map((c) => c.name)).toContain("Fuel");
+    expect(expense.map((c) => c.name)).toContain("Топливо");
     expect(expense).toHaveLength(18);
-    expect(income.map((c) => c.name)).toEqual(["Salary", "Freelance", "Bonus", "Cash", "Refund", "Other"]);
-    expect(expense.find((c) => c.name === "Debt Payments")?.isSystem).toBe(true);
+    expect(income.map((c) => c.name)).toEqual(["Зарплата", "Фриланс", "Премия", "Наличные", "Возврат", "Другое"]);
+    expect(expense.find((c) => c.name === "Платежи по долгам")?.isSystem).toBe(true);
   });
 
   it("creates, renames, reorders and archives", async () => {
@@ -26,8 +26,8 @@ describe("categories", () => {
     const pets = await createCategory(user.id, { name: "Pets", type: "EXPENSE", icon: "paw-print", color: "amber" });
     expect(pets.sortOrder).toBe(18);
 
-    await expect(createCategory(user.id, { name: "Pets", type: "EXPENSE", icon: "paw-print" })).rejects.toThrow(/already exists/);
-    await expect(updateCategory(user.id, { id: pets.id, name: "Fuel", icon: "fuel" })).rejects.toThrow(/already exists/);
+    await expect(createCategory(user.id, { name: "Pets", type: "EXPENSE", icon: "paw-print" })).rejects.toThrow(/уже есть/);
+    await expect(updateCategory(user.id, { id: pets.id, name: "Топливо", icon: "fuel" })).rejects.toThrow(/уже есть/);
 
     const renamed = await updateCategory(user.id, { id: pets.id, name: "Pet care", icon: "paw-print" });
     expect(renamed.name).toBe("Pet care");
@@ -45,6 +45,6 @@ describe("categories", () => {
   it("protects system categories from archiving", async () => {
     const user = await createUser();
     const debt = (await listCategories(user.id, { type: "EXPENSE" })).find((c) => c.isSystem)!;
-    await expect(setCategoryArchived(user.id, debt.id, true)).rejects.toThrow(/can't be archived/);
+    await expect(setCategoryArchived(user.id, debt.id, true)).rejects.toThrow(/нельзя архивировать/);
   });
 });

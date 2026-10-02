@@ -99,7 +99,7 @@ export function TelegramConnect({ connection, bot }: { connection: TelegramConne
           </Badge>
           <span className="text-muted-foreground">
             {connection.username ? `@${connection.username}` : "Telegram chat"}
-            {connection.connectedAt ? ` · since ${new Date(connection.connectedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` : ""}
+            {connection.connectedAt ? ` · since ${new Date(connection.connectedAt).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" })}` : ""}
           </span>
         </div>
         <div className="flex flex-wrap gap-2">

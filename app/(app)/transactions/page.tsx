@@ -80,7 +80,7 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
           {groupByDate(result.items).map(([date, items]) => (
             <section key={date} aria-label={date} className="grid gap-1">
               <h2 className="px-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                {date === today ? "Today" : formatLocalDate(date, "en-US", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                {date === today ? "Today" : formatLocalDate(date, undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
               </h2>
               <Card className="grid gap-0.5 p-1.5">
                 {items.map((t) => (

@@ -29,7 +29,7 @@ export function resolveFeeStructure(input: {
 }): FeeStructure {
   const principal = money(input.contractPrincipal);
   const fee = money(input.fee ?? 0);
-  if (fee.isNegative()) throw new RangeError("Fee cannot be negative");
+  if (fee.isNegative()) throw new RangeError("Комиссия не может быть отрицательной");
   const base = { contractPrincipal: principal, principalBasis: principal, netReceived: principal, scheduledFee: ZERO, withheldFee: ZERO };
   let result: Omit<FeeStructure, "totalRepayment">;
   switch (input.feeMode) {
@@ -40,7 +40,7 @@ export function resolveFeeStructure(input: {
       result = { ...base, scheduledFee: fee };
       break;
     case "DEDUCTED_FROM_DISBURSEMENT":
-      if (fee.greaterThanOrEqualTo(principal)) throw new RangeError("The fee cannot exceed the principal");
+      if (fee.greaterThanOrEqualTo(principal)) throw new RangeError("Комиссия не может быть больше суммы долга");
       result = { ...base, netReceived: principal.minus(fee), withheldFee: fee };
       break;
     case "FINANCED_INTO_DEBT":

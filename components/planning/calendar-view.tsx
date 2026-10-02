@@ -172,7 +172,7 @@ export function CalendarView({
                   key={date}
                   type="button"
                   onClick={() => setSelected(date)}
-                  aria-label={`${formatLocalDate(date, "en-US", { weekday: "long", day: "numeric", month: "long" })}, ${dayEvents.length} event${dayEvents.length === 1 ? "" : "s"}`}
+                  aria-label={`${formatLocalDate(date, undefined, { weekday: "long", day: "numeric", month: "long" })}, ${dayEvents.length} event${dayEvents.length === 1 ? "" : "s"}`}
                   className={cn(
                     "flex min-h-16 flex-col items-stretch gap-1 border-r border-b p-1.5 text-left transition-colors hover:bg-muted/60 lg:min-h-28",
                     !inMonth && "bg-muted/30 text-muted-foreground",
@@ -219,7 +219,7 @@ export function CalendarView({
               <section key={date} aria-label={date} className="grid gap-1">
                 <h2 className={cn("px-1 text-xs font-medium tracking-wide uppercase", date === today ? "text-primary" : date < today ? "text-muted-foreground" : "text-foreground")}>
                   {date === today ? "Today · " : ""}
-                  {formatLocalDate(date, "en-US", { weekday: "short", day: "numeric", month: "short" })}
+                  {formatLocalDate(date, undefined, { weekday: "short", day: "numeric", month: "short" })}
                 </h2>
                 <Card className="divide-y px-4">
                   {byDate.get(date)!.map((e) => (
@@ -245,7 +245,7 @@ export function CalendarView({
       <Sheet open={selected !== null} onOpenChange={(o) => !o && setSelected(null)}>
         <SheetContent side={desktop ? "right" : "bottom"}>
           <SheetHeader>
-            <SheetTitle>{selected ? formatLocalDate(selected, "en-US", { weekday: "long", day: "numeric", month: "long" }) : ""}</SheetTitle>
+            <SheetTitle>{selected ? formatLocalDate(selected, undefined, { weekday: "long", day: "numeric", month: "long" }) : ""}</SheetTitle>
             <SheetDescription>{selectedEvents.length ? `${selectedEvents.length} planned item${selectedEvents.length === 1 ? "" : "s"}` : "Nothing planned on this day."}</SheetDescription>
           </SheetHeader>
           <div className="divide-y">

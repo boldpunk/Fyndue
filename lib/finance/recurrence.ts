@@ -56,15 +56,28 @@ export function nextOccurrence(rule: RecurrenceRule, date: LocalDate): LocalDate
   return null;
 }
 
-export const FREQUENCY_LABELS: Record<RecurrenceFrequency, [string, string]> = {
-  WEEKLY: ["week", "weeks"],
-  MONTHLY: ["month", "months"],
-  YEARLY: ["year", "years"],
+/** Russian plural forms: [1, 2–4, 5+] (неделя, недели, недель). */
+export function pluralRu(n: number, forms: [string, string, string]): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return forms[0];
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return forms[1];
+  return forms[2];
+}
+
+const EVERY: Record<RecurrenceFrequency, { one: string; forms: [string, string, string]; prefix: [string, string] }> = {
+  WEEKLY: { one: "Каждую неделю", forms: ["неделю", "недели", "недель"], prefix: ["Каждую", "Каждые"] },
+  MONTHLY: { one: "Каждый месяц", forms: ["месяц", "месяца", "месяцев"], prefix: ["Каждый", "Каждые"] },
+  YEARLY: { one: "Каждый год", forms: ["год", "года", "лет"], prefix: ["Каждый", "Каждые"] },
 };
 
+/** "Каждый месяц", "Каждые 2 недели", "Каждые 5 лет", "Каждый 21 месяц". */
 export function describeRule(rule: Pick<RecurrenceRule, "frequency" | "interval">): string {
-  const [one, many] = FREQUENCY_LABELS[rule.frequency];
-  return rule.interval === 1 ? `Every ${one}` : `Every ${rule.interval} ${many}`;
+  const e = EVERY[rule.frequency];
+  if (rule.interval === 1) return e.one;
+  const n = rule.interval;
+  const singular = n % 10 === 1 && n % 100 !== 11;
+  return `${singular ? e.prefix[0] : e.prefix[1]} ${n} ${pluralRu(n, e.forms)}`;
 }
 
 /** Average cost per month (weekly × 52 / 12, yearly / 12), unrounded except for display. */

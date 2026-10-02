@@ -25,10 +25,10 @@ describe("user data isolation", () => {
     const alice = await createUser("Alice");
     const bob = await createUser("Bob");
     const bobCard = await createTestAccount(bob.id, { name: "Bob card", openingBalance: "1000" });
-    const bobFuel = await categoryId(bob.id, "Fuel");
+    const bobFuel = await categoryId(bob.id, "Топливо");
     const bobTx = await createTransaction(bob.id, { kind: "EXPENSE", accountId: bobCard.id, categoryId: bobFuel, amount: "100", date: "2026-09-10", clientRequestId: requestId() });
     const aliceCard = await createTestAccount(alice.id, { name: "Alice card", openingBalance: "1000" });
-    const aliceFuel = await categoryId(alice.id, "Fuel");
+    const aliceFuel = await categoryId(alice.id, "Топливо");
     return { alice, bob, bobCard, bobFuel, bobTx, aliceCard, aliceFuel };
   }
 
@@ -70,6 +70,6 @@ describe("user data isolation", () => {
     await expect(setCategoryArchived(alice.id, bobFuel, true)).rejects.toThrow(NotFoundError);
     await expect(reorderCategories(alice.id, { type: "EXPENSE", orderedIds: [bobFuel] })).rejects.toThrow(NotFoundError);
     const bobCategories = await listCategories(bob.id, { type: "EXPENSE" });
-    expect(bobCategories.find((c) => c.id === bobFuel)?.name).toBe("Fuel");
+    expect(bobCategories.find((c) => c.id === bobFuel)?.name).toBe("Топливо");
   });
 });

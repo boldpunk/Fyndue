@@ -23,8 +23,8 @@ describe("transactions & account balances", () => {
   it("records expenses and income and keeps the balance exact", async () => {
     const user = await createUser();
     const card = await createTestAccount(user.id, { openingBalance: "1000000.00" });
-    const fuel = await categoryId(user.id, "Fuel");
-    const salary = await categoryId(user.id, "Salary", "INCOME");
+    const fuel = await categoryId(user.id, "Топливо");
+    const salary = await categoryId(user.id, "Зарплата", "INCOME");
 
     await createTransaction(user.id, { kind: "INCOME", accountId: card.id, categoryId: salary, amount: "49986962.63", date: "2026-09-01", status: "ACTUAL", clientRequestId: requestId() });
     await createTransaction(user.id, { kind: "EXPENSE", accountId: card.id, categoryId: fuel, amount: "350000.00", date: "2026-09-02", clientRequestId: requestId() });
@@ -39,7 +39,7 @@ describe("transactions & account balances", () => {
   it("is idempotent per clientRequestId (double submit)", async () => {
     const user = await createUser();
     const card = await createTestAccount(user.id);
-    const fuel = await categoryId(user.id, "Fuel");
+    const fuel = await categoryId(user.id, "Топливо");
     const input = { kind: "EXPENSE" as const, accountId: card.id, categoryId: fuel, amount: "100.00", date: "2026-09-02", clientRequestId: requestId() };
 
     const results = await Promise.allSettled([createTransaction(user.id, input), createTransaction(user.id, input)]);
@@ -53,7 +53,7 @@ describe("transactions & account balances", () => {
   it("expected income does not count until confirmed", async () => {
     const user = await createUser();
     const card = await createTestAccount(user.id);
-    const salary = await categoryId(user.id, "Salary", "INCOME");
+    const salary = await categoryId(user.id, "Зарплата", "INCOME");
     const { id } = await createTransaction(user.id, { kind: "INCOME", accountId: card.id, categoryId: salary, amount: "8000000", date: "2026-09-25", status: "EXPECTED", clientRequestId: requestId() });
 
     expect(await balanceOf(card.id)).toBe("0.00");
@@ -111,7 +111,7 @@ describe("transactions & account balances", () => {
     expect(await balanceOf(card.id)).toBe("500.00");
     expect(await balanceOf(cash.id)).toBe("0.00");
     expect(await prisma.transaction.count({ where: { userId: user.id, voidedAt: { not: null } } })).toBe(2);
-    await expect(voidTransaction(user.id, id)).rejects.toThrow(/already voided/);
+    await expect(voidTransaction(user.id, id)).rejects.toThrow(/уже аннулирована/);
     await expectBalanceConsistent(user.id, card.id);
     await expectBalanceConsistent(user.id, cash.id);
   });
@@ -120,7 +120,7 @@ describe("transactions & account balances", () => {
     const user = await createUser();
     const card = await createTestAccount(user.id, { openingBalance: "1000" });
     const visa = await createTestAccount(user.id, { name: "Visa", openingBalance: "1000" });
-    const taxi = await categoryId(user.id, "Taxi");
+    const taxi = await categoryId(user.id, "Такси");
     const { id } = await createTransaction(user.id, { kind: "EXPENSE", accountId: card.id, categoryId: taxi, amount: "100", date: "2026-09-10", clientRequestId: requestId() });
 
     await updateCashFlowTransaction(user.id, { id, accountId: visa.id, categoryId: taxi, amount: "150.50", date: "2026-09-11" });
@@ -156,20 +156,20 @@ describe("transactions & account balances", () => {
   it("rejects mismatched and system categories, archived accounts", async () => {
     const user = await createUser();
     const card = await createTestAccount(user.id);
-    const salary = await categoryId(user.id, "Salary", "INCOME");
-    const debt = await categoryId(user.id, "Debt Payments");
+    const salary = await categoryId(user.id, "Зарплата", "INCOME");
+    const debt = await categoryId(user.id, "Платежи по долгам");
     await expect(
       createTransaction(user.id, { kind: "EXPENSE", accountId: card.id, categoryId: salary, amount: "1", date: "2026-09-10", clientRequestId: requestId() }),
-    ).rejects.toThrow(/match/);
+    ).rejects.toThrow(/не подходит/);
     await expect(
       createTransaction(user.id, { kind: "EXPENSE", accountId: card.id, categoryId: debt, amount: "1", date: "2026-09-10", clientRequestId: requestId() }),
-    ).rejects.toThrow(/managed by Fyndue/);
+    ).rejects.toThrow(/управляет приложение/);
 
     await prisma.account.update({ where: { id: card.id }, data: { isArchived: true } });
-    const fuel = await categoryId(user.id, "Fuel");
+    const fuel = await categoryId(user.id, "Топливо");
     await expect(
       createTransaction(user.id, { kind: "EXPENSE", accountId: card.id, categoryId: fuel, amount: "1", date: "2026-09-10", clientRequestId: requestId() }),
-    ).rejects.toThrow(/archived/);
+    ).rejects.toThrow(/в архиве/);
   });
 
   it("database constraints reject impossible rows", async () => {
@@ -185,13 +185,13 @@ describe("transactions & account balances", () => {
   it("filters the list by month and search text", async () => {
     const user = await createUser();
     const card = await createTestAccount(user.id);
-    const groceries = await categoryId(user.id, "Groceries");
+    const groceries = await categoryId(user.id, "Продукты");
     await createTransaction(user.id, { kind: "EXPENSE", accountId: card.id, categoryId: groceries, amount: "10", date: "2026-08-31", merchant: "Korzinka", clientRequestId: requestId() });
     await createTransaction(user.id, { kind: "EXPENSE", accountId: card.id, categoryId: groceries, amount: "20", date: "2026-09-01", clientRequestId: requestId() });
 
     expect((await listTransactions(user.id, { page: 1, month: "2026-09" })).total).toBe(1);
     expect((await listTransactions(user.id, { page: 1, month: "2026-08" })).total).toBe(1);
     expect((await listTransactions(user.id, { page: 1, q: "korz" })).total).toBe(1);
-    expect((await listTransactions(user.id, { page: 1, q: "grocer" })).total).toBe(2);
+    expect((await listTransactions(user.id, { page: 1, q: "продук" })).total).toBe(2);
   });
 });

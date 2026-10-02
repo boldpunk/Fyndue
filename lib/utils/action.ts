@@ -24,13 +24,13 @@ export async function runAction<T>(fn: () => Promise<T>): Promise<ActionResult<T
   } catch (error) {
     unstable_rethrow(error);
     if (error instanceof ZodError) {
-      return { ok: false, error: "Please check the highlighted fields.", fieldErrors: zodFieldErrors(error) };
+      return { ok: false, error: "Проверьте выделенные поля.", fieldErrors: zodFieldErrors(error) };
     }
     if (error instanceof DomainError) {
       return { ok: false, error: error.message, fieldErrors: error.fieldErrors };
     }
     const reference = crypto.randomUUID().slice(0, 8);
     console.error(`[action-error ${reference}]`, error instanceof Error ? error.name : "UnknownError", error instanceof Error ? error.message.split("\n")[0] : "");
-    return { ok: false, error: `Something went wrong. Please try again (ref ${reference}).` };
+    return { ok: false, error: `Что-то пошло не так. Попробуйте ещё раз (код ${reference}).` };
   }
 }

@@ -60,36 +60,36 @@ export type DefaultCategory = {
   isSystem?: boolean;
 };
 
-/** SPEC §27. "Debt Payments" is a system category used by the debt engine. */
+/** SPEC §27. «Платежи по долгам» is a system category used by the debt engine (found by isSystem, not by name). */
 export const DEFAULT_EXPENSE_CATEGORIES: readonly DefaultCategory[] = [
-  { name: "Fuel", icon: "fuel", color: "orange" },
-  { name: "Taxi", icon: "car-taxi-front", color: "amber" },
-  { name: "Groceries", icon: "shopping-cart", color: "green" },
-  { name: "Restaurants", icon: "utensils", color: "red" },
-  { name: "Shopping", icon: "shopping-bag", color: "pink" },
-  { name: "Car", icon: "car", color: "slate" },
-  { name: "Home", icon: "house", color: "teal" },
-  { name: "Utilities", icon: "zap", color: "amber" },
-  { name: "Internet", icon: "wifi", color: "sky" },
-  { name: "Mobile", icon: "smartphone", color: "blue" },
-  { name: "Entertainment", icon: "clapperboard", color: "violet" },
-  { name: "Travel", icon: "plane", color: "sky" },
-  { name: "Health", icon: "heart-pulse", color: "red" },
-  { name: "Education", icon: "graduation-cap", color: "indigo" },
-  { name: "Subscriptions", icon: "repeat", color: "violet" },
-  { name: "Gifts", icon: "gift", color: "pink" },
-  { name: "Debt Payments", icon: "landmark", color: "indigo", isSystem: true },
-  { name: "Other", icon: "circle-dashed", color: "slate" },
+  { name: "Топливо", icon: "fuel", color: "orange" },
+  { name: "Такси", icon: "car-taxi-front", color: "amber" },
+  { name: "Продукты", icon: "shopping-cart", color: "green" },
+  { name: "Кафе и рестораны", icon: "utensils", color: "red" },
+  { name: "Покупки", icon: "shopping-bag", color: "pink" },
+  { name: "Автомобиль", icon: "car", color: "slate" },
+  { name: "Дом", icon: "house", color: "teal" },
+  { name: "Коммунальные услуги", icon: "zap", color: "amber" },
+  { name: "Интернет", icon: "wifi", color: "sky" },
+  { name: "Мобильная связь", icon: "smartphone", color: "blue" },
+  { name: "Развлечения", icon: "clapperboard", color: "violet" },
+  { name: "Путешествия", icon: "plane", color: "sky" },
+  { name: "Здоровье", icon: "heart-pulse", color: "red" },
+  { name: "Образование", icon: "graduation-cap", color: "indigo" },
+  { name: "Подписки", icon: "repeat", color: "violet" },
+  { name: "Подарки", icon: "gift", color: "pink" },
+  { name: "Платежи по долгам", icon: "landmark", color: "indigo", isSystem: true },
+  { name: "Другое", icon: "circle-dashed", color: "slate" },
 ];
 
 /** SPEC §28 income sources. */
 export const DEFAULT_INCOME_CATEGORIES: readonly DefaultCategory[] = [
-  { name: "Salary", icon: "briefcase", color: "green" },
-  { name: "Freelance", icon: "laptop", color: "teal" },
-  { name: "Bonus", icon: "trophy", color: "amber" },
-  { name: "Cash", icon: "banknote", color: "lime" },
-  { name: "Refund", icon: "undo-2", color: "sky" },
-  { name: "Other", icon: "circle-dashed", color: "slate" },
+  { name: "Зарплата", icon: "briefcase", color: "green" },
+  { name: "Фриланс", icon: "laptop", color: "teal" },
+  { name: "Премия", icon: "trophy", color: "amber" },
+  { name: "Наличные", icon: "banknote", color: "lime" },
+  { name: "Возврат", icon: "undo-2", color: "sky" },
+  { name: "Другое", icon: "circle-dashed", color: "slate" },
 ];
 
-export const DEBT_PAYMENTS_CATEGORY_NAME = "Debt Payments";
+export const DEBT_PAYMENTS_CATEGORY_NAME = "Платежи по долгам";

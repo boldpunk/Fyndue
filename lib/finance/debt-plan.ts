@@ -52,9 +52,9 @@ export function buildDebtPlan(input: DebtPlanInput): DebtPlanResult {
     });
     const paidBefore = money(input.paidBeforeTracking ?? 0);
     const remaining = fee.principalBasis.minus(paidBefore);
-    if (remaining.lte(0)) return { ok: false, error: "Already paid must be less than the debt amount", field: "paidBeforeTracking" };
+    if (remaining.lte(0)) return { ok: false, error: "Уже выплаченное должно быть меньше суммы долга", field: "paidBeforeTracking" };
     if (daysBetween(input.startDate, input.firstPaymentDate) < 0) {
-      return { ok: false, error: "The first payment can't be before the start date", field: "firstPaymentDate" };
+      return { ok: false, error: "Первый платёж не может быть раньше даты начала", field: "firstPaymentDate" };
     }
     const scale = input.roundingScale ?? 2;
     // When earlier payments were made outside Fyndue, interest for the first
@@ -66,14 +66,14 @@ export function buildDebtPlan(input: DebtPlanInput): DebtPlanResult {
     let lines: ScheduleLine[];
     let isEstimate = false;
     if (input.knownTotalRepayment) {
-      if (!input.knownTotalLines?.length) return { ok: false, error: "Add the amounts due", field: "knownTotalLines" };
+      if (!input.knownTotalLines?.length) return { ok: false, error: "Добавьте суммы платежей", field: "knownTotalLines" };
       lines = knownTotalSchedule(remaining, input.knownTotalLines, scale);
     } else {
       switch (input.repaymentType) {
         case "DIFFERENTIAL":
         case "ANNUITY": {
-          if (input.annualInterestRate === undefined) return { ok: false, error: "Enter the annual interest rate", field: "annualInterestRate" };
-          if (!input.termMonths) return { ok: false, error: "Enter the number of payments", field: "termMonths" };
+          if (input.annualInterestRate === undefined) return { ok: false, error: "Укажите годовую ставку", field: "annualInterestRate" };
+          if (!input.termMonths) return { ok: false, error: "Укажите количество платежей", field: "termMonths" };
           const terms = {
             ...common,
             annualRatePercent: input.annualInterestRate,
@@ -91,12 +91,12 @@ export function buildDebtPlan(input: DebtPlanInput): DebtPlanResult {
           } else if (input.termMonths) {
             lines = generateInstallmentSchedule({ ...common, count: input.termMonths });
           } else {
-            return { ok: false, error: "Enter the number of installments or the monthly amount", field: "termMonths" };
+            return { ok: false, error: "Укажите количество платежей или сумму в месяц", field: "termMonths" };
           }
           break;
         case "MANUAL":
         case "CUSTOM":
-          if (!input.manualLines?.length) return { ok: false, error: "Add at least one payment", field: "manualLines" };
+          if (!input.manualLines?.length) return { ok: false, error: "Добавьте хотя бы один платёж", field: "manualLines" };
           lines = manualSchedule(input.manualLines, remaining);
           break;
       }
@@ -105,6 +105,6 @@ export function buildDebtPlan(input: DebtPlanInput): DebtPlanResult {
     if (problems.length) return { ok: false, error: problems[0]! };
     return { ok: true, plan: { fee, remainingPrincipal: remaining, lines, isEstimate } };
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "Could not build the schedule" };
+    return { ok: false, error: error instanceof Error ? error.message : "Не удалось построить график" };
   }
 }

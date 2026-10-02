@@ -39,7 +39,7 @@ export const transferSchema = z
     note: optionalText(500),
   })
   .refine((v) => v.fromAccountId !== v.toAccountId, {
-    message: "Choose two different accounts",
+    message: "Выберите два разных счёта",
     path: ["toAccountId"],
   });
 

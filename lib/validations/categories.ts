@@ -5,7 +5,7 @@ import { colorSchema, idSchema } from "./common";
 export const categoryTypeSchema = z.enum(["EXPENSE", "INCOME"]);
 
 const categoryFields = {
-  name: z.string().trim().min(1, "Name is required").max(40),
+  name: z.string().trim().min(1, "Введите название").max(40),
   icon: z.enum(CATEGORY_ICONS),
   color: colorSchema.optional(),
 };

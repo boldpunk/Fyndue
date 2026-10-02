@@ -109,7 +109,7 @@ export async function setBudget(userId: string, input: BudgetInput): Promise<voi
     if (input.categoryId) {
       const category = await tx.category.findFirst({ where: { id: input.categoryId, userId } });
       if (!category) throw new NotFoundError("Category");
-      if (category.type !== "EXPENSE" || category.isSystem) throw new DomainError("Budgets are for expense categories.", "CATEGORY_TYPE");
+      if (category.type !== "EXPENSE" || category.isSystem) throw new DomainError("Бюджет задаётся только для категорий расходов.", "CATEGORY_TYPE");
     }
     const where = { userId, year: input.year, month: input.month, currency: input.currency, categoryId: input.categoryId ?? null };
     const existing = await tx.budget.findFirst({ where });

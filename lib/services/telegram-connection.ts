@@ -95,7 +95,7 @@ export async function linkTelegramChat(
 export async function disconnectTelegram(userId: string): Promise<void> {
   await prisma.$transaction(async (tx) => {
     const row = await tx.telegramConnection.findUnique({ where: { userId } });
-    if (!row) throw new DomainError("Telegram is not connected.");
+    if (!row) throw new DomainError("Telegram не подключён.");
     await tx.telegramConnection.update({
       where: { id: row.id },
       data: { status: "DISCONNECTED", telegramChatId: null, connectionCodeHash: null, connectionCodeExpiresAt: null },

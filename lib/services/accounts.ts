@@ -164,7 +164,7 @@ export async function adjustAccountBalance(userId: string, input: BalanceAdjustm
         amount: adjustment.amount.toFixed(2),
         currency: account.currency,
         transactionDate: localDateToDb(input.date as LocalDate),
-        note: input.note ?? "Balance adjustment",
+        note: input.note ?? "Корректировка баланса",
         source: "MANUAL",
       },
     });

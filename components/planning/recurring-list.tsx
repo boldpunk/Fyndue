@@ -87,7 +87,7 @@ export function RecurringList({
                     </p>
                     <p className="truncate text-[13px] text-muted-foreground">
                       {describeRule(item)} · {item.account.name}
-                      {item.nextOccurrence ? ` · next ${formatLocalDate(item.nextOccurrence, "en-US", { day: "numeric", month: "short" })}` : item.isActive ? " · ended" : ""}
+                      {item.nextOccurrence ? ` · next ${formatLocalDate(item.nextOccurrence, undefined, { day: "numeric", month: "short" })}` : item.isActive ? " · ended" : ""}
                     </p>
                   </div>
                   <Money

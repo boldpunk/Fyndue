@@ -70,7 +70,7 @@ export default async function DashboardPage() {
     <div className="grid gap-8">
       <PageHeader
         title={`${greeting(user.timezone)}, ${firstName}`}
-        description={`${formatLocalDate(d.today, "en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${formatYearMonthLabel(d.month)}`}
+        description={`${formatLocalDate(d.today, undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${formatYearMonthLabel(d.month)}`}
         actions={<QuickAddButton label="Quick add" className="hidden lg:inline-flex" />}
       />
 
@@ -117,7 +117,7 @@ export default async function DashboardPage() {
             d.combinedBalance ? (
               <span>
                 ≈ <Money amount={d.combinedBalance.amount} currency={d.primaryCurrency} className="font-medium text-foreground" /> combined at your rates
-                {d.combinedBalance.rateDate ? ` (${formatLocalDate(d.combinedBalance.rateDate, "en-US", { day: "numeric", month: "short" })})` : ""}
+                {d.combinedBalance.rateDate ? ` (${formatLocalDate(d.combinedBalance.rateDate, undefined, { day: "numeric", month: "short" })})` : ""}
               </span>
             ) : (
               `${d.accountCount} active account${d.accountCount === 1 ? "" : "s"}`

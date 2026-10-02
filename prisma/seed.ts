@@ -176,14 +176,14 @@ async function main() {
   if ((await prisma.transaction.count({ where: { userId, type: "INCOME" } })) === 0) {
     const categoryOf = async (name: string, type: "EXPENSE" | "INCOME") =>
       (await prisma.category.findFirstOrThrow({ where: { userId, name, type } })).id;
-    const salary = await categoryOf("Salary", "INCOME");
+    const salary = await categoryOf("Зарплата", "INCOME");
     const { start } = monthBounds(yearMonthOf(today));
     const lastMonth = addMonthsClamped(start, -1);
     const add = (input: Record<string, unknown>) => createTransaction(userId, { clientRequestId: randomUUID(), merchant: undefined, note: undefined, ...input } as never);
 
     await add({ kind: "INCOME", accountId: uzcard.id, categoryId: salary, amount: "14000000.00", date: addDays(lastMonth, 4), status: "ACTUAL" });
-    await add({ kind: "EXPENSE", accountId: uzcard.id, categoryId: await categoryOf("Groceries", "EXPENSE"), amount: "1850000.00", date: addDays(lastMonth, 9) });
-    await add({ kind: "EXPENSE", accountId: uzcard.id, categoryId: await categoryOf("Fuel", "EXPENSE"), amount: "760000.00", date: addDays(lastMonth, 15) });
+    await add({ kind: "EXPENSE", accountId: uzcard.id, categoryId: await categoryOf("Продукты", "EXPENSE"), amount: "1850000.00", date: addDays(lastMonth, 9) });
+    await add({ kind: "EXPENSE", accountId: uzcard.id, categoryId: await categoryOf("Топливо", "EXPENSE"), amount: "760000.00", date: addDays(lastMonth, 15) });
     await add({ kind: "INCOME", accountId: uzcard.id, categoryId: salary, amount: "14000000.00", date: addDays(start, 4) <= today ? addDays(start, 4) : start, status: "ACTUAL" });
     // Next payday: expected, so it never counts as actual until confirmed.
     await add({ kind: "INCOME", accountId: uzcard.id, categoryId: salary, amount: "14000000.00", date: nextOnDay(5) === today ? addMonthsClamped(today, 1) : nextOnDay(5), status: "EXPECTED" });
@@ -212,10 +212,10 @@ async function main() {
         isSubscription,
         note: undefined,
       });
-    await rule("Internet", "EXPENSE", await cat("Internet", "EXPENSE"), "150000.00", 5);
-    await rule("Mobile plan", "EXPENSE", await cat("Mobile", "EXPENSE"), "60000.00", 10, true);
-    await rule("Streaming", "EXPENSE", await cat("Subscriptions", "EXPENSE"), "45000.00", 18, true);
-    await rule("Utilities", "EXPENSE", await cat("Utilities", "EXPENSE"), "420000.00", 25);
+    await rule("Internet", "EXPENSE", await cat("Интернет", "EXPENSE"), "150000.00", 5);
+    await rule("Mobile plan", "EXPENSE", await cat("Мобильная связь", "EXPENSE"), "60000.00", 10, true);
+    await rule("Streaming", "EXPENSE", await cat("Подписки", "EXPENSE"), "45000.00", 18, true);
+    await rule("Utilities", "EXPENSE", await cat("Коммунальные услуги", "EXPENSE"), "420000.00", 25);
     // Salary repeats from the month after the already-seeded expected payday.
     const expected = await prisma.transaction.findFirst({ where: { userId, type: "INCOME", status: "EXPECTED" }, orderBy: { transactionDate: "desc" } });
     const payday = expected ? addMonthsClamped(expected.transactionDate.toISOString().slice(0, 10), 1) : nextOnDay(5);
@@ -223,7 +223,7 @@ async function main() {
       name: "Salary",
       kind: "INCOME",
       accountId: uzcard.id,
-      categoryId: await cat("Salary", "INCOME"),
+      categoryId: await cat("Зарплата", "INCOME"),
       amount: "14000000.00",
       frequency: "MONTHLY",
       interval: 1,

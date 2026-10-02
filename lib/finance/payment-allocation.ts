@@ -56,16 +56,16 @@ export function validatePaymentBreakdown(
 ): Record<string, string> {
   const errors: Record<string, string> = {};
   for (const key of BREAKDOWN_KEYS) {
-    if (money(b[key]).isNegative()) errors[key] = "Cannot be negative";
+    if (money(b[key]).isNegative()) errors[key] = "Не может быть отрицательным";
   }
   if (Object.keys(errors).length) return errors;
   const { actualAccountDebit } = paymentTotals(b);
-  if (actualAccountDebit.lte(0)) errors.form = "Enter at least one amount";
+  if (actualAccountDebit.lte(0)) errors.form = "Укажите хотя бы одну сумму";
   const principal = money(b.principal);
   if (principal.greaterThan(money(context.currentPrincipal))) {
-    errors.principal = "More than the remaining principal";
+    errors.principal = "Больше остатка основного долга";
   } else if (context.item && principal.greaterThan(context.item.principal)) {
-    errors.principal = `This installment has ${context.item.principal.toFixed(2)} principal left — record extra as an early repayment`;
+    errors.principal = `В этом платеже осталось ${context.item.principal.toFixed(2)} основного долга — сверх этого вносите как досрочное погашение`;
   }
   return errors;
 }

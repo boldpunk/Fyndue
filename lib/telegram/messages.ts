@@ -5,6 +5,7 @@
  */
 import { formatLocalDate, parseLocalDate, type LocalDate } from "@/lib/finance/dates";
 import { formatMoney } from "@/lib/finance/money";
+import { pluralRu } from "@/lib/finance/recurrence";
 import type { ReminderIntent } from "@/lib/notifications/planner";
 
 export function escapeHtml(value: string): string {
@@ -25,14 +26,16 @@ export function debtEmoji(type: string): string {
   return DEBT_EMOJI[type] ?? "📌";
 }
 
-/** "15 October", with the year only when it isn't the current one. */
+/** "15 октября", with the year only when it isn't the current one ("1 января 2027"). */
 export function formatDueDate(date: LocalDate, today: LocalDate): string {
   const sameYear = parseLocalDate(date).year === parseLocalDate(today).year;
-  return formatLocalDate(date, "en-GB", sameYear ? { day: "numeric", month: "long" } : { day: "numeric", month: "long", year: "numeric" });
+  const text = formatLocalDate(date, undefined, sameYear ? { day: "numeric", month: "long" } : { day: "numeric", month: "long", year: "numeric" });
+  return text.replace(/\s*г\.$/, "");
 }
 
-export function plural(n: number, word: string): string {
-  return `${n} ${word}${n === 1 ? "" : "s"}`;
+/** "1 день", "3 дня", "5 дней". */
+export function days(n: number): string {
+  return `${n} ${pluralRu(n, ["день", "дня", "дней"])}`;
 }
 
 const money = (amount: string, currency: string) => escapeHtml(formatMoney(amount, currency));
@@ -43,31 +46,31 @@ export function formatReminder(intent: ReminderIntent, today: LocalDate): string
   const due = formatDueDate(item.dueDate, today);
   if (intent.type === "OVERDUE") {
     return [
-      "⚠️ <b>Payment overdue</b>",
+      "⚠️ <b>Платёж просрочен</b>",
       "",
       name,
       "",
-      "Expected payment:",
+      "Нужно оплатить:",
       `<b>${money(item.amountDue, item.currency)}</b>`,
       "",
-      "Due date:",
+      "Срок был:",
       due,
       "",
-      "Overdue:",
-      plural(intent.days, "day"),
+      "Просрочка:",
+      days(intent.days),
     ].join("\n");
   }
   return [
     `${debtEmoji(item.debtType)} <b>${name}</b>`,
     "",
-    intent.type === "DUE_TODAY" ? "Payment due today" : `Payment in ${plural(intent.days, "day")}`,
+    intent.type === "DUE_TODAY" ? "Платёж сегодня" : `Платёж через ${days(intent.days)}`,
     "",
     `<b>${money(item.amountDue, item.currency)}</b>`,
     "",
-    "Due:",
+    "Срок:",
     due,
     "",
-    "Remaining debt:",
+    "Остаток долга:",
     money(item.remainingPrincipal, item.currency),
   ].join("\n");
 }

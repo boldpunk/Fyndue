@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils/cn";
 /** SPEC §13 — informational only, never financial advice. */
 export function SafeToSpendCard({ primary, others }: { primary: CurrencyDashboard; others: CurrencyDashboard[] }) {
   const s = primary.safeToSpend;
-  const until = formatLocalDate(s.horizonDate, "en-US", { day: "numeric", month: "short" });
+  const until = formatLocalDate(s.horizonDate, undefined, { day: "numeric", month: "short" });
   return (
     <Card className="grid content-start gap-4 p-5">
       <div className="flex items-center justify-between gap-3">
@@ -41,7 +41,7 @@ export function SafeToSpendCard({ primary, others }: { primary: CurrencyDashboar
         </div>
         {s.nextIncome ? (
           <div className="flex justify-between gap-3 text-muted-foreground">
-            <dt>Next expected income · {formatLocalDate(s.nextIncome.date, "en-US", { day: "numeric", month: "short" })}</dt>
+            <dt>Next expected income · {formatLocalDate(s.nextIncome.date, undefined, { day: "numeric", month: "short" })}</dt>
             <dd><Money amount={s.nextIncome.amount} currency={primary.currency} tone="muted" /></dd>
           </div>
         ) : (

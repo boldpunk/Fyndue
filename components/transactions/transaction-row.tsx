@@ -46,7 +46,7 @@ export function TransactionRow({
   const secondary = [
     t.type === "EXPENSE" || t.type === "INCOME" ? (t.merchant ? t.category?.name : null) : t.debt ? TRANSACTION_TYPE_LABELS[t.type] : null,
     t.account.name,
-    showDate ? formatLocalDate(t.date, "en-US", { day: "numeric", month: "short" }) : null,
+    showDate ? formatLocalDate(t.date, undefined, { day: "numeric", month: "short" }) : null,
   ].filter(Boolean);
 
   return (

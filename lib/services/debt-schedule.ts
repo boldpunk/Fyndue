@@ -184,11 +184,11 @@ export async function replaceOpenSchedule(tx: Tx, debt: Debt, input: Pick<Replac
   try {
     lines = manualSchedule(input.lines, split.principalToPlan);
   } catch (error) {
-    throw new DomainError(error instanceof Error ? error.message : "Invalid schedule", "INVALID_SCHEDULE");
+    throw new DomainError(error instanceof Error ? error.message : "Неверный график", "INVALID_SCHEDULE");
   }
   const lastFrozen = split.frozen.at(-1);
   if (lastFrozen && lines[0] && lines[0].dueDate <= dbToLocalDate(lastFrozen.dueDate)) {
-    throw new DomainError("New payments must come after the last paid installment.", "INVALID_SCHEDULE");
+    throw new DomainError("Новые платежи должны идти после последнего оплаченного.", "INVALID_SCHEDULE");
   }
   const problems = validateSchedule(lines, split.principalToPlan);
   if (problems.length) throw new DomainError(problems[0]!, "INVALID_SCHEDULE");

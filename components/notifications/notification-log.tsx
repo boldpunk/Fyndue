@@ -21,7 +21,7 @@ export function NotificationLog({ entries, timeZone }: { entries: NotificationLo
   if (entries.length === 0) {
     return <p className="text-sm text-muted-foreground">No reminders yet. They appear here once Telegram is connected and a payment is coming up.</p>;
   }
-  const time = new Intl.DateTimeFormat("en-GB", { timeZone, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const time = new Intl.DateTimeFormat("ru-RU", { timeZone, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   return (
     <ul className="-my-2 divide-y">
       {entries.map((e) => {
@@ -37,7 +37,7 @@ export function NotificationLog({ entries, timeZone }: { entries: NotificationLo
               <span className="truncate font-medium">{e.debtName ?? type.label}</span>
               <span className="text-[13px] text-muted-foreground">
                 {e.debtName ? type.label : null}
-                {e.dueDate ? ` · due ${formatLocalDate(e.dueDate, "en-GB", { day: "numeric", month: "short" })}` : null}
+                {e.dueDate ? ` · due ${formatLocalDate(e.dueDate, undefined, { day: "numeric", month: "short" })}` : null}
                 {e.debtName || e.dueDate ? " · " : null}
                 {time.format(new Date(e.sentAt ?? e.createdAt))}
               </span>

@@ -255,7 +255,7 @@ function DocumentRow({ doc, currency, onEdit, onDelete }: { doc: DocumentDTO; cu
             {isImage ? <ImageIcon className="size-3.5" aria-hidden /> : <FileText className="size-3.5" aria-hidden />}
             {doc.mimeType === "application/pdf" ? "PDF" : doc.mimeType === "image/png" ? "PNG" : "JPG"} · {formatSize(doc.size)}
           </span>
-          <span>· added {new Date(doc.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
+          <span>· added {new Date(doc.createdAt).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" })}</span>
         </p>
         {doc.payment ? (
           <p className="flex items-start gap-1 text-[13px] text-muted-foreground [&>svg]:mt-0.5">

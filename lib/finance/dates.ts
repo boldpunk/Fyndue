@@ -5,6 +5,8 @@
  * (SPEC §47). Instants (createdAt, …) stay as Date objects.
  */
 
+import { APP_LOCALE } from "@/lib/constants/locale";
+
 export type LocalDate = string;
 
 export const DEFAULT_TIMEZONE = "Asia/Tashkent";
@@ -126,14 +128,16 @@ export function formatYearMonth({ year, month }: YearMonth): string {
 /** Human formatting of a LocalDate. Formats in UTC so the date never shifts. */
 export function formatLocalDate(
   value: LocalDate,
-  locale = "en-US",
+  locale = APP_LOCALE,
   options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" },
 ): string {
   return new Intl.DateTimeFormat(locale, { ...options, timeZone: "UTC" }).format(localDateToDb(value));
 }
 
-export function formatYearMonthLabel(value: YearMonth, locale = "en-US"): string {
-  return formatLocalDate(makeLocalDate(value.year, value.month, 1), locale, { month: "long", year: "numeric" });
+/** "Октябрь 2026" (standalone month name, no "г." suffix). */
+export function formatYearMonthLabel(value: YearMonth, locale = APP_LOCALE): string {
+  const month = formatLocalDate(makeLocalDate(value.year, value.month, 1), locale, { month: "long" });
+  return `${month.charAt(0).toLocaleUpperCase(locale)}${month.slice(1)} ${value.year}`;
 }
 
 /** 0 = Sunday … 6 = Saturday. */

@@ -168,10 +168,10 @@ describe("payments", () => {
     const usd = await createTestAccount(user.id, { name: "USD", currency: "USD", openingBalance: "100" });
     const { id } = await createTestDebt(user.id);
     const item = (await getDebtDetail(user.id, id)).schedule[0]!;
-    await expect(pay(user.id, id, card.id, { scheduleItemId: item.id, principal: "1000.01" })).rejects.toThrow(/early repayment/);
+    await expect(pay(user.id, id, card.id, { scheduleItemId: item.id, principal: "1000.01" })).rejects.toThrow(/досрочное погашение/);
     await expect(pay(user.id, id, usd.id, { scheduleItemId: item.id, principal: "1" })).rejects.toThrow(/UZS/);
     await pay(user.id, id, card.id, { scheduleItemId: item.id, principal: "1000", interest: "120" });
-    await expect(pay(user.id, id, card.id, { scheduleItemId: item.id, principal: "1" })).rejects.toThrow(/settled/);
+    await expect(pay(user.id, id, card.id, { scheduleItemId: item.id, principal: "1" })).rejects.toThrow(/уже закрыт/);
     expect(await balanceOf(card.id)).toBe("98880.00");
   });
 
@@ -230,7 +230,7 @@ describe("reversal (SPEC §25)", () => {
     expect(detail.payments[0]!.reversalReason).toBe("Entered twice");
     const tx = await prisma.transaction.findFirstOrThrow({ where: { debtPaymentId: paymentId } });
     expect(tx.voidedAt).not.toBeNull();
-    await expect(reverseDebtPayment(user.id, { paymentId, reason: "again" })).rejects.toThrow(/already reversed/);
+    await expect(reverseDebtPayment(user.id, { paymentId, reason: "again" })).rejects.toThrow(/уже отменён/);
     await expectConsistent(user.id, id, [card.id]);
   });
 
@@ -305,7 +305,7 @@ describe("early repayment and versioning (SPEC §24, §52)", () => {
     const next = (await getDebtDetail(user.id, id)).schedule[0]!;
     expect(next.plannedPrincipal).toBe("500.00");
     await pay(user.id, id, card.id, { scheduleItemId: next.id, principal: next.plannedPrincipal, interest: next.plannedInterest });
-    await expect(reverseDebtPayment(user.id, { paymentId: earlyId, reason: "oops" })).rejects.toThrow(/Reverse those first/);
+    await expect(reverseDebtPayment(user.id, { paymentId: earlyId, reason: "oops" })).rejects.toThrow(/Сначала отмените их/);
   });
 
   it("paying off everything early marks the debt paid off", async () => {
@@ -346,7 +346,7 @@ describe("early repayment and versioning (SPEC §24, §52)", () => {
     expect(detail.schedule[0]!.status).toBe("PAID");
     await expect(
       prisma.$transaction((tx) => replaceOpenSchedule(tx, debt, { reason: "MANUAL_EDIT", note: undefined, lines: [{ dueDate: "2026-03-01", principal: "999.00", interest: undefined, fees: undefined }] })),
-    ).rejects.toThrow(/add up/);
+    ).rejects.toThrow(/должен давать в сумме/);
   });
 });
 

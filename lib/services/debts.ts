@@ -378,9 +378,9 @@ export async function createDebt(userId: string, input: DebtCreateInput): Promis
       let disbursementAccountId: string | null = null;
       if (input.disbursementAccountId) {
         const account = await lockOwnedAccount(tx, userId, input.disbursementAccountId);
-        if (account.isArchived) throw new DomainError("That account is archived.", "ACCOUNT_ARCHIVED", { disbursementAccountId: "Account is archived" });
+        if (account.isArchived) throw new DomainError("Этот счёт в архиве.", "ACCOUNT_ARCHIVED", { disbursementAccountId: "Счёт в архиве" });
         if (account.currency !== input.currency) {
-          throw new DomainError(`The account must be in ${input.currency}.`, "CURRENCY_MISMATCH", { disbursementAccountId: `Choose a ${input.currency} account` });
+          throw new DomainError(`Счёт должен быть в ${input.currency}.`, "CURRENCY_MISMATCH", { disbursementAccountId: `Выберите счёт в ${input.currency}` });
         }
         disbursementAccountId = account.id;
       }

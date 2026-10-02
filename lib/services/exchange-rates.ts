@@ -36,7 +36,7 @@ export async function addExchangeRate(userId: string, input: ExchangeRateInput):
     });
   } catch (error) {
     if (isUniqueViolation(error)) {
-      throw new DomainError("You already set this rate for that date.", "DUPLICATE", { effectiveDate: "A rate for this date exists" });
+      throw new DomainError("На эту дату курс уже задан.", "DUPLICATE", { effectiveDate: "На эту дату курс уже задан" });
     }
     throw error;
   }

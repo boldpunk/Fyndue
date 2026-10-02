@@ -13,7 +13,7 @@ export function ProjectedBalanceCard({ primary, others }: { primary: CurrencyDas
   return (
     <Card className="grid content-start gap-4 p-5">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-medium text-muted-foreground">Projected balance · {formatLocalDate(p.until, "en-US", { day: "numeric", month: "short" })}</h2>
+        <h2 className="text-sm font-medium text-muted-foreground">Projected balance · {formatLocalDate(p.until, undefined, { day: "numeric", month: "short" })}</h2>
         <span className="grid size-8 place-items-center rounded-lg bg-info-subtle text-info">
           <TrendingUp className="size-4" aria-hidden />
         </span>

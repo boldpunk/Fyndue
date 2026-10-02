@@ -7,7 +7,7 @@ import { lineFee, makeLine, MAX_LINES, nthDueDate, periodRate, type GeneratedTer
 /** Unrounded periodic payment. `monthlyRate` is a fraction (0.01 = 1%). */
 export function annuityPayment(principal: MoneyLike, monthlyRate: FinDecimal, periods: number): FinDecimal {
   const p = money(principal);
-  if (periods < 1) throw new RangeError("Annuity needs at least one period");
+  if (periods < 1) throw new RangeError("Для аннуитета нужен хотя бы один период");
   if (monthlyRate.isZero()) return p.div(periods);
   const growth = monthlyRate.plus(1).pow(periods);
   return p.times(monthlyRate).times(growth).div(growth.minus(1));
@@ -37,14 +37,14 @@ export function generateAnnuitySchedule(terms: AnnuityTerms): ScheduleLine[] {
   for (let i = 0; opening.gt(0); i++) {
     if (i >= maxLines) {
       if (terms.count !== undefined) break;
-      throw new RangeError(`The payment would take more than ${MAX_LINES} months`);
+      throw new RangeError(`Погашение заняло бы больше ${MAX_LINES} месяцев`);
     }
     const dueDate = nthDueDate(terms.firstDueDate, i, terms.paymentDay);
     const interest = roundMoney(opening.times(periodRate(terms.annualRatePercent, previousDate, dueDate, terms.dayCount)), scale);
     const isLastByCount = terms.count !== undefined && i === terms.count - 1;
     let principalPart = payment.minus(interest);
     if (principalPart.lte(0) && !isLastByCount) {
-      throw new RangeError("The payment does not cover the interest for the period");
+      throw new RangeError("Платёж не покрывает проценты за период");
     }
     if (isLastByCount || principalPart.greaterThanOrEqualTo(opening)) principalPart = opening;
     const line = makeLine({

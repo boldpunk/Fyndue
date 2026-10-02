@@ -158,8 +158,8 @@ function DebtAnalytics({ debt }: { debt: DebtDetailDTO }) {
   const cats = (rows: typeof paid) =>
     rows.map((r) => ({
       key: r.key,
-      label: formatLocalDate(`${r.key}-01`, "en-US", { month: "short" }),
-      fullLabel: formatLocalDate(`${r.key}-01`, "en-US", { month: "long", year: "numeric" }),
+      label: formatLocalDate(`${r.key}-01`, undefined, { month: "short" }),
+      fullLabel: formatLocalDate(`${r.key}-01`, undefined, { month: "long", year: "numeric" }),
     }));
   return (
     <div className="grid gap-4">
@@ -259,7 +259,7 @@ export default async function DebtPage({
             <div className="grid gap-1 rounded-lg bg-muted/60 p-3 sm:min-w-56">
               <p className="text-xs text-muted-foreground">Next payment · {daysLabel(debt.nextPayment.daysUntil)}</p>
               <Money amount={debt.nextPayment.amountDue} currency={debt.currency} className="text-lg font-semibold" />
-              <p className="text-xs text-muted-foreground">{formatLocalDate(debt.nextPayment.dueDate, "en-US", { weekday: "short", day: "numeric", month: "long" })}</p>
+              <p className="text-xs text-muted-foreground">{formatLocalDate(debt.nextPayment.dueDate, undefined, { weekday: "short", day: "numeric", month: "long" })}</p>
             </div>
           ) : null}
         </Card>

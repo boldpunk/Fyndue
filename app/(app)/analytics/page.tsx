@@ -50,8 +50,8 @@ function Tile({ label, children, hint }: { label: string; children: React.ReactN
   );
 }
 
-const monthLabel = (key: string) => formatLocalDate(`${key}-01`, "en-US", { month: "short" });
-const monthFull = (key: string) => formatLocalDate(`${key}-01`, "en-US", { month: "long", year: "numeric" });
+const monthLabel = (key: string) => formatLocalDate(`${key}-01`, undefined, { month: "short" });
+const monthFull = (key: string) => formatLocalDate(`${key}-01`, undefined, { month: "long", year: "numeric" });
 
 export default async function AnalyticsPage({
   searchParams,
@@ -158,7 +158,7 @@ export default async function AnalyticsPage({
                 <ColumnChart
                   title="Daily spending"
                   description="Expenses per day"
-                  categories={data.daily.map((d) => ({ key: d.key, label: String(Number(d.key.slice(8))), fullLabel: formatLocalDate(d.key, "en-US", { weekday: "short", day: "numeric", month: "short" }) }))}
+                  categories={data.daily.map((d) => ({ key: d.key, label: String(Number(d.key.slice(8))), fullLabel: formatLocalDate(d.key, undefined, { weekday: "short", day: "numeric", month: "short" }) }))}
                   series={[{ key: "expenses", label: "Expenses", color: "var(--viz-2)", values: data.daily.map((d) => d.expenses) }]}
                   currency={cur}
                 />
@@ -258,7 +258,7 @@ export default async function AnalyticsPage({
                     <span className="font-medium">{d.name}</span>
                     <span className="text-muted-foreground">
                       <Money amount={d.currentPrincipal} currency={cur} className="font-medium text-foreground" /> left ·{" "}
-                      {d.status === "PAID_OFF" ? "paid off" : d.projectedPayoffDate ? `payoff ${formatLocalDate(d.projectedPayoffDate, "en-US", { month: "short", year: "numeric" })}` : "no schedule"}
+                      {d.status === "PAID_OFF" ? "paid off" : d.projectedPayoffDate ? `payoff ${formatLocalDate(d.projectedPayoffDate, undefined, { month: "short", year: "numeric" })}` : "no schedule"}
                     </span>
                   </div>
                   <ProgressBar percent={d.paidPercent} label={`${d.name} repaid`} tone={d.status === "PAID_OFF" ? "success" : "primary"} />

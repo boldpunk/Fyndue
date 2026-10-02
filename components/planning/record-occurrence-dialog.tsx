@@ -52,7 +52,7 @@ function RecordForm({ target, accounts, today, onDone }: { target: OccurrenceTar
       }}
     >
       <p className="text-sm text-muted-foreground">
-        Planned for {formatLocalDate(target.occurrenceDate, "en-US", { weekday: "short", day: "numeric", month: "long" })}. Record what actually {target.direction === "IN" ? "arrived" : "left your account"}.
+        Planned for {formatLocalDate(target.occurrenceDate, undefined, { weekday: "short", day: "numeric", month: "long" })}. Record what actually {target.direction === "IN" ? "arrived" : "left your account"}.
       </p>
       <Field label="Amount" htmlFor="occ-amount" error={error ?? undefined}>
         <MoneyInput id="occ-amount" size="lg" currency={target.currency} value={amount} onChange={setAmount} autoFocus />

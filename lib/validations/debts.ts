@@ -14,9 +14,9 @@ const optionalAmount = () =>
 export const percentSchema = z
   .string()
   .trim()
-  .regex(/^\d{1,3}([.,]\d{1,6})?$/, "Enter a rate like 24 or 23.9")
+  .regex(/^\d{1,3}([.,]\d{1,6})?$/, "Введите ставку, например 24 или 23,9")
   .transform((v) => v.replace(",", "."))
-  .refine((v) => Number.parseFloat(v) <= 999, "Rate is too high");
+  .refine((v) => Number.parseFloat(v) <= 999, "Слишком высокая ставка");
 
 const optionalInt = (min: number, max: number) =>
   z.coerce.number().int().min(min).max(max).optional().or(z.literal("").transform(() => undefined));
@@ -34,7 +34,7 @@ export const debtCreateSchema = z
   .object({
     clientRequestId: clientRequestIdSchema,
     type: z.enum(DEBT_TYPES),
-    name: z.string().trim().min(1, "Name is required").max(80),
+    name: z.string().trim().min(1, "Введите название").max(80),
     lender: optionalText(80),
     currency: currencySchema,
     repaymentType: z.enum(REPAYMENT_TYPES),
@@ -60,11 +60,11 @@ export const debtCreateSchema = z
   .superRefine((v, ctx) => {
     const interestBearing = v.repaymentType === "DIFFERENTIAL" || v.repaymentType === "ANNUITY";
     if (interestBearing && !v.knownTotalRepayment) {
-      if (v.annualInterestRate === undefined) ctx.addIssue({ code: "custom", path: ["annualInterestRate"], message: "Enter the annual interest rate" });
-      if (!v.termMonths) ctx.addIssue({ code: "custom", path: ["termMonths"], message: "Enter the number of payments" });
+      if (v.annualInterestRate === undefined) ctx.addIssue({ code: "custom", path: ["annualInterestRate"], message: "Укажите годовую ставку" });
+      if (!v.termMonths) ctx.addIssue({ code: "custom", path: ["termMonths"], message: "Укажите количество платежей" });
     }
     if (v.feeMode !== "NONE" && v.feeMode !== "CUSTOM" && v.originationFee === undefined) {
-      ctx.addIssue({ code: "custom", path: ["originationFee"], message: "Enter the fee" });
+      ctx.addIssue({ code: "custom", path: ["originationFee"], message: "Укажите комиссию" });
     }
   });
 
@@ -73,7 +73,7 @@ export type DebtCreateFormValues = z.input<typeof debtCreateSchema>;
 
 export const debtUpdateSchema = z.object({
   id: idSchema,
-  name: z.string().trim().min(1, "Name is required").max(80),
+  name: z.string().trim().min(1, "Введите название").max(80),
   lender: optionalText(80),
   notes: optionalText(1000),
 });
@@ -120,7 +120,7 @@ export const earlyRepaymentPreviewSchema = z.object({
 
 export const reversePaymentSchema = z.object({
   paymentId: idSchema,
-  reason: z.string().trim().min(3, "Say briefly why (at least 3 characters)").max(200),
+  reason: z.string().trim().min(3, "Коротко укажите причину (от 3 символов)").max(200),
 });
 
 export const replaceScheduleSchema = z.object({

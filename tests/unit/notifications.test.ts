@@ -102,26 +102,26 @@ describe("telegram messages", () => {
   it("formats an upcoming reminder like SPEC §34", () => {
     const [intent] = planReminders([carItem], DEFAULT_PREFERENCES, "2026-10-12");
     expect(formatReminder(intent!, "2026-10-12")).toBe(
-      ["🚘 <b>Car Installment</b>", "", "Payment in 3 days", "", "<b>3,500,000 UZS</b>", "", "Due:", "15 October", "", "Remaining debt:", "113,606,733.37 UZS"].join("\n"),
+      ["🚘 <b>Car Installment</b>", "", "Платёж через 3 дня", "", "<b>3\u00a0500\u00a0000 UZS</b>", "", "Срок:", "15 октября", "", "Остаток долга:", "113\u00a0606\u00a0733,37 UZS"].join("\n"),
     );
   });
 
   it("formats due today and overdue reminders", () => {
     const [today] = planReminders([carItem], DEFAULT_PREFERENCES, "2026-10-15");
-    expect(formatReminder(today!, "2026-10-15")).toContain("Payment due today");
+    expect(formatReminder(today!, "2026-10-15")).toContain("Платёж сегодня");
     const credit = { ...carItem, debtName: "Credit", debtType: "CREDIT" as const, amountDue: "2480000.00", dueDate: "2026-10-22" };
     const [overdue] = planReminders([credit], DEFAULT_PREFERENCES, "2026-10-23");
     expect(formatReminder(overdue!, "2026-10-23")).toBe(
-      ["⚠️ <b>Payment overdue</b>", "", "Credit", "", "Expected payment:", "<b>2,480,000 UZS</b>", "", "Due date:", "22 October", "", "Overdue:", "1 day"].join("\n"),
+      ["⚠️ <b>Платёж просрочен</b>", "", "Credit", "", "Нужно оплатить:", "<b>2\u00a0480\u00a0000 UZS</b>", "", "Срок был:", "22 октября", "", "Просрочка:", "1 день"].join("\n"),
     );
   });
 
-  it("adds the year only when it differs, and says '1 day'", () => {
+  it("adds the year only when it differs, and declines «день»", () => {
     const next = { ...carItem, dueDate: "2027-01-01" };
     const [intent] = planReminders([next], DEFAULT_PREFERENCES, "2026-12-31");
     const text = formatReminder(intent!, "2026-12-31");
-    expect(text).toContain("Payment in 1 day");
-    expect(text).toContain("1 January 2027");
+    expect(text).toContain("Платёж через 1 день");
+    expect(text).toContain("1 января 2027\n");
   });
 
   it("escapes user text", () => {

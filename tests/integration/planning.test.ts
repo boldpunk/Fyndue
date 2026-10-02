@@ -22,7 +22,7 @@ async function setup() {
   const user = await createUser();
   const today = todayIn(user.timezone);
   const card = await createTestAccount(user.id, { openingBalance: "10000000" });
-  return { user, today, card, fuel: await categoryId(user.id, "Fuel"), internet: await categoryId(user.id, "Internet"), salary: await categoryId(user.id, "Salary", "INCOME") };
+  return { user, today, card, fuel: await categoryId(user.id, "Топливо"), internet: await categoryId(user.id, "Интернет"), salary: await categoryId(user.id, "Зарплата", "INCOME") };
 }
 
 describe("recurring transactions", () => {
@@ -43,7 +43,7 @@ describe("recurring transactions", () => {
     const { id } = await record();
     expect(await balanceOf(card.id)).toBe("9845000.00");
     expect((await listOccurrences(user.id, start, start))[0]!.transactionId).toBe(id);
-    await expect(record()).rejects.toThrow(/already recorded/);
+    await expect(record()).rejects.toThrow(/уже записан/);
 
     await voidTransaction(user.id, id, "wrong amount");
     expect((await listOccurrences(user.id, start, start))[0]!.transactionId).toBeNull();
@@ -52,7 +52,7 @@ describe("recurring transactions", () => {
 
     await expect(
       recordOccurrence(user.id, { clientRequestId: randomUUID(), recurringId, occurrenceDate: addDays(start, 1), amount: "1", date: start, accountId: card.id }),
-    ).rejects.toThrow(/not an occurrence/);
+    ).rejects.toThrow(/не запланирован/);
   });
 
   it("feeds planned expenses and recurring income into the dashboard", async () => {
@@ -101,13 +101,13 @@ describe("budgets (SPEC §38)", () => {
     await setBudget(user.id, { ...month, categoryId: fuel, currency: "UZS", amount: "1500000" });
     await setBudget(user.id, { ...month, categoryId: undefined, currency: "UZS", amount: "5000000" });
     await tx(user.id, { kind: "EXPENSE", accountId: card.id, categoryId: fuel, amount: "800000", date: today });
-    await tx(user.id, { kind: "EXPENSE", accountId: card.id, categoryId: await categoryId(user.id, "Taxi"), amount: "50000", date: today });
+    await tx(user.id, { kind: "EXPENSE", accountId: card.id, categoryId: await categoryId(user.id, "Такси"), amount: "50000", date: today });
     await tx(user.id, { kind: "TRANSFER", fromAccountId: card.id, toAccountId: cash.id, amount: "999999", date: today });
 
     const b = await getBudgetMonth(user.id, month);
     expect(b.categories[0]).toMatchObject({ limit: "1500000.00", spent: "800000.00", percent: "53", state: "UNDER", remaining: "700000.00" });
     expect(b.overall).toMatchObject({ limit: "5000000.00", spent: "850000.00", state: "UNDER" });
-    expect(b.unbudgeted.map((u) => u.category?.name)).toEqual(["Taxi"]);
+    expect(b.unbudgeted.map((u) => u.category?.name)).toEqual(["Такси"]);
 
     // Setting again replaces rather than duplicates.
     await setBudget(user.id, { ...month, categoryId: fuel, currency: "UZS", amount: "900000" });
@@ -140,7 +140,7 @@ describe("analytics and monthly summary (SPEC §36, §39)", () => {
     const cash = await createTestAccount(user.id, { name: "Cash", type: "CASH" });
     await tx(user.id, { kind: "INCOME", accountId: card.id, categoryId: salary, amount: "8000000", date: start, status: "ACTUAL" });
     await tx(user.id, { kind: "EXPENSE", accountId: card.id, categoryId: fuel, amount: "300000", date: start });
-    await tx(user.id, { kind: "EXPENSE", accountId: card.id, categoryId: await categoryId(user.id, "Taxi"), amount: "100000", date: start });
+    await tx(user.id, { kind: "EXPENSE", accountId: card.id, categoryId: await categoryId(user.id, "Такси"), amount: "100000", date: start });
     await tx(user.id, { kind: "TRANSFER", fromAccountId: card.id, toAccountId: cash.id, amount: "500000", date: start });
     const { id: debtId } = await createTestDebt(user.id, { repaymentType: "INTEREST_FREE", originalPrincipal: "2000000", feeMode: "ADDED_ON_TOP", originationFee: "100000", annualInterestRate: undefined, termMonths: 1, startDate: start, firstPaymentDate: start });
     const item = (await getDebtDetail(user.id, debtId)).schedule[0]!;
@@ -153,8 +153,8 @@ describe("analytics and monthly summary (SPEC §36, §39)", () => {
     expect(a.totals).toMatchObject({ income: "8000000.00", expenses: "400000.00", debtPayments: "2115000.00", net: "5485000.00" });
     expect(a.totals.debtToIncome).toBe("26.4");
     expect(a.byCategory.map((c) => [c.name, c.amount, c.share])).toEqual([
-      ["Fuel", "300000.00", "75.0"],
-      ["Taxi", "100000.00", "25.0"],
+      ["Топливо", "300000.00", "75.0"],
+      ["Такси", "100000.00", "25.0"],
     ]);
     expect(a.debt).toMatchObject({ principalPaid: "2000000.00", feesPaid: "115000.00", costAbovePrincipal: "115000.00", cashOutflow: "2115000.00" });
     expect(a.daily?.length).toBeGreaterThan(0);
@@ -166,7 +166,7 @@ describe("analytics and monthly summary (SPEC §36, §39)", () => {
       debtPayments: "2115000.00",
       netCashFlow: "5485000.00",
       debtReduction: "2000000.00",
-      largestExpenseCategory: { name: "Fuel", amount: "300000.00" },
+      largestExpenseCategory: { name: "Топливо", amount: "300000.00" },
       totalRemainingDebt: "0.00",
     });
     // Card 10M + 8M − 0.4M − 0.5M − 2.115M, cash +0.5M
@@ -217,6 +217,6 @@ describe("calendar and exchange rates", () => {
     expect((await getDashboard(user.id)).combinedBalance).toBeNull();
     await addExchangeRate(user.id, { fromCurrency: "USD", toCurrency: "UZS", rate: "12700", effectiveDate: today });
     expect((await getDashboard(user.id)).combinedBalance).toEqual({ amount: "11270000.00", rateDate: today });
-    await expect(addExchangeRate(user.id, { fromCurrency: "USD", toCurrency: "UZS", rate: "12800", effectiveDate: today })).rejects.toThrow(/already/);
+    await expect(addExchangeRate(user.id, { fromCurrency: "USD", toCurrency: "UZS", rate: "12800", effectiveDate: today })).rejects.toThrow(/уже задан/);
   });
 });

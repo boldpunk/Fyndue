@@ -2,22 +2,22 @@ export const CURRENCIES = ["UZS", "USD", "EUR", "RUB"] as const;
 export type CurrencyCode = (typeof CURRENCIES)[number];
 
 export const CURRENCY_LABELS: Record<CurrencyCode, string> = {
-  UZS: "Uzbek som",
-  USD: "US dollar",
-  EUR: "Euro",
-  RUB: "Russian ruble",
+  UZS: "Узбекский сум",
+  USD: "Доллар США",
+  EUR: "Евро",
+  RUB: "Российский рубль",
 };
 
 export const ACCOUNT_TYPES = ["BANK_CARD", "CASH", "SAVINGS", "DEPOSIT", "DIGITAL_WALLET", "OTHER"] as const;
 export type AccountTypeCode = (typeof ACCOUNT_TYPES)[number];
 
 export const ACCOUNT_TYPE_LABELS: Record<AccountTypeCode, string> = {
-  BANK_CARD: "Bank card",
-  CASH: "Cash",
-  SAVINGS: "Savings",
-  DEPOSIT: "Deposit",
-  DIGITAL_WALLET: "Digital wallet",
-  OTHER: "Other",
+  BANK_CARD: "Банковская карта",
+  CASH: "Наличные",
+  SAVINGS: "Накопления",
+  DEPOSIT: "Вклад",
+  DIGITAL_WALLET: "Электронный кошелёк",
+  OTHER: "Другое",
 };
 
 export const TRANSACTION_TYPES = [
@@ -31,12 +31,12 @@ export const TRANSACTION_TYPES = [
 export type TransactionTypeCode = (typeof TRANSACTION_TYPES)[number];
 
 export const TRANSACTION_TYPE_LABELS: Record<TransactionTypeCode, string> = {
-  EXPENSE: "Expense",
-  INCOME: "Income",
-  TRANSFER: "Transfer",
-  DEBT_PAYMENT: "Debt payment",
-  BALANCE_ADJUSTMENT: "Adjustment",
-  LOAN_DISBURSEMENT: "Loan received",
+  EXPENSE: "Расход",
+  INCOME: "Доход",
+  TRANSFER: "Перевод",
+  DEBT_PAYMENT: "Платёж по долгу",
+  BALANCE_ADJUSTMENT: "Корректировка",
+  LOAN_DISBURSEMENT: "Получен заём",
 };
 
 export const TIMEZONES = [

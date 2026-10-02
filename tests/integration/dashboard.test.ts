@@ -18,8 +18,8 @@ describe("dashboard (SPEC §9–§14)", () => {
 
     const card = await createTestAccount(user.id, { openingBalance: "12000000" });
     await createTestAccount(user.id, { name: "Cash USD", currency: "USD", openingBalance: "300" });
-    const salary = await categoryId(user.id, "Salary", "INCOME");
-    const fuel = await categoryId(user.id, "Fuel");
+    const salary = await categoryId(user.id, "Зарплата", "INCOME");
+    const fuel = await categoryId(user.id, "Топливо");
     const tx = (input: Record<string, unknown>) => createTransaction(user.id, { clientRequestId: randomUUID(), ...input } as never);
 
     // Previous month: 100,000 expense. This month: 150,000 expense + 10M income.
@@ -78,7 +78,7 @@ describe("dashboard (SPEC §9–§14)", () => {
   it("has no comparison without previous-month history and N/A DTI without income", async () => {
     const user = await createUser();
     const card = await createTestAccount(user.id, { openingBalance: "1000" });
-    const fuel = await categoryId(user.id, "Fuel");
+    const fuel = await categoryId(user.id, "Топливо");
     await createTransaction(user.id, {
       kind: "EXPENSE", accountId: card.id, categoryId: fuel, amount: "10", date: todayIn(user.timezone), merchant: undefined, note: undefined, clientRequestId: randomUUID(),
     });

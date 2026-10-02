@@ -67,9 +67,9 @@ describe("reminder dispatch (SPEC §35)", () => {
     expect(first.sent).toBe(1);
     expect(sender.sent).toHaveLength(1);
     expect(sender.sent[0]!.chatId).toBe("1001");
-    expect(sender.sent[0]!.html).toContain("Payment in 3 days");
-    expect(sender.sent[0]!.html).toContain("3,500,000 UZS");
-    expect(sender.sent[0]!.html).toContain("Remaining debt:\n7,000,000 UZS");
+    expect(sender.sent[0]!.html).toContain("Платёж через 3 дня");
+    expect(sender.sent[0]!.html).toContain("3\u00a0500\u00a0000 UZS");
+    expect(sender.sent[0]!.html).toContain("Остаток долга:\n7\u00a0000\u00a0000 UZS");
 
     const second = await runReminders({ sender, now: at(0, "06:15"), sleep: noSleep });
     expect(second.sent).toBe(0);
@@ -84,7 +84,7 @@ describe("reminder dispatch (SPEC §35)", () => {
     // Day before: the 1-day reminder.
     await runReminders({ sender, now: at(2), sleep: noSleep });
     expect(sender.sent).toHaveLength(2);
-    expect(sender.sent[1]!.html).toContain("Payment in 1 day");
+    expect(sender.sent[1]!.html).toContain("Платёж через 1 день");
   });
 
   it("concurrent runs send exactly once", async () => {
@@ -95,7 +95,7 @@ describe("reminder dispatch (SPEC §35)", () => {
     const results = await Promise.all(Array.from({ length: 4 }, () => runReminders({ sender, now: at(0), sleep: noSleep })));
     expect(results.reduce((s, r) => s + r.sent, 0)).toBe(1);
     expect(sender.sent).toHaveLength(1);
-    expect(sender.sent[0]!.html).toContain("Payment due today");
+    expect(sender.sent[0]!.html).toContain("Платёж сегодня");
     expect(await prisma.notificationLog.count()).toBe(1);
   });
 
@@ -109,7 +109,7 @@ describe("reminder dispatch (SPEC §35)", () => {
     expect(run.sent).toBe(2);
     expect(sender.sent).toHaveLength(1);
     const html = sender.sent[0]!.html;
-    expect(html.indexOf("Payment overdue")).toBeLessThan(html.indexOf("Car Installment"));
+    expect(html.indexOf("Платёж просрочен")).toBeLessThan(html.indexOf("Car Installment"));
   });
 
   it("paying the item cancels its pending reminder", async () => {
@@ -191,7 +191,7 @@ describe("reminder dispatch (SPEC §35)", () => {
     for (let day = 0; day <= 6; day++) await runReminders({ sender, now: at(day), sleep: noSleep });
     // Overdue days 1..7 with a 3-day repeat → day 1, day 4 and day 7.
     expect(sender.sent).toHaveLength(3);
-    expect(sender.sent.map((s) => s.html.match(/Overdue:\n(\d+ days?)/)?.[1])).toEqual(["1 day", "4 days", "7 days"]);
+    expect(sender.sent.map((s) => s.html.match(/Просрочка:\n(\d+ \S+)/)?.[1])).toEqual(["1 день", "4 дня", "7 дней"]);
   });
 
   it("quiet hours defer the reminder to the first run afterwards", async () => {
@@ -208,7 +208,7 @@ describe("reminder dispatch (SPEC §35)", () => {
     // 04:00 UTC = 09:00: sent (2 days left, still the 3-day reminder).
     await runReminders({ sender, now: at(1, "04:00"), sleep: noSleep });
     expect(sender.sent).toHaveLength(1);
-    expect(sender.sent[0]!.html).toContain("Payment in 2 days");
+    expect(sender.sent[0]!.html).toContain("Платёж через 2 дня");
   });
 
   it("respects preferences: disabled Telegram sends nothing", async () => {
@@ -248,11 +248,11 @@ describe("reminder dispatch (SPEC §35)", () => {
   it("test message is limited to one per minute", async () => {
     const user = await createUser();
     const sender = fakeSender();
-    await expect(sendTestNotification(user.id, sender)).rejects.toThrow(/Connect Telegram first/);
+    await expect(sendTestNotification(user.id, sender)).rejects.toThrow(/Сначала подключите Telegram/);
     await connect(user.id, "1011");
     const now = at(0);
     await sendTestNotification(user.id, sender, now);
-    await expect(sendTestNotification(user.id, sender, now)).rejects.toThrow(/just sent/);
+    await expect(sendTestNotification(user.id, sender, now)).rejects.toThrow(/только что отправлено/);
     expect(sender.sent).toHaveLength(1);
   });
 });
@@ -329,30 +329,30 @@ describe("bot commands", () => {
     const sender = fakeSender();
 
     await handleUpdate(message("4001", "/today"), sender);
-    expect(sender.sent.at(-1)!.html).toContain("isn't connected");
+    expect(sender.sent.at(-1)!.html).toContain("не подключён");
 
     const { code } = await createConnectionCode(a.id);
     await handleUpdate(message("4001", `/start ${code}`), sender);
-    expect(sender.sent.at(-1)!.html).toContain("Connected to Fyndue");
+    expect(sender.sent.at(-1)!.html).toContain("Fyndue подключён");
 
     await handleUpdate(message("4001", "/today"), sender);
     expect(sender.sent.at(-1)!.html).toContain("Alpha loan");
-    expect(sender.sent.at(-1)!.html).toContain("due today");
+    expect(sender.sent.at(-1)!.html).toContain("сегодня");
     expect(sender.sent.at(-1)!.html).not.toContain("Beta loan");
 
     await handleUpdate(message("4001", "/debts"), sender);
-    expect(sender.sent.at(-1)!.html).toContain("Remaining: 7,000,000 UZS");
+    expect(sender.sent.at(-1)!.html).toContain("Осталось: 7\u00a0000\u00a0000 UZS");
     expect(sender.sent.at(-1)!.html).not.toContain("Beta loan");
 
     await handleUpdate(message("4001", "/upcoming"), sender);
-    expect(sender.sent.at(-1)!.html).toContain("Next 14 days");
+    expect(sender.sent.at(-1)!.html).toContain("Ближайшие 14 дней");
 
     await handleUpdate(message("4001", "/month"), sender);
-    expect(sender.sent.at(-1)!.html).toContain("Debt payments:");
+    expect(sender.sent.at(-1)!.html).toContain("Платежи по долгам:");
 
     // Another chat cannot see A's data.
     await handleUpdate(message("4002", "/debts"), sender);
-    expect(sender.sent.at(-1)!.html).toContain("isn't connected");
+    expect(sender.sent.at(-1)!.html).toContain("не подключён");
     expect(sender.sent.at(-1)!.chatId).toBe("4002");
   });
 
@@ -360,7 +360,7 @@ describe("bot commands", () => {
     const user = await createUser();
     const sender = fakeSender();
     await handleUpdate(message("4003", "/start NOPE2345"), sender);
-    expect(sender.sent.at(-1)!.html).toContain("invalid or has expired");
+    expect(sender.sent.at(-1)!.html).toContain("неверный или устарел");
 
     await connect(user.id, "4003");
     await handleUpdate(message("4003", "/stop"), sender);

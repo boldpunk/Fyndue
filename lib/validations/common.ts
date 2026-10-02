@@ -1,4 +1,5 @@
 import { z } from "zod";
+import "./zod-ru";
 import { CATEGORY_COLORS } from "@/lib/constants/categories";
 import { CURRENCIES } from "@/lib/constants/finance";
 import { isLocalDate } from "@/lib/finance/dates";
@@ -11,7 +12,7 @@ export const currencySchema = z.enum(CURRENCIES);
 export const localDateSchema = z
   .string()
   .trim()
-  .refine(isLocalDate, { message: "Enter a valid date" });
+  .refine(isLocalDate, { message: "Введите корректную дату" });
 
 export const clientRequestIdSchema = z.uuid();
 
@@ -37,19 +38,19 @@ export function moneySchema({ allowZero = false, allowNegative = false }: MoneyO
     const negative = allowNegative && /^[-−]/.test(trimmed);
     const parsed = parseMoneyInput(negative ? trimmed.slice(1) : trimmed);
     if (!parsed) {
-      ctx.addIssue({ code: "custom", message: trimmed ? "Enter a valid amount" : "Amount is required" });
+      ctx.addIssue({ code: "custom", message: trimmed ? "Введите корректную сумму" : "Введите сумму" });
       return z.NEVER;
     }
     if (parsed.decimalPlaces() > MONEY_SCALE) {
-      ctx.addIssue({ code: "custom", message: `Use at most ${MONEY_SCALE} decimal places` });
+      ctx.addIssue({ code: "custom", message: `Не больше ${MONEY_SCALE} знаков после запятой` });
       return z.NEVER;
     }
     if (parsed.greaterThan(MAX_MONEY)) {
-      ctx.addIssue({ code: "custom", message: "Amount is too large" });
+      ctx.addIssue({ code: "custom", message: "Слишком большая сумма" });
       return z.NEVER;
     }
     if (parsed.isZero() && !allowZero) {
-      ctx.addIssue({ code: "custom", message: "Amount must be greater than zero" });
+      ctx.addIssue({ code: "custom", message: "Сумма должна быть больше нуля" });
       return z.NEVER;
     }
     return toMoneyString(negative ? parsed.negated() : parsed);

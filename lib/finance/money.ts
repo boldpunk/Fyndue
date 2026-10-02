@@ -6,6 +6,7 @@
  * components (for formatting and input parsing) and from the server.
  */
 import Decimal from "decimal.js";
+import { APP_LOCALE } from "@/lib/constants/locale";
 
 // A dedicated Decimal constructor so global configuration of other libraries
 // can never change our rounding behaviour.
@@ -128,7 +129,7 @@ export function formatMoney(value: MoneyLike, currency: string, options: MoneyFo
   const amount = roundMoney(value);
   const hasFraction = !amount.isInteger();
   const digits = options.alwaysShowDecimals || hasFraction ? MONEY_SCALE : 0;
-  const formatter = new Intl.NumberFormat(options.locale ?? "en-US", {
+  const formatter = new Intl.NumberFormat(options.locale ?? APP_LOCALE, {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
     signDisplay: options.signed ? "exceptZero" : "auto",
@@ -146,7 +147,7 @@ export function percentage(part: MoneyLike, whole: MoneyLike): FinDecimal | null
 }
 
 /** Short display form for axes and dense lists: 12,500,000 → "12.5M". Display only. */
-export function formatCompactMoney(value: MoneyLike, locale = "en-US"): string {
+export function formatCompactMoney(value: MoneyLike, locale = APP_LOCALE): string {
   const formatter = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 });
   return formatter.format(roundMoney(value, 0).toFixed(0) as unknown as number);
 }

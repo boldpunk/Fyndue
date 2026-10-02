@@ -26,18 +26,18 @@ async function debtPaymentsCategoryId(tx: Tx, userId: string): Promise<string | 
 
 async function payingAccount(tx: Tx, userId: string, accountId: string, debt: Debt) {
   const account = await lockOwnedAccount(tx, userId, accountId);
-  if (account.isArchived) throw new DomainError("That account is archived.", "ACCOUNT_ARCHIVED", { accountId: "Account is archived" });
+  if (account.isArchived) throw new DomainError("Этот счёт в архиве.", "ACCOUNT_ARCHIVED", { accountId: "Счёт в архиве" });
   if (account.currency !== debt.currency) {
-    throw new DomainError(`Pay a ${debt.currency} debt from a ${debt.currency} account.`, "CURRENCY_MISMATCH", {
-      accountId: `Choose a ${debt.currency} account`,
+    throw new DomainError(`Долг в ${debt.currency} оплачивается со счёта в ${debt.currency}.`, "CURRENCY_MISMATCH", {
+      accountId: `Выберите счёт в ${debt.currency}`,
     });
   }
   return account;
 }
 
 function assertPayable(debt: Debt) {
-  if (debt.status === "ARCHIVED") throw new DomainError("This debt is archived.", "DEBT_ARCHIVED");
-  if (debt.status === "PAID_OFF") throw new DomainError("This debt is already paid off.", "DEBT_PAID_OFF");
+  if (debt.status === "ARCHIVED") throw new DomainError("Этот долг в архиве.", "DEBT_ARCHIVED");
+  if (debt.status === "PAID_OFF") throw new DomainError("Этот долг уже погашен.", "DEBT_PAID_OFF");
 }
 
 type StoredPayment = {
@@ -160,7 +160,7 @@ export async function recordDebtPayment(userId: string, input: RecordPaymentInpu
           item = await tx.debtScheduleItem.findFirst({ where: { id: input.scheduleItemId, debtId: debt.id, userId, isCurrent: true } });
           if (!item) throw new NotFoundError("Installment");
           if (item.status !== "SCHEDULED" && item.status !== "PARTIALLY_PAID") {
-            throw new DomainError("This installment is already settled.", "ITEM_SETTLED");
+            throw new DomainError("Этот платёж уже закрыт.", "ITEM_SETTLED");
           }
         }
 
@@ -231,11 +231,11 @@ export async function previewEarlyRepayment(
     const split = await splitCurrentSchedule(tx, debt);
     const amount = money(input.amount);
     if (amount.gt(money(debt.currentPrincipal))) {
-      throw new DomainError("More than the remaining principal.", "INVALID_PAYMENT", { amount: "More than the remaining principal" });
+      throw new DomainError("Больше остатка основного долга.", "INVALID_PAYMENT", { amount: "Больше остатка основного долга" });
     }
     const principalAfter = split.principalToPlan.minus(amount);
     if (principalAfter.lt(0)) {
-      throw new DomainError("Settle the partially paid installment first.", "INVALID_PAYMENT", { amount: "Exceeds the unscheduled principal" });
+      throw new DomainError("Сначала закройте частично оплаченный платёж.", "INVALID_PAYMENT", { amount: "Больше остатка основного долга вне графика" });
     }
     const plan = planForSplit(debt, split, principalAfter, input.strategy);
     return {
@@ -274,10 +274,10 @@ export async function recordEarlyRepayment(userId: string, input: EarlyRepayment
         const amount = money(input.amount);
         const splitBefore = await splitCurrentSchedule(tx, debt);
         if (amount.gt(money(debt.currentPrincipal))) {
-          throw new DomainError("More than the remaining principal.", "INVALID_PAYMENT", { amount: "More than the remaining principal" });
+          throw new DomainError("Больше остатка основного долга.", "INVALID_PAYMENT", { amount: "Больше остатка основного долга" });
         }
         if (amount.gt(splitBefore.principalToPlan)) {
-          throw new DomainError("Settle the partially paid installment first.", "INVALID_PAYMENT", { amount: "Exceeds the unscheduled principal" });
+          throw new DomainError("Сначала закройте частично оплаченный платёж.", "INVALID_PAYMENT", { amount: "Больше остатка основного долга вне графика" });
         }
 
         const { payment, totals } = await storePayment(tx, userId, {
@@ -298,7 +298,7 @@ export async function recordEarlyRepayment(userId: string, input: EarlyRepayment
         const plan = planForSplit(updatedDebt, split, split.principalToPlan, input.strategy);
         const versionId = await writeNewScheduleVersion(tx, updatedDebt, split, plan.lines, {
           reason: "EARLY_REPAYMENT",
-          note: `${input.strategy === "REDUCE_TERM" ? "Reduce term" : "Reduce payment"} · extra ${amount.toFixed(2)}`,
+          note: `${input.strategy === "REDUCE_TERM" ? "Сокращение срока" : "Уменьшение платежа"} · досрочно ${amount.toFixed(2)}`,
           isEstimate: updatedDebt.repaymentType === "DIFFERENTIAL" || updatedDebt.repaymentType === "ANNUITY",
         });
         await tx.debtPayment.update({ where: { id: payment.id }, data: { resultingScheduleVersionId: versionId } });
@@ -335,18 +335,18 @@ export async function reverseDebtPayment(userId: string, input: { paymentId: str
       if (!found) throw new NotFoundError("Payment");
       const debt = await lockOwnedDebt(tx, userId, found.debtId);
       const payment = await tx.debtPayment.findFirstOrThrow({ where: { id: input.paymentId, userId }, include: { transaction: true } });
-      if (payment.reversedAt) throw new DomainError("This payment is already reversed.", "ALREADY_REVERSED");
+      if (payment.reversedAt) throw new DomainError("Этот платёж уже отменён.", "ALREADY_REVERSED");
 
       if (payment.isEarlyRepayment && payment.resultingScheduleVersionId) {
         // Keep version history linear: only the latest change can be undone.
         if (debt.activeScheduleVersionId !== payment.resultingScheduleVersionId) {
-          throw new DomainError("The schedule changed after this early repayment. Undo the later changes first.", "NOT_LATEST");
+          throw new DomainError("После этого досрочного погашения график менялся. Сначала отмените более поздние изменения.", "NOT_LATEST");
         }
         const laterPayments = await tx.debtPayment.count({
           where: { debtId: debt.id, reversedAt: null, scheduleItem: { scheduleVersionId: payment.resultingScheduleVersionId } },
         });
         if (laterPayments > 0) {
-          throw new DomainError("Payments were made on the new schedule. Reverse those first.", "NOT_LATEST");
+          throw new DomainError("По новому графику уже есть платежи. Сначала отмените их.", "NOT_LATEST");
         }
       }
 
@@ -356,7 +356,7 @@ export async function reverseDebtPayment(userId: string, input: { paymentId: str
       // Reverse the linked account transaction and restore the balance.
       if (payment.transaction) {
         await lockOwnedAccount(tx, userId, payment.transaction.accountId);
-        await tx.transaction.update({ where: { id: payment.transaction.id }, data: { voidedAt: reversedAt, voidReason: `Payment reversed: ${input.reason}` } });
+        await tx.transaction.update({ where: { id: payment.transaction.id }, data: { voidedAt: reversedAt, voidReason: `Платёж отменён: ${input.reason}` } });
         await applyBalanceDelta(tx, payment.transaction.accountId, money(payment.actualAccountDebit));
       }
 
@@ -392,7 +392,7 @@ export async function reverseDebtPayment(userId: string, input: { paymentId: str
         const split = await splitCurrentSchedule(tx, updatedDebt);
         await writeNewScheduleVersion(tx, updatedDebt, split, replaced.map(itemToLine), {
           reason: "CORRECTION",
-          note: `Early repayment of ${dbToLocalDate(payment.paymentDate)} reversed`,
+          note: `Досрочное погашение от ${dbToLocalDate(payment.paymentDate)} отменено`,
           isEstimate: replaced.some((i) => i.isEstimate),
         });
       } else {

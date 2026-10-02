@@ -19,7 +19,7 @@ function foldTail(rows: CategoryShare[], total: FinDecimal, max = 8): CategorySh
     ...head,
     {
       id: "other",
-      name: `Other (${tail.length})`,
+      name: `Другое (${tail.length})`,
       icon: null,
       color: null,
       amount: toMoneyString(amount),

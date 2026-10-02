@@ -67,23 +67,23 @@ export type UploadInput = DocumentUploadInput & { fileName: string; bytes: Uint8
  */
 export async function uploadDocument(userId: string, input: UploadInput, storage: StorageAdapter = getStorage()): Promise<{ id: string }> {
   const { bytes } = input;
-  if (bytes.byteLength === 0) throw new DomainError("The file is empty.", "VALIDATION", { file: "The file is empty." });
+  if (bytes.byteLength === 0) throw new DomainError("Файл пустой.", "VALIDATION", { file: "Файл пустой." });
   if (bytes.byteLength > MAX_DOCUMENT_BYTES) {
-    throw new DomainError("Files can be up to 10 MB.", "VALIDATION", { file: "Files can be up to 10 MB." });
+    throw new DomainError("Файл должен быть не больше 10 МБ.", "VALIDATION", { file: "Файл должен быть не больше 10 МБ." });
   }
   const mimeType = sniffFileType(bytes);
   if (!mimeType) {
-    throw new DomainError("Only PDF, JPG and PNG files are supported.", "VALIDATION", { file: "Only PDF, JPG and PNG files are supported." });
+    throw new DomainError("Поддерживаются только PDF, JPG и PNG.", "VALIDATION", { file: "Поддерживаются только PDF, JPG и PNG." });
   }
 
   await assertOwnedDebt(userId, input.debtId);
   if (input.debtPaymentId) await assertPaymentOfDebt(userId, input.debtId, input.debtPaymentId);
   if ((await prisma.document.count({ where: { userId } })) >= MAX_DOCUMENTS_PER_USER) {
-    throw new DomainError(`You can keep up to ${MAX_DOCUMENTS_PER_USER} documents. Delete some to upload more.`);
+    throw new DomainError(`Можно хранить до ${MAX_DOCUMENTS_PER_USER} документов. Удалите лишние, чтобы загрузить новые.`);
   }
   const sha256 = createHash("sha256").update(bytes).digest("hex");
   const duplicate = await prisma.document.findFirst({ where: { userId, debtId: input.debtId, sha256 }, select: { name: true } });
-  if (duplicate) throw new DomainError(`This file is already attached as “${duplicate.name}”.`, "DUPLICATE", { file: "Already uploaded" });
+  if (duplicate) throw new DomainError(`Этот файл уже загружен как «${duplicate.name}».`, "DUPLICATE", { file: "Уже загружен" });
 
   const storageKey = `users/${userId}/${randomBytes(18).toString("base64url")}`;
   await storage.put(storageKey, bytes);
@@ -126,7 +126,7 @@ async function findOwned(userId: string, id: string) {
 export async function updateDocument(userId: string, input: DocumentUpdateInput): Promise<void> {
   const doc = await findOwned(userId, input.id);
   if (input.debtPaymentId) {
-    if (!doc.debtId) throw new DomainError("Only debt documents can be linked to a payment.");
+    if (!doc.debtId) throw new DomainError("К платежу можно привязать только документ долга.");
     await assertPaymentOfDebt(userId, doc.debtId, input.debtPaymentId);
   }
   await prisma.$transaction(async (tx) => {

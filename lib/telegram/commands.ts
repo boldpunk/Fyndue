@@ -7,7 +7,7 @@ import { debtTotalsByCurrency, listDebts, listUpcomingPayments, type UpcomingPay
 import { disconnectChat, linkTelegramChat, userIdForChat } from "@/lib/services/telegram-connection";
 import type { TelegramSender, TelegramUpdate } from "./client";
 import { parseCommand } from "./commands-parse";
-import { debtEmoji, escapeHtml, formatDueDate, plural } from "./messages";
+import { days, debtEmoji, escapeHtml, formatDueDate } from "./messages";
 
 /**
  * Bot commands (SPEC §34). Every data command resolves the user from the
@@ -17,22 +17,22 @@ import { debtEmoji, escapeHtml, formatDueDate, plural } from "./messages";
  */
 
 export const BOT_COMMANDS = [
-  { command: "today", description: "Payments due today and overdue" },
-  { command: "upcoming", description: "Payments in the next 14 days" },
-  { command: "debts", description: "Remaining debt and progress" },
-  { command: "month", description: "This month's income, expenses and debt payments" },
-  { command: "help", description: "What this bot can do" },
-  { command: "stop", description: "Disconnect this chat from Fyndue" },
+  { command: "today", description: "Платежи на сегодня и просроченные" },
+  { command: "upcoming", description: "Платежи на ближайшие 14 дней" },
+  { command: "debts", description: "Остаток долгов и прогресс" },
+  { command: "month", description: "Доходы, расходы и платежи за месяц" },
+  { command: "help", description: "Что умеет бот" },
+  { command: "stop", description: "Отключить этот чат от Fyndue" },
 ];
 
 const HELP = [
-  "<b>Fyndue</b> sends payment reminders and answers:",
+  "<b>Fyndue</b> напоминает о платежах и отвечает на команды:",
   "",
   ...BOT_COMMANDS.map((c) => `/${c.command} — ${c.description}`),
 ].join("\n");
 
-const NOT_LINKED = "This chat isn't connected to Fyndue.\n\nOpen Fyndue → Settings → Notifications → <b>Connect Telegram</b>, then send the code shown there.";
-const BAD_CODE = "That code is invalid or has expired.\n\nCreate a new one in Fyndue → Settings → Notifications.";
+const NOT_LINKED = "Этот чат не подключён к Fyndue.\n\nОткройте Fyndue → Настройки → Уведомления → <b>Подключить Telegram</b> и отправьте показанный там код.";
+const BAD_CODE = "Код неверный или устарел.\n\nСоздайте новый в Fyndue → Настройки → Уведомления.";
 
 const m = (amount: string, currency: string) => escapeHtml(formatMoney(amount, currency));
 
@@ -43,7 +43,7 @@ async function todayFor(userId: string): Promise<string> {
 
 function paymentLine(p: UpcomingPaymentDTO, today: string): string {
   const when =
-    p.days < 0 ? `⚠️ overdue ${plural(-p.days, "day")}` : p.days === 0 ? "due today" : `${formatDueDate(p.dueDate, today)} · in ${plural(p.days, "day")}`;
+    p.days < 0 ? `⚠️ просрочен на ${days(-p.days)}` : p.days === 0 ? "сегодня" : `${formatDueDate(p.dueDate, today)} · через ${days(p.days)}`;
   return `• <b>${escapeHtml(p.debt.name)}</b>\n${m(p.remainingTotal, p.debt.currency)} — ${when}`;
 }
 
@@ -58,22 +58,22 @@ function totalLines(payments: UpcomingPaymentDTO[]): string[] {
   const currencies = [...new Set(payments.map((p) => p.debt.currency))];
   return currencies.map((currency) => {
     const total = sumMoney(payments.filter((p) => p.debt.currency === currency).map((p) => p.remainingTotal));
-    return `Total: <b>${m(toMoneyString(total), currency)}</b>`;
+    return `Итого: <b>${m(toMoneyString(total), currency)}</b>`;
   });
 }
 
 async function debtsReply(userId: string): Promise<string> {
   const debts = await listDebts(userId, "active");
-  if (debts.length === 0) return "No active debts. 🎉";
+  if (debts.length === 0) return "Активных долгов нет. 🎉";
   const today = await todayFor(userId);
   const lines = debts.flatMap((d) => [
     `${debtEmoji(d.type)} <b>${escapeHtml(d.name)}</b>`,
-    `Remaining: ${m(d.currentPrincipal, d.currency)} · ${d.paidPercent}% paid`,
-    d.nextPayment ? `Next: ${m(d.nextPayment.amountDue, d.currency)} on ${formatDueDate(d.nextPayment.dueDate, today)}` : "No payments scheduled",
+    `Осталось: ${m(d.currentPrincipal, d.currency)} · выплачено ${d.paidPercent}%`,
+    d.nextPayment ? `Следующий: ${m(d.nextPayment.amountDue, d.currency)} — ${formatDueDate(d.nextPayment.dueDate, today)}` : "Платежей по графику нет",
     "",
   ]);
-  const totals = debtTotalsByCurrency(debts).map((t) => `Total remaining: <b>${m(t.remainingPrincipal, t.currency)}</b> · ${t.paidPercent}% paid`);
-  return ["<b>Active debts</b>", "", ...lines, ...totals].join("\n").trim();
+  const totals = debtTotalsByCurrency(debts).map((t) => `Всего осталось: <b>${m(t.remainingPrincipal, t.currency)}</b> · выплачено ${t.paidPercent}%`);
+  return ["<b>Активные долги</b>", "", ...lines, ...totals].join("\n").trim();
 }
 
 function totalsText(label: string, totals: CurrencyTotals): string {
@@ -84,12 +84,12 @@ async function monthReply(userId: string): Promise<string> {
   const month = yearMonthOf(await todayFor(userId));
   const o = await getMonthOverview(userId, month);
   return [
-    `<b>${formatYearMonthLabel(month, "en-GB")}</b>`,
+    `<b>${formatYearMonthLabel(month)}</b>`,
     "",
-    totalsText("Income", o.income),
-    totalsText("Expenses", o.expenses),
-    totalsText("Debt payments", o.debtPayments),
-    ...(o.expectedIncome.length ? ["", totalsText("Still expected", o.expectedIncome)] : []),
+    totalsText("Доходы", o.income),
+    totalsText("Расходы", o.expenses),
+    totalsText("Платежи по долгам", o.debtPayments),
+    ...(o.expectedIncome.length ? ["", totalsText("Ещё ожидается", o.expectedIncome)] : []),
   ].join("\n");
 }
 
@@ -98,7 +98,7 @@ async function reply(command: string, args: string[], chat: { chatId: string; us
     const code = args[0];
     if (code) {
       const linked = await linkTelegramChat(code, chat);
-      return linked.ok ? `✅ <b>Connected to Fyndue</b>\n\nPayment reminders will arrive here.\n\n${HELP}` : BAD_CODE;
+      return linked.ok ? `✅ <b>Fyndue подключён</b>\n\nНапоминания о платежах будут приходить сюда.\n\n${HELP}` : BAD_CODE;
     }
     return (await userIdForChat(chat.chatId)) ? HELP : NOT_LINKED;
   }
@@ -108,18 +108,18 @@ async function reply(command: string, args: string[], chat: { chatId: string; us
   if (!userId) return NOT_LINKED;
   switch (command) {
     case "today":
-      return paymentsReply(userId, 0, "Due today", "Nothing due today and nothing overdue. ✅");
+      return paymentsReply(userId, 0, "На сегодня", "Сегодня платежей нет, просроченных тоже. ✅");
     case "upcoming":
-      return paymentsReply(userId, 14, "Next 14 days", "No payments in the next 14 days. ✅");
+      return paymentsReply(userId, 14, "Ближайшие 14 дней", "В ближайшие 14 дней платежей нет. ✅");
     case "debts":
       return debtsReply(userId);
     case "month":
       return monthReply(userId);
     case "stop":
       await disconnectChat(chat.chatId);
-      return "Disconnected. You won't get reminders here any more.\n\nReconnect any time from Fyndue → Settings → Notifications.";
+      return "Отключено. Напоминания сюда больше не придут.\n\nПодключить снова можно в Fyndue → Настройки → Уведомления.";
     default:
-      return `Unknown command.\n\n${HELP}`;
+      return `Неизвестная команда.\n\n${HELP}`;
   }
 }
 
@@ -129,6 +129,6 @@ export async function handleUpdate(update: TelegramUpdate, sender: TelegramSende
   if (!message || message.chat.type !== "private" || message.from?.is_bot) return;
   const parsed = parseCommand(message.text);
   const chat = { chatId: String(message.chat.id), username: message.from?.username };
-  const text = parsed ? await reply(parsed.command, parsed.args, chat) : `Send a command, for example /today.\n\n${HELP}`;
+  const text = parsed ? await reply(parsed.command, parsed.args, chat) : `Отправьте команду, например /today.\n\n${HELP}`;
   if (text) await sender.sendMessage(chat.chatId, text);
 }

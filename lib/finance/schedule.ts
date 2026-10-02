@@ -128,22 +128,22 @@ export function validateSchedule(lines: readonly ScheduleLine[], expectedPrincip
   const expected = money(expectedPrincipal);
   const totals = scheduleTotals(lines);
   if (!totals.principal.equals(expected)) {
-    errors.push(`Principal adds up to ${totals.principal.toFixed(2)}, expected ${expected.toFixed(2)}`);
+    errors.push(`Сумма основного долга ${totals.principal.toFixed(2)}, а должна быть ${expected.toFixed(2)}`);
   }
   lines.forEach((line, i) => {
     const n = line.installmentNumber;
-    if (line.principal.isNegative() || line.interest.isNegative() || line.fees.isNegative()) errors.push(`Line ${n} has a negative amount`);
-    if (line.closingPrincipal.isNegative()) errors.push(`Line ${n} closes below zero`);
-    if (!line.closingPrincipal.equals(line.openingPrincipal.minus(line.principal))) errors.push(`Line ${n} closing principal is inconsistent`);
-    if (!line.total.equals(line.principal.plus(line.interest).plus(line.fees))) errors.push(`Line ${n} total is inconsistent`);
+    if (line.principal.isNegative() || line.interest.isNegative() || line.fees.isNegative()) errors.push(`Строка ${n}: отрицательная сумма`);
+    if (line.closingPrincipal.isNegative()) errors.push(`Строка ${n}: остаток уходит ниже нуля`);
+    if (!line.closingPrincipal.equals(line.openingPrincipal.minus(line.principal))) errors.push(`Строка ${n}: остаток после платежа не сходится`);
+    if (!line.total.equals(line.principal.plus(line.interest).plus(line.fees))) errors.push(`Строка ${n}: итог не сходится`);
     const prev = lines[i - 1];
     if (prev) {
-      if (daysBetween(prev.dueDate, line.dueDate) <= 0) errors.push(`Line ${n} is not after the previous due date`);
-      if (!prev.closingPrincipal.equals(line.openingPrincipal)) errors.push(`Line ${n} does not continue from line ${prev.installmentNumber}`);
+      if (daysBetween(prev.dueDate, line.dueDate) <= 0) errors.push(`Строка ${n}: дата должна быть позже предыдущей`);
+      if (!prev.closingPrincipal.equals(line.openingPrincipal)) errors.push(`Строка ${n} не продолжает строку ${prev.installmentNumber}`);
     }
   });
   const last = lines.at(-1);
-  if (last && !last.closingPrincipal.isZero()) errors.push("The last line does not close the principal to zero");
+  if (last && !last.closingPrincipal.isZero()) errors.push("Последняя строка не гасит долг до нуля");
   return errors;
 }
 

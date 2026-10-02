@@ -67,29 +67,44 @@ describe("parseMoneyInput", () => {
 });
 
 describe("formatMoney", () => {
-  it("formats like the SPEC examples", () => {
-    expect(formatMoney("3500000", "UZS")).toBe("3,500,000 UZS");
-    expect(formatMoney("113606733.37", "UZS")).toBe("113,606,733.37 UZS");
-    expect(formatMoney("2115000.00", "UZS")).toBe("2,115,000 UZS");
+  const NB = "\u00a0"; // ru-RU groups digits with a no-break space
+
+  it("formats in Russian by default", () => {
+    expect(formatMoney("3500000", "UZS")).toBe(`3${NB}500${NB}000 UZS`);
+    expect(formatMoney("113606733.37", "UZS")).toBe(`113${NB}606${NB}733,37 UZS`);
+    expect(formatMoney("2115000.00", "UZS")).toBe(`2${NB}115${NB}000 UZS`);
+  });
+
+  it("formats like the SPEC examples in en-US", () => {
+    const en = { locale: "en-US" };
+    expect(formatMoney("3500000", "UZS", en)).toBe("3,500,000 UZS");
+    expect(formatMoney("113606733.37", "UZS", en)).toBe("113,606,733.37 UZS");
+    expect(formatMoney("2115000.00", "UZS", en)).toBe("2,115,000 UZS");
+  });
+
+  it("regrouped Russian output parses back to the same amount", () => {
+    for (const v of ["3500000", "113606733.37", "0.5", "1234.5"]) {
+      expect(parseMoneyInput(formatMoney(v, "", { hideCurrency: true }))!.toString()).toBe(money(v).toString());
+    }
   });
 
   it("keeps every digit of very large values", () => {
-    expect(formatMoney("999999999999999999.99", "UZS", { hideCurrency: true })).toBe("999,999,999,999,999,999.99");
+    expect(formatMoney("999999999999999999.99", "UZS", { hideCurrency: true, locale: "en-US" })).toBe("999,999,999,999,999,999.99");
   });
 
   it("supports signs and fixed decimals", () => {
-    expect(formatMoney("150000", "UZS", { signed: true })).toBe("+150,000 UZS");
-    expect(formatMoney("-150000", "UZS", { signed: true })).toBe("-150,000 UZS");
-    expect(formatMoney("12", "USD", { alwaysShowDecimals: true })).toBe("12.00 USD");
+    expect(formatMoney("150000", "UZS", { signed: true, locale: "en-US" })).toBe("+150,000 UZS");
+    expect(formatMoney("-150000", "UZS", { signed: true, locale: "en-US" })).toBe("-150,000 UZS");
+    expect(formatMoney("12", "USD", { alwaysShowDecimals: true })).toBe("12,00 USD");
   });
 });
 
 describe("formatCompactMoney", () => {
   it("shortens large values for axes", async () => {
     const { formatCompactMoney } = await import("@/lib/finance/money");
-    expect(formatCompactMoney("12500000")).toBe("12.5M");
-    expect(formatCompactMoney("850000")).toBe("850K");
+    expect(formatCompactMoney("12500000", "en-US")).toBe("12.5M");
+    expect(formatCompactMoney("850000", "en-US")).toBe("850K");
     expect(formatCompactMoney("0")).toBe("0");
-    expect(formatCompactMoney("-2115000")).toBe("-2.1M");
+    expect(formatCompactMoney("12500000")).toBe("12,5\u00a0млн");
   });
 });

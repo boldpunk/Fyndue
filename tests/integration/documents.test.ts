@@ -44,11 +44,11 @@ describe("documents (SPEC §41)", () => {
   it("decides the type from the bytes and rejects anything else", async () => {
     const { user, debtId } = await setup();
     const html = new TextEncoder().encode("<html><script>alert(1)</script></html>");
-    await expect(uploadDocument(user.id, { debtId, type: "OTHER", fileName: "receipt.pdf", bytes: html })).rejects.toThrow(/Only PDF, JPG and PNG/);
-    await expect(uploadDocument(user.id, { debtId, type: "OTHER", fileName: "empty.pdf", bytes: new Uint8Array() })).rejects.toThrow(/empty/);
+    await expect(uploadDocument(user.id, { debtId, type: "OTHER", fileName: "receipt.pdf", bytes: html })).rejects.toThrow(/только PDF, JPG и PNG/);
+    await expect(uploadDocument(user.id, { debtId, type: "OTHER", fileName: "empty.pdf", bytes: new Uint8Array() })).rejects.toThrow(/пустой/);
     const huge = new Uint8Array(10 * 1024 * 1024 + 1);
     huge.set(pdf());
-    await expect(uploadDocument(user.id, { debtId, type: "OTHER", fileName: "big.pdf", bytes: huge })).rejects.toThrow(/10 MB/);
+    await expect(uploadDocument(user.id, { debtId, type: "OTHER", fileName: "big.pdf", bytes: huge })).rejects.toThrow(/10 МБ/);
 
     // A PNG called ".pdf" is stored as what it really is.
     const { id } = await uploadDocument(user.id, { debtId, type: "BANK_SCHEDULE", fileName: "schedule.pdf", bytes: png() });
@@ -59,7 +59,7 @@ describe("documents (SPEC §41)", () => {
   it("refuses the same file twice on one debt", async () => {
     const { user, debtId } = await setup();
     await uploadDocument(user.id, { debtId, type: "OTHER", fileName: "a.pdf", bytes: pdf() });
-    await expect(uploadDocument(user.id, { debtId, type: "OTHER", fileName: "b.pdf", bytes: pdf() })).rejects.toThrow(/already attached as “a”/);
+    await expect(uploadDocument(user.id, { debtId, type: "OTHER", fileName: "b.pdf", bytes: pdf() })).rejects.toThrow(/уже загружен как «a»/);
   });
 
   it("links a receipt to a payment of the same debt and keeps it after a reversal", async () => {
@@ -85,7 +85,7 @@ describe("documents (SPEC §41)", () => {
     const { id: otherDebt } = await createTestDebt(user.id, { name: "Other" });
     await expect(
       uploadDocument(user.id, { debtId: otherDebt, debtPaymentId: paymentId, type: "PAYMENT_RECEIPT", fileName: "x.pdf", bytes: pdf("x") }),
-    ).rejects.toThrow(/Payment not found/);
+    ).rejects.toThrow(/Платёж не найден/);
 
     await updateDocument(user.id, { id, type: "OTHER", name: "Bank receipt", debtPaymentId: undefined });
     expect((await listDebtDocuments(user.id, debtId))[0]).toMatchObject({ name: "Bank receipt", type: "OTHER", payment: null });
@@ -123,11 +123,11 @@ describe("documents authorization (SPEC §59)", () => {
     const b = await setup();
     const { id } = await uploadDocument(b.user.id, { debtId: b.debtId, type: "LOAN_AGREEMENT", fileName: "b.pdf", bytes: pdf() });
 
-    await expect(readDocument(a.user.id, id)).rejects.toThrow(/Document not found/);
-    await expect(listDebtDocuments(a.user.id, b.debtId)).rejects.toThrow(/Debt not found/);
-    await expect(updateDocument(a.user.id, { id, type: "OTHER", name: "mine", debtPaymentId: undefined })).rejects.toThrow(/Document not found/);
-    await expect(deleteDocument(a.user.id, id)).rejects.toThrow(/Document not found/);
-    await expect(uploadDocument(a.user.id, { debtId: b.debtId, type: "OTHER", fileName: "x.pdf", bytes: pdf("x") })).rejects.toThrow(/Debt not found/);
+    await expect(readDocument(a.user.id, id)).rejects.toThrow(/Документ не найден/);
+    await expect(listDebtDocuments(a.user.id, b.debtId)).rejects.toThrow(/Долг не найден/);
+    await expect(updateDocument(a.user.id, { id, type: "OTHER", name: "mine", debtPaymentId: undefined })).rejects.toThrow(/Документ не найден/);
+    await expect(deleteDocument(a.user.id, id)).rejects.toThrow(/Документ не найден/);
+    await expect(uploadDocument(a.user.id, { debtId: b.debtId, type: "OTHER", fileName: "x.pdf", bytes: pdf("x") })).rejects.toThrow(/Долг не найден/);
 
     expect(await prisma.document.findUniqueOrThrow({ where: { id } })).toMatchObject({ name: "b", type: "LOAN_AGREEMENT" });
     expect((await readDocument(b.user.id, id)).name).toBe("b");

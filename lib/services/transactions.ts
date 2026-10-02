@@ -169,7 +169,7 @@ export async function recentTransactions(userId: string, limit = 6): Promise<Tra
 async function ownedUsableAccount(tx: Tx, userId: string, accountId: string) {
   const account = await lockOwnedAccount(tx, userId, accountId);
   if (account.isArchived) {
-    throw new DomainError("This account is archived.", "ACCOUNT_ARCHIVED", { accountId: "Account is archived" });
+    throw new DomainError("Этот счёт в архиве.", "ACCOUNT_ARCHIVED", { accountId: "Счёт в архиве" });
   }
   return account;
 }
@@ -178,13 +178,13 @@ async function ownedCategory(tx: Tx, userId: string, categoryId: string, type: "
   const category = await tx.category.findFirst({ where: { id: categoryId, userId } });
   if (!category) throw new NotFoundError("Category");
   if (category.type !== type) {
-    throw new DomainError("Category does not match the transaction type.", "CATEGORY_TYPE", {
-      categoryId: "Choose a matching category",
+    throw new DomainError("Категория не подходит к типу операции.", "CATEGORY_TYPE", {
+      categoryId: "Выберите подходящую категорию",
     });
   }
   if (category.isSystem) {
-    throw new DomainError("This category is managed by Fyndue.", "SYSTEM_CATEGORY", {
-      categoryId: "Choose another category",
+    throw new DomainError("Этой категорией управляет приложение.", "SYSTEM_CATEGORY", {
+      categoryId: "Выберите другую категорию",
     });
   }
   return category;
@@ -330,15 +330,15 @@ function resolveTransferToAmount(
 ): string {
   if (fromCurrency === toCurrency) {
     if (toAmount !== undefined && !money(toAmount).equals(money(amount))) {
-      throw new DomainError("Transfers in the same currency move the same amount.", "TRANSFER_AMOUNT", {
-        toAmount: "Must equal the amount sent",
+      throw new DomainError("При переводе в одной валюте суммы совпадают.", "TRANSFER_AMOUNT", {
+        toAmount: "Должна совпадать с отправленной суммой",
       });
     }
     return amount;
   }
   if (toAmount === undefined) {
-    throw new DomainError(`Enter the amount received in ${toCurrency}.`, "TRANSFER_CONVERSION", {
-      toAmount: `Amount received in ${toCurrency} is required`,
+    throw new DomainError(`Укажите сумму, полученную в ${toCurrency}.`, "TRANSFER_CONVERSION", {
+      toAmount: `Укажите сумму, полученную в ${toCurrency}`,
     });
   }
   return toAmount;
@@ -352,10 +352,10 @@ async function lockOwnedTransaction(tx: Tx, userId: string, id: string): Promise
 }
 
 function assertEditable(t: Transaction, expected: "cash-flow" | "transfer") {
-  if (t.voidedAt) throw new DomainError("Voided transactions can't be edited.", "VOIDED");
+  if (t.voidedAt) throw new DomainError("Аннулированную операцию нельзя изменить.", "VOIDED");
   const isTransfer = t.type === "TRANSFER";
   if (expected === "transfer" ? !isTransfer : t.type !== "EXPENSE" && t.type !== "INCOME") {
-    throw new DomainError("This transaction can't be edited here.", "NOT_EDITABLE");
+    throw new DomainError("Эту операцию здесь нельзя изменить.", "NOT_EDITABLE");
   }
 }
 
@@ -408,7 +408,7 @@ export async function updateTransfer(userId: string, input: TransferUpdateInput)
     const legs = await tx.transaction.findMany({ where: { userId, transferGroupId: target.transferGroupId } });
     const outLeg = legs.find((l) => l.direction === "OUTFLOW");
     const inLeg = legs.find((l) => l.direction === "INFLOW");
-    if (!outLeg || !inLeg) throw new DomainError("This transfer is incomplete.", "BROKEN_TRANSFER");
+    if (!outLeg || !inLeg) throw new DomainError("Этот перевод неполный.", "BROKEN_TRANSFER");
 
     const toAmount = resolveTransferToAmount(outLeg.currency, inLeg.currency, input.amount, input.toAmount);
     const data = { transactionDate: localDateToDb(input.date), note: input.note ?? null };
@@ -437,9 +437,9 @@ export async function updateTransfer(userId: string, input: TransferUpdateInput)
 export async function voidTransaction(userId: string, id: string, reason?: string): Promise<void> {
   await prisma.$transaction(async (tx) => {
     const target = await lockOwnedTransaction(tx, userId, id);
-    if (target.voidedAt) throw new DomainError("This transaction is already voided.", "VOIDED");
+    if (target.voidedAt) throw new DomainError("Эта операция уже аннулирована.", "VOIDED");
     if (target.type === "DEBT_PAYMENT" || target.type === "LOAN_DISBURSEMENT") {
-      throw new DomainError("Debt transactions are reversed from the debt's payment history.", "USE_DEBT_REVERSAL");
+      throw new DomainError("Платёж по долгу отменяется в истории платежей этого долга.", "USE_DEBT_REVERSAL");
     }
 
     const legs = target.transferGroupId
@@ -465,7 +465,7 @@ export async function confirmExpectedIncome(userId: string, id: string): Promise
   await prisma.$transaction(async (tx) => {
     const target = await lockOwnedTransaction(tx, userId, id);
     if (target.voidedAt || target.type !== "INCOME" || target.status !== "EXPECTED") {
-      throw new DomainError("Only expected income can be confirmed.", "NOT_EXPECTED");
+      throw new DomainError("Подтвердить можно только ожидаемый доход.", "NOT_EXPECTED");
     }
     await lockOwnedAccount(tx, userId, target.accountId);
     await tx.transaction.update({ where: { id: target.id }, data: { status: "ACTUAL" } });

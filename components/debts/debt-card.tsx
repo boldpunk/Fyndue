@@ -69,7 +69,7 @@ export function DebtCard({ debt }: { debt: DebtSummaryDTO }) {
               <span className="text-xs text-muted-foreground">Next payment · {daysLabel(debt.nextPayment.daysUntil)}</span>
               <span className="text-sm">
                 <Money amount={debt.nextPayment.amountDue} currency={debt.currency} className="font-semibold" /> on{" "}
-                {formatLocalDate(debt.nextPayment.dueDate, "en-US", { day: "numeric", month: "short" })}
+                {formatLocalDate(debt.nextPayment.dueDate, undefined, { day: "numeric", month: "short" })}
               </span>
             </div>
             <PaymentStatusBadge status={debt.nextPayment.displayStatus} />
@@ -78,7 +78,7 @@ export function DebtCard({ debt }: { debt: DebtSummaryDTO }) {
 
         <p className="text-xs text-muted-foreground">
           {debt.paymentsCompleted} paid · {debt.paymentsRemaining} remaining
-          {debt.projectedPayoffDate ? ` · payoff ${formatLocalDate(debt.projectedPayoffDate, "en-US", { month: "short", year: "numeric" })}` : ""}
+          {debt.projectedPayoffDate ? ` · payoff ${formatLocalDate(debt.projectedPayoffDate, undefined, { month: "short", year: "numeric" })}` : ""}
         </p>
       </Card>
     </Link>

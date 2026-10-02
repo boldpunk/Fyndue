@@ -4,13 +4,13 @@ import { clientRequestIdSchema, idSchema, localDateSchema, moneySchema, optional
 
 export const recurringSchema = z
   .object({
-    name: z.string().trim().min(1, "Name is required").max(60),
+    name: z.string().trim().min(1, "Введите название").max(60),
     kind: z.enum(["EXPENSE", "INCOME"]),
     accountId: idSchema,
     categoryId: idSchema,
     amount: moneySchema(),
     frequency: z.enum(["WEEKLY", "MONTHLY", "YEARLY"]),
-    interval: z.coerce.number().int().min(1, "At least 1").max(60),
+    interval: z.coerce.number().int().min(1, "Не меньше 1").max(60),
     startDate: localDateSchema,
     endDate: z
       .string()
@@ -20,7 +20,7 @@ export const recurringSchema = z
     isSubscription: z.boolean().default(false),
     note: optionalText(200),
   })
-  .refine((v) => !v.endDate || v.endDate >= v.startDate, { message: "Ends before it starts", path: ["endDate"] });
+  .refine((v) => !v.endDate || v.endDate >= v.startDate, { message: "Окончание раньше начала", path: ["endDate"] });
 export type RecurringInput = z.output<typeof recurringSchema>;
 
 export const recurringUpdateSchema = z.intersection(recurringSchema, z.object({ id: idSchema }));
@@ -57,10 +57,10 @@ export const exchangeRateSchema = z
     rate: z
       .string()
       .trim()
-      .regex(/^\d{1,12}([.,]\d{1,8})?$/, "Enter a rate like 12700 or 0.0000725")
+      .regex(/^\d{1,12}([.,]\d{1,8})?$/, "Введите курс, например 12700 или 0,0000725")
       .transform((v) => v.replace(",", "."))
-      .refine((v) => Number.parseFloat(v) > 0, "Rate must be positive"),
+      .refine((v) => Number.parseFloat(v) > 0, "Курс должен быть больше нуля"),
     effectiveDate: localDateSchema,
   })
-  .refine((v) => v.fromCurrency !== v.toCurrency, { message: "Choose two different currencies", path: ["toCurrency"] });
+  .refine((v) => v.fromCurrency !== v.toCurrency, { message: "Выберите две разные валюты", path: ["toCurrency"] });
 export type ExchangeRateInput = z.output<typeof exchangeRateSchema>;

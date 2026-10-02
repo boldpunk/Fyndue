@@ -86,11 +86,11 @@ export async function listRecurring(userId: string): Promise<RecurringDTO[]> {
 async function validateRefs(tx: Tx, userId: string, input: RecurringInput) {
   const account = await tx.account.findFirst({ where: { id: input.accountId, userId } });
   if (!account) throw new NotFoundError("Account");
-  if (account.isArchived) throw new DomainError("That account is archived.", "ACCOUNT_ARCHIVED", { accountId: "Account is archived" });
+  if (account.isArchived) throw new DomainError("Этот счёт в архиве.", "ACCOUNT_ARCHIVED", { accountId: "Счёт в архиве" });
   const category = await tx.category.findFirst({ where: { id: input.categoryId, userId } });
   if (!category) throw new NotFoundError("Category");
   if (category.type !== input.kind || category.isSystem) {
-    throw new DomainError("Choose a matching category.", "CATEGORY_TYPE", { categoryId: "Choose a matching category" });
+    throw new DomainError("Выберите подходящую категорию.", "CATEGORY_TYPE", { categoryId: "Выберите подходящую категорию" });
   }
   return account;
 }
@@ -211,8 +211,8 @@ export async function recordOccurrence(userId: string, input: RecordOccurrenceIn
   const rule = await prisma.recurringTransaction.findFirst({ where: { id: input.recurringId, userId } });
   if (!rule) throw new NotFoundError("Recurring item");
   const valid = occurrencesBetween(ruleOf(rule), input.occurrenceDate, input.occurrenceDate);
-  if (valid.length !== 1) throw new DomainError("That date is not an occurrence of this item.", "NOT_AN_OCCURRENCE");
-  if (!rule.categoryId) throw new DomainError("Set a category for this recurring item first.", "NO_CATEGORY");
+  if (valid.length !== 1) throw new DomainError("В эту дату этот платёж не запланирован.", "NOT_AN_OCCURRENCE");
+  if (!rule.categoryId) throw new DomainError("Сначала укажите категорию для этого регулярного платежа.", "NO_CATEGORY");
   try {
     return await createTransaction(
       userId,
@@ -241,7 +241,7 @@ export async function recordOccurrence(userId: string, input: RecordOccurrenceIn
       { recurringId: rule.id, occurrenceDate: input.occurrenceDate },
     );
   } catch (error) {
-    if (isUniqueViolation(error)) throw new DomainError("This occurrence is already recorded.", "ALREADY_RECORDED");
+    if (isUniqueViolation(error)) throw new DomainError("Этот платёж уже записан.", "ALREADY_RECORDED");
     throw error;
   }
 }

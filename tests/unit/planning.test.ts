@@ -102,3 +102,17 @@ describe("monthly equivalent of recurring items", () => {
     expect(monthlyEquivalent("12000", "WEEKLY", 1).toFixed(2)).toBe("52000.00");
   });
 });
+
+describe("Russian wording", () => {
+  it("declines numbers and describes recurrence", async () => {
+    const { describeRule, pluralRu } = await import("@/lib/finance/recurrence");
+    const forms: [string, string, string] = ["день", "дня", "дней"];
+    expect([1, 2, 5, 11, 12, 21, 22, 25, 111, 101].map((n) => `${n} ${pluralRu(n, forms)}`)).toEqual([
+      "1 день", "2 дня", "5 дней", "11 дней", "12 дней", "21 день", "22 дня", "25 дней", "111 дней", "101 день",
+    ]);
+    expect(describeRule({ frequency: "MONTHLY", interval: 1 })).toBe("Каждый месяц");
+    expect(describeRule({ frequency: "WEEKLY", interval: 2 })).toBe("Каждые 2 недели");
+    expect(describeRule({ frequency: "YEARLY", interval: 5 })).toBe("Каждые 5 лет");
+    expect(describeRule({ frequency: "MONTHLY", interval: 21 })).toBe("Каждый 21 месяц");
+  });
+});

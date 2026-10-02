@@ -27,7 +27,7 @@ export function UpcomingPayments({ items, accounts, today }: { items: UpcomingPa
                 {item.debt.name}
               </Link>
               <p className="truncate text-[13px] text-muted-foreground">
-                {item.debt.lender ? `${item.debt.lender} · ` : ""}#{item.installmentNumber} · {formatLocalDate(item.dueDate, "en-US", { weekday: "short", day: "numeric", month: "short" })} ·{" "}
+                {item.debt.lender ? `${item.debt.lender} · ` : ""}#{item.installmentNumber} · {formatLocalDate(item.dueDate, undefined, { weekday: "short", day: "numeric", month: "short" })} ·{" "}
                 {daysLabel(item.days)}
               </p>
             </div>
