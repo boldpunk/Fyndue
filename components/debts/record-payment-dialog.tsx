@@ -58,7 +58,7 @@ function PaymentForm({
 
   // The fee column maps to an origination fee for "added on top" loans, otherwise "other fees".
   const feeKey = debt.feeMode === "ADDED_ON_TOP" ? "originationFee" : "otherFee";
-  const feeLabel = debt.feeMode === "ADDED_ON_TOP" ? "Origination / service fee" : "Fees";
+  const feeLabel = debt.feeMode === "ADDED_ON_TOP" ? "Комиссия за выдачу / обслуживание" : "Комиссии";
 
   const breakdown = {
     principal: parse(fields.principal),
@@ -105,13 +105,13 @@ function PaymentForm({
         setErrors({ ...(result.fieldErrors ?? {}), form: result.error });
         return;
       }
-      toast.success(coversAll || settles ? "Payment recorded — installment paid" : "Partial payment recorded");
+      toast.success(coversAll || settles ? "Платёж записан, этот месяц оплачен" : "Частичный платёж записан");
       router.refresh();
       onDone();
     });
 
   if (usable.length === 0) {
-    return <p className="text-sm text-muted-foreground">Add a {debt.currency} account first — payments come out of a real account.</p>;
+    return <p className="text-sm text-muted-foreground">Сначала добавьте счёт в {debt.currency}: платежи списываются с реального счёта.</p>;
   }
 
   return (
@@ -127,19 +127,19 @@ function PaymentForm({
         <div className="grid gap-1 rounded-lg bg-muted/60 p-3 text-sm">
           <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">
-              Installment #{item.installmentNumber} · {formatLocalDate(item.dueDate)}
+              Платёж №{item.installmentNumber} · {formatLocalDate(item.dueDate)}
             </span>
             <span>
-              Expected <Money amount={item.plannedTotal} currency={debt.currency} className="font-medium" />
+              По графику <Money amount={item.plannedTotal} currency={debt.currency} className="font-medium" />
             </span>
           </div>
           {money(item.paidTotal).gt(0) ? (
             <div className="flex justify-between gap-3 text-muted-foreground">
               <span>
-                Paid <Money amount={item.paidTotal} currency={debt.currency} />
+                Оплачено <Money amount={item.paidTotal} currency={debt.currency} />
               </span>
               <span>
-                Remaining <Money amount={toMoneyString(remaining.total)} currency={debt.currency} className="font-medium text-foreground" />
+                Осталось <Money amount={toMoneyString(remaining.total)} currency={debt.currency} className="font-medium text-foreground" />
               </span>
             </div>
           ) : null}
@@ -148,39 +148,39 @@ function PaymentForm({
 
       {item ? (
         <Field
-          label="Amount paid"
+          label="Сколько оплачено"
           htmlFor="pay-amount"
-          hint="Split automatically: fees, then interest, then principal. Adjust below if the bank split it differently."
+          hint="Распределяется автоматически: сначала комиссии, потом проценты, потом основной долг. Если банк распределил иначе, поправьте ниже."
         >
           <MoneyInput id="pay-amount" size="lg" currency={debt.currency} value={amount} onChange={onAmount} autoFocus />
         </Field>
       ) : null}
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Principal" htmlFor="pay-principal" error={errors.principal}>
+        <Field label="Основной долг" htmlFor="pay-principal" error={errors.principal}>
           <MoneyInput id="pay-principal" value={fields.principal} onChange={set("principal")} />
         </Field>
-        <Field label="Interest" htmlFor="pay-interest" error={errors.interest}>
+        <Field label="Проценты" htmlFor="pay-interest" error={errors.interest}>
           <MoneyInput id="pay-interest" value={fields.interest} onChange={set("interest")} />
         </Field>
         <Field label={feeLabel} htmlFor="pay-fees" error={errors.originationFee ?? errors.otherFee}>
           <MoneyInput id="pay-fees" value={fields.fees} onChange={set("fees")} />
         </Field>
-        <Field label="Penalty" htmlFor="pay-penalty" error={errors.penalty}>
+        <Field label="Штраф" htmlFor="pay-penalty" error={errors.penalty}>
           <MoneyInput id="pay-penalty" value={fields.penalty} onChange={set("penalty")} />
         </Field>
       </div>
       <Field
-        label="Card / transfer fee"
+        label="Комиссия за перевод"
         htmlFor="pay-processing"
         error={errors.processingFee}
-        hint="Charged by your bank or card for the transfer. Debited from the account, not applied to the debt."
+        hint="Её берёт банк или карта за перевод. Списывается со счёта, но в счёт долга не идёт."
       >
         <MoneyInput id="pay-processing" value={fields.processingFee} onChange={set("processingFee")} />
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="From account" htmlFor="pay-account" error={errors.accountId}>
+        <Field label="Со счёта" htmlFor="pay-account" error={errors.accountId}>
           <NativeSelect id="pay-account" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
             {usable.map((a) => (
               <option key={a.id} value={a.id}>
@@ -189,40 +189,40 @@ function PaymentForm({
             ))}
           </NativeSelect>
         </Field>
-        <Field label="Date" htmlFor="pay-date" error={errors.paymentDate}>
+        <Field label="Дата" htmlFor="pay-date" error={errors.paymentDate}>
           <Input id="pay-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
       </div>
 
-      <Field label="Note" htmlFor="pay-note">
-        <Textarea id="pay-note" rows={2} placeholder="Optional" value={note} onChange={(e) => setNote(e.target.value)} />
+      <Field label="Комментарий" htmlFor="pay-note">
+        <Textarea id="pay-note" rows={2} placeholder="Необязательно" value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
 
       {item && coversPrincipal && !coversAll ? (
         <label className="flex items-start justify-between gap-4 rounded-lg border p-3">
           <span className="grid gap-0.5">
-            <span className="text-sm font-medium">This settles the installment</span>
-            <span className="text-[13px] text-muted-foreground">Use when the bank charged less interest or fees than estimated.</span>
+            <span className="text-sm font-medium">Этот месяц оплачен полностью</span>
+            <span className="text-[13px] text-muted-foreground">Включите, если банк начислил меньше процентов или комиссий, чем в расчёте.</span>
           </span>
-          <Switch checked={settles} onCheckedChange={setSettles} aria-label="This settles the installment" />
+          <Switch checked={settles} onCheckedChange={setSettles} aria-label="Этот месяц оплачен полностью" />
         </label>
       ) : null}
 
       <dl className="grid gap-1.5 rounded-lg border p-3 text-sm">
         <div className="flex justify-between">
-          <dt className="text-muted-foreground">Applied to debt</dt>
+          <dt className="text-muted-foreground">В счёт долга</dt>
           <dd>
             <Money amount={toMoneyString(totals.amountAppliedToDebt)} currency={debt.currency} />
           </dd>
         </div>
         <div className="flex justify-between">
-          <dt className="text-muted-foreground">Card / transfer fee</dt>
+          <dt className="text-muted-foreground">Комиссия за перевод</dt>
           <dd>
             <Money amount={toMoneyString(breakdown.processingFee)} currency={debt.currency} />
           </dd>
         </div>
         <div className="flex justify-between border-t pt-1.5 font-medium">
-          <dt>Debited from account</dt>
+          <dt>Спишется со счёта</dt>
           <dd>
             <Money amount={toMoneyString(totals.actualAccountDebit)} currency={debt.currency} />
           </dd>
@@ -236,7 +236,7 @@ function PaymentForm({
       ) : null}
 
       <Button type="submit" size="lg" disabled={pending}>
-        {pending ? "Recording…" : "Confirm payment"}
+        {pending ? "Записываем…" : "Подтвердить платёж"}
       </Button>
     </form>
   );
@@ -255,7 +255,7 @@ export function RecordPaymentDialog({
   today: string;
 }) {
   return (
-    <ResponsiveDialog open={open} onOpenChange={onOpenChange} title={`Mark as paid · ${props.debt.name}`}>
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange} title={`Оплата · ${props.debt.name}`}>
       {open ? <PaymentForm key={props.item?.id ?? "none"} {...props} onDone={() => onOpenChange(false)} /> : null}
     </ResponsiveDialog>
   );

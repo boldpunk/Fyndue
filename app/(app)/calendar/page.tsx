@@ -14,7 +14,7 @@ import { getCalendarEvents } from "@/lib/services/calendar";
 import { getSettings } from "@/lib/services/settings";
 import { cn } from "@/lib/utils/cn";
 
-export const metadata: Metadata = { title: "Calendar" };
+export const metadata: Metadata = { title: "Календарь" };
 
 export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ month?: string; view?: string }> }) {
   const user = await requireUser();
@@ -37,15 +37,15 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   return (
     <div className="grid gap-6">
       <PageHeader
-        title="Calendar"
-        description="Debt payments, expected income, bills and subscriptions — everything planned, by date."
+        title="Календарь"
+        description="Платежи по долгам, ожидаемый доход, счета и подписки — всё запланированное по датам."
         actions={
           <div className="flex flex-wrap gap-2">
-            <div className="flex gap-1 rounded-md border bg-card p-0.5" role="group" aria-label="View">
+            <div className="flex gap-1 rounded-md border bg-card p-0.5" role="group" aria-label="Вид">
               {(
                 [
-                  ["month", "Month", CalendarDays],
-                  ["list", "Timeline", List],
+                  ["month", "Месяц", CalendarDays],
+                  ["list", "Лента", List],
                 ] as const
               ).map(([value, label, Icon]) => (
                 <Link
@@ -66,9 +66,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {(
           [
-            ["Debt payments still due", ["DEBT_PAYMENT"], "neutral"],
-            ["Bills & subscriptions planned", ["RECURRING_EXPENSE", "SUBSCRIPTION"], "neutral"],
-            ["Income expected", ["EXPECTED_INCOME", "RECURRING_INCOME"], "positive"],
+            ["Ещё заплатить по долгам", ["DEBT_PAYMENT"], "neutral"],
+            ["Счета и подписки", ["RECURRING_EXPENSE", "SUBSCRIPTION"], "neutral"],
+            ["Ожидается доход", ["EXPECTED_INCOME", "RECURRING_INCOME"], "positive"],
           ] as const
         ).map(([label, kinds, tone]) => (
           <Card key={label} className="grid gap-1 p-4">
@@ -77,9 +77,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           </Card>
         ))}
         <Card className="grid gap-1 p-4">
-          <p className="text-xs text-muted-foreground">Items this month</p>
+          <p className="text-xs text-muted-foreground">Событий в этом месяце</p>
           <p className="tabular font-semibold">
-            {events.filter((e) => !e.done).length} open · {events.filter((e) => e.done).length} done
+            {events.filter((e) => !e.done).length} впереди · {events.filter((e) => e.done).length} выполнено
           </p>
         </Card>
       </div>

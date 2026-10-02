@@ -60,7 +60,7 @@ export function ScheduleEditor({
         lines: rows.map((r) => ({ dueDate: r.dueDate, principal: r.principal || "0", interest: r.interest, fees: r.fees })),
       });
       if (!result.ok) return setError(result.error);
-      toast.success("Schedule updated — previous version kept in history");
+      toast.success("График обновлён, предыдущая версия сохранена в истории");
       setOpen(false);
       router.refresh();
     });
@@ -76,60 +76,60 @@ export function ScheduleEditor({
           setOpen(true);
         }}
       >
-        <Pencil /> Edit schedule
+        <Pencil /> Изменить график
       </Button>
       <ResponsiveDialog
         open={open}
         onOpenChange={setOpen}
-        title="Edit remaining schedule"
-        description="Paid installments stay as they are. Saving creates a new schedule version; earlier versions remain viewable."
+        title="Изменить оставшийся график"
+        description="Оплаченные платежи не меняются. При сохранении создаётся новая версия графика, прежние можно посмотреть."
       >
         <div className="grid gap-4">
           <Segmented
-            label="Source"
+            label="Источник"
             value={reason}
             onChange={setReason}
             options={[
-              { value: "BANK_IMPORT", label: "Bank's schedule" },
-              { value: "MANUAL_EDIT", label: "Manual edit" },
+              { value: "BANK_IMPORT", label: "График банка" },
+              { value: "MANUAL_EDIT", label: "Ручная правка" },
             ]}
           />
           <div className="grid max-h-[45dvh] gap-2 overflow-y-auto pr-1">
             <div className="grid grid-cols-[1.2fr_1fr_1fr_0.8fr_auto] gap-2 text-xs text-muted-foreground">
-              <span>Due date</span>
-              <span>Principal</span>
-              <span>Interest</span>
-              <span>Fees</span>
-              <span className="sr-only">Remove</span>
+              <span>Срок</span>
+              <span>Основной долг</span>
+              <span>Проценты</span>
+              <span>Комиссии</span>
+              <span className="sr-only">Удалить</span>
             </div>
             {rows.map((row, i) => (
               <div key={i} className="grid grid-cols-[1.2fr_1fr_1fr_0.8fr_auto] items-center gap-2">
-                <Input type="date" aria-label={`Payment ${i + 1} due date`} value={row.dueDate} onChange={(e) => update(i, "dueDate", e.target.value)} className="px-2" />
-                <MoneyInput aria-label={`Payment ${i + 1} principal`} value={row.principal} onChange={(v) => update(i, "principal", v)} className="px-2" />
-                <MoneyInput aria-label={`Payment ${i + 1} interest`} value={row.interest} onChange={(v) => update(i, "interest", v)} className="px-2" />
-                <MoneyInput aria-label={`Payment ${i + 1} fees`} value={row.fees} onChange={(v) => update(i, "fees", v)} className="px-2" />
-                <Button type="button" variant="ghost" size="icon-sm" aria-label={`Remove payment ${i + 1}`} onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}>
+                <Input type="date" aria-label={`Платёж ${i + 1}: срок`} value={row.dueDate} onChange={(e) => update(i, "dueDate", e.target.value)} className="px-2" />
+                <MoneyInput aria-label={`Платёж ${i + 1}: основной долг`} value={row.principal} onChange={(v) => update(i, "principal", v)} className="px-2" />
+                <MoneyInput aria-label={`Платёж ${i + 1}: проценты`} value={row.interest} onChange={(v) => update(i, "interest", v)} className="px-2" />
+                <MoneyInput aria-label={`Платёж ${i + 1}: комиссии`} value={row.fees} onChange={(v) => update(i, "fees", v)} className="px-2" />
+                <Button type="button" variant="ghost" size="icon-sm" aria-label={`Удалить платёж ${i + 1}`} onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}>
                   <Trash2 />
                 </Button>
               </div>
             ))}
           </div>
           <Button type="button" variant="ghost" size="sm" className="w-fit" onClick={addRow}>
-            <Plus /> Add payment
+            <Plus /> Добавить платёж
           </Button>
           <p className="text-sm">
-            Principal to schedule <Money amount={principalToPlan} currency={currency} className="font-medium" />
+            Нужно распределить <Money amount={principalToPlan} currency={currency} className="font-medium" />
             {difference.isZero() ? (
-              <span className="ml-2 text-success">✓ adds up</span>
+              <span className="ml-2 text-success">✓ сходится</span>
             ) : (
               <span className="ml-2 text-danger">
-                {difference.gt(0) ? "missing" : "over by"} <Money amount={toMoneyString(difference.abs())} currency={currency} />
+                {difference.gt(0) ? "не хватает" : "лишние"} <Money amount={toMoneyString(difference.abs())} currency={currency} />
               </span>
             )}
           </p>
           {error ? <p role="alert" className="rounded-md bg-danger-subtle px-3 py-2 text-sm text-danger">{error}</p> : null}
           <Button onClick={save} disabled={pending || !difference.isZero() || rows.length === 0}>
-            {pending ? "Saving…" : "Save as new version"}
+            {pending ? "Сохраняем…" : "Сохранить как новую версию"}
           </Button>
         </div>
       </ResponsiveDialog>

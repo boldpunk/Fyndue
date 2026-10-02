@@ -34,7 +34,7 @@ export function MobileNav({ user }: { user: { name: string; email: string } }) {
 
   return (
     <>
-      <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 pb-safe backdrop-blur lg:hidden">
+      <nav aria-label="Основное" className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 pb-safe backdrop-blur lg:hidden">
         <div className="flex h-16 items-stretch">
           {MOBILE_NAV.left.map((item) => (
             <Tab key={item.href} item={item} pathname={pathname} />
@@ -46,7 +46,7 @@ export function MobileNav({ user }: { user: { name: string; email: string } }) {
               className="grid size-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-transform active:scale-95"
             >
               <Plus className="size-6" aria-hidden />
-              <span className="sr-only">Add transaction</span>
+              <span className="sr-only">Добавить операцию</span>
             </button>
           </div>
           {MOBILE_NAV.right.map((item) => (
@@ -67,7 +67,7 @@ export function MobileNav({ user }: { user: { name: string; email: string } }) {
         <SheetContent side="bottom">
           <SheetHeader>
             <SheetTitle>More</SheetTitle>
-            <SheetDescription className="sr-only">Other sections of Fyndue</SheetDescription>
+            <SheetDescription className="sr-only">Другие разделы Fyndue</SheetDescription>
           </SheetHeader>
           <div className="grid grid-cols-3 gap-2">
             {MORE_NAV.map(({ href, label, icon: Icon }) => (

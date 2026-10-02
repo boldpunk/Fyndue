@@ -10,12 +10,12 @@ import { requireUser } from "@/lib/auth/session";
 import { countDebtsByStatus, debtTotalsByCurrency, listDebts, type DebtTab } from "@/lib/services/debts";
 import { cn } from "@/lib/utils/cn";
 
-export const metadata: Metadata = { title: "Debts" };
+export const metadata: Metadata = { title: "Долги" };
 
 const TABS: { value: DebtTab; label: string; status: "ACTIVE" | "PAID_OFF" | "ARCHIVED" }[] = [
-  { value: "active", label: "Active", status: "ACTIVE" },
-  { value: "paid", label: "Paid off", status: "PAID_OFF" },
-  { value: "archived", label: "Archived", status: "ARCHIVED" },
+  { value: "active", label: "Активные", status: "ACTIVE" },
+  { value: "paid", label: "Погашенные", status: "PAID_OFF" },
+  { value: "archived", label: "Архив", status: "ARCHIVED" },
 ];
 
 export default async function DebtsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
@@ -28,18 +28,18 @@ export default async function DebtsPage({ searchParams }: { searchParams: Promis
   return (
     <div className="grid gap-6">
       <PageHeader
-        title="Debts"
-        description="Every loan, installment and microloan, with what's paid and what's left."
+        title="Долги"
+        description="Все кредиты, рассрочки и микрозаймы: сколько уже выплачено и сколько осталось."
         actions={
           <Button asChild>
             <Link href="/debts/new">
-              <Plus /> Add debt
+              <Plus /> Добавить долг
             </Link>
           </Button>
         }
       />
 
-      <nav aria-label="Debt status" className="flex gap-1 border-b">
+      <nav aria-label="Статус долга" className="flex gap-1 border-b">
         {TABS.map((t) => (
           <Link
             key={t.value}
@@ -61,12 +61,12 @@ export default async function DebtsPage({ searchParams }: { searchParams: Promis
       {debts.length === 0 ? (
         <EmptyState
           icon={Landmark}
-          title={tab === "active" ? "No active debts" : tab === "paid" ? "Nothing paid off yet" : "No archived debts"}
-          description={tab === "active" ? "Add a loan, car installment or microloan to track its schedule and never miss a payment." : undefined}
+          title={tab === "active" ? "Активных долгов нет" : tab === "paid" ? "Погашенных долгов пока нет" : "В архиве пусто"}
+          description={tab === "active" ? "Добавьте кредит, рассрочку или микрозайм — Fyndue построит график и напомнит о каждом платеже." : undefined}
           action={
             tab === "active" ? (
               <Button asChild>
-                <Link href="/debts/new">Add debt</Link>
+                <Link href="/debts/new">Добавить долг</Link>
               </Button>
             ) : undefined
           }

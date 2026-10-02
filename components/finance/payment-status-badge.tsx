@@ -12,17 +12,18 @@ import {
 } from "lucide-react";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 import type { DisplayPaymentStatus } from "@/lib/finance/payment-status";
+import { pluralRu } from "@/lib/finance/recurrence";
 
 export const PAYMENT_STATUS_META: Record<DisplayPaymentStatus, { label: string; tone: BadgeTone; icon: LucideIcon }> = {
-  UPCOMING: { label: "Upcoming", tone: "neutral", icon: Clock },
-  DUE_SOON: { label: "Due soon", tone: "warning", icon: CalendarClock },
-  URGENT: { label: "Urgent", tone: "warning", icon: AlarmClock },
-  DUE_TODAY: { label: "Due today", tone: "warning", icon: BellRing },
-  OVERDUE: { label: "Overdue", tone: "danger", icon: CircleAlert },
-  PARTIALLY_PAID: { label: "Partially paid", tone: "info", icon: CircleDashed },
-  PAID: { label: "Paid", tone: "success", icon: CheckCircle2 },
-  SKIPPED: { label: "Skipped", tone: "neutral", icon: CircleSlash },
-  RESCHEDULED: { label: "Rescheduled", tone: "neutral", icon: Repeat },
+  UPCOMING: { label: "Скоро", tone: "neutral", icon: Clock },
+  DUE_SOON: { label: "Скоро срок", tone: "warning", icon: CalendarClock },
+  URGENT: { label: "Срочно", tone: "warning", icon: AlarmClock },
+  DUE_TODAY: { label: "Сегодня", tone: "warning", icon: BellRing },
+  OVERDUE: { label: "Просрочен", tone: "danger", icon: CircleAlert },
+  PARTIALLY_PAID: { label: "Оплачен частично", tone: "info", icon: CircleDashed },
+  PAID: { label: "Оплачен", tone: "success", icon: CheckCircle2 },
+  SKIPPED: { label: "Пропущен", tone: "neutral", icon: CircleSlash },
+  RESCHEDULED: { label: "Перенесён", tone: "neutral", icon: Repeat },
 };
 
 /** Status is always icon + text + colour — never colour alone (SPEC §7). */
@@ -38,9 +39,9 @@ export function PaymentStatusBadge({ status, className }: { status: DisplayPayme
 }
 
 export function daysLabel(days: number): string {
-  if (days === 0) return "today";
-  if (days === 1) return "tomorrow";
-  if (days === -1) return "1 day overdue";
-  if (days < 0) return `${-days} days overdue`;
-  return `in ${days} days`;
+  if (days === 0) return "сегодня";
+  if (days === 1) return "завтра";
+  const n = Math.abs(days);
+  const word = `${n} ${pluralRu(n, ["день", "дня", "дней"])}`;
+  return days < 0 ? `просрочен на ${word}` : `через ${word}`;
 }

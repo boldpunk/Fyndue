@@ -32,7 +32,7 @@ function AdjustBalanceForm({ account, today, onDone }: { account: AccountDTO; to
     startTransition(async () => {
       const result = await adjustBalanceAction(payload);
       if (!result.ok) return setFormError(result.error);
-      toast.success(result.data.transactionId ? "Balance adjusted" : "Balance already matches");
+      toast.success(result.data.transactionId ? "Баланс скорректирован" : "Баланс уже совпадает");
       router.refresh();
       onDone();
     });
@@ -40,20 +40,20 @@ function AdjustBalanceForm({ account, today, onDone }: { account: AccountDTO; to
   return (
     <form onSubmit={onSubmit} noValidate className="grid gap-4">
       <p className="text-sm text-muted-foreground">
-        Current balance in Fyndue: <Money amount={account.currentBalance} currency={account.currency} className="font-medium text-foreground" />.
-        Enter what the bank or wallet actually shows; the difference is recorded as an adjustment.
+        Баланс в Fyndue: <Money amount={account.currentBalance} currency={account.currency} className="font-medium text-foreground" />.
+        Введите сумму, которую на самом деле показывает банк или кошелёк, — разница запишется как корректировка.
       </p>
-      <Field label="Actual balance" htmlFor="targetBalance" error={formState.errors.targetBalance?.message}>
+      <Field label="Фактический баланс" htmlFor="targetBalance" error={formState.errors.targetBalance?.message}>
         <Controller control={control} name="targetBalance" render={({ field }) => <MoneyInput id="targetBalance" currency={account.currency} allowNegative autoFocus {...field} />} />
       </Field>
-      <Field label="Date" htmlFor="adj-date" error={formState.errors.date?.message}>
+      <Field label="Дата" htmlFor="adj-date" error={formState.errors.date?.message}>
         <Input id="adj-date" type="date" {...register("date")} />
       </Field>
-      <Field label="Note" htmlFor="adj-note">
-        <Input id="adj-note" placeholder="Optional" {...register("note")} />
+      <Field label="Комментарий" htmlFor="adj-note">
+        <Input id="adj-note" placeholder="Необязательно" {...register("note")} />
       </Field>
       {formError ? <p role="alert" className="text-sm text-danger">{formError}</p> : null}
-      <Button type="submit" disabled={pending}>{pending ? "Saving…" : "Record adjustment"}</Button>
+      <Button type="submit" disabled={pending}>{pending ? "Сохраняем…" : "Записать корректировку"}</Button>
     </form>
   );
 }
@@ -67,7 +67,7 @@ export function AccountActions({ account, today }: { account: AccountDTO; today:
     startTransition(async () => {
       const result = await archiveAccountAction({ id: account.id, archived: !account.isArchived });
       if (!result.ok) return void toast.error(result.error);
-      toast.success(account.isArchived ? "Account restored" : "Account archived");
+      toast.success(account.isArchived ? "Счёт восстановлен" : "Счёт перенесён в архив");
       router.refresh();
     });
 
@@ -76,20 +76,20 @@ export function AccountActions({ account, today }: { account: AccountDTO; today:
       {!account.isArchived ? (
         <>
           <Button variant="outline" onClick={() => setAdjustOpen(true)}>
-            <Scale /> Adjust balance
+            <Scale /> Скорректировать баланс
           </Button>
           <Button variant="outline" asChild>
             <Link href={`/accounts/${account.id}/edit`}>
-              <Pencil /> Edit
+              <Pencil /> Изменить
             </Link>
           </Button>
         </>
       ) : null}
       <Button variant="ghost" disabled={pending} onClick={toggleArchive}>
         {account.isArchived ? <ArchiveRestore /> : <Archive />}
-        {account.isArchived ? "Restore" : "Archive"}
+        {account.isArchived ? "Восстановить" : "В архив"}
       </Button>
-      <ResponsiveDialog open={adjustOpen} onOpenChange={setAdjustOpen} title="Adjust balance">
+      <ResponsiveDialog open={adjustOpen} onOpenChange={setAdjustOpen} title="Корректировка баланса">
         <AdjustBalanceForm account={account} today={today} onDone={() => setAdjustOpen(false)} />
       </ResponsiveDialog>
     </div>

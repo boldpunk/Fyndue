@@ -47,10 +47,10 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
       if (authError) {
         setError(
           authError.status === 429
-            ? "Too many attempts. Please wait a minute and try again."
+            ? "Слишком много попыток. Подождите минуту и попробуйте снова."
             : mode === "login"
-              ? "Incorrect email or password."
-              : (authError.message ?? "Could not create the account."),
+              ? "Неверный email или пароль."
+              : (authError.message ?? "Не удалось создать аккаунт."),
         );
         return;
       }
@@ -62,15 +62,15 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
   return (
     <Card className="grid gap-6 p-6">
       <div className="grid gap-1">
-        <h1 className="text-xl font-semibold tracking-tight">{mode === "login" ? "Sign in" : "Create your account"}</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{mode === "login" ? "Войти" : "Создайте аккаунт"}</h1>
         <p className="text-sm text-muted-foreground">
-          {mode === "login" ? "Welcome back to Fyndue." : "Start tracking debts, spending and cash flow."}
+          {mode === "login" ? "С возвращением в Fyndue." : "Начните следить за долгами, расходами и деньгами."}
         </p>
       </div>
 
       <form onSubmit={onSubmit} noValidate className="grid gap-4">
         {mode === "register" ? (
-          <Field label="Name" htmlFor="name" error={errors.name?.message}>
+          <Field label="Имя" htmlFor="name" error={errors.name?.message}>
             <Input id="name" autoComplete="name" aria-invalid={Boolean(errors.name) || undefined} {...register("name")} />
           </Field>
         ) : null}
@@ -78,10 +78,10 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
           <Input id="email" type="email" autoComplete="email" inputMode="email" aria-invalid={Boolean(errors.email) || undefined} {...register("email")} />
         </Field>
         <Field
-          label="Password"
+          label="Пароль"
           htmlFor="password"
           error={errors.password?.message}
-          hint={mode === "register" ? "At least 10 characters." : undefined}
+          hint={mode === "register" ? "Не меньше 10 символов." : undefined}
         >
           <Input
             id="password"
@@ -99,7 +99,7 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
         ) : null}
 
         <Button type="submit" disabled={pending} className="mt-1">
-          {pending ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
+          {pending ? "Подождите…" : mode === "login" ? "Войти" : "Создать аккаунт"}
         </Button>
       </form>
 
@@ -109,23 +109,23 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
           disabled={pending}
           onClick={() => startTransition(async () => void (await authClient.signIn.social({ provider: "google", callbackURL: next })))}
         >
-          Continue with Google
+          Продолжить с Google
         </Button>
       ) : null}
 
       <p className="text-center text-sm text-muted-foreground">
         {mode === "login" ? (
           <>
-            New to Fyndue?{" "}
+            Впервые в Fyndue?{" "}
             <Link href="/register" className="font-medium text-primary hover:underline">
-              Create an account
+              Создать аккаунт
             </Link>
           </>
         ) : (
           <>
-            Already have an account?{" "}
+            Уже есть аккаунт?{" "}
             <Link href="/login" className="font-medium text-primary hover:underline">
-              Sign in
+              Войти
             </Link>
           </>
         )}

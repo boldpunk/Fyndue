@@ -8,11 +8,11 @@ export default function NotFound() {
     <main className="mx-auto grid min-h-dvh max-w-md place-items-center p-6">
       <EmptyState
         icon={SearchX}
-        title="Page not found"
-        description="It may have been moved, or it belongs to another account."
+        title="Страница не найдена"
+        description="Возможно, её перенесли или она относится к другому аккаунту."
         action={
           <Button asChild variant="outline">
-            <Link href="/dashboard">Back to overview</Link>
+            <Link href="/dashboard">Вернуться к обзору</Link>
           </Button>
         }
       />

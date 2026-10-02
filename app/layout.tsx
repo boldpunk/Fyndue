@@ -7,7 +7,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "Fyndue", template: "%s · Fyndue" },
-  description: "No missed payments. No financial chaos. One clear picture of your money.",
+  description: "Ни одного пропущенного платежа. Никакого финансового хаоса. Вся картина денег — в одном месте.",
   applicationName: "Fyndue",
   appleWebApp: { capable: true, title: "Fyndue", statusBarStyle: "default" },
   robots: { index: false, follow: false },

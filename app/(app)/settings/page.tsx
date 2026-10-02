@@ -11,7 +11,7 @@ import { requireUser } from "@/lib/auth/session";
 import { TIMEZONES } from "@/lib/constants/finance";
 import { getTelegramConnection } from "@/lib/services/telegram-connection";
 
-export const metadata: Metadata = { title: "Settings" };
+export const metadata: Metadata = { title: "Настройки" };
 
 export default async function SettingsPage() {
   const user = await requireUser();
@@ -20,11 +20,11 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto grid w-full max-w-2xl gap-6">
-      <PageHeader title="Settings" description={user.email} />
+      <PageHeader title="Настройки" description={user.email} />
 
       <Card>
         <CardHeader>
-          <CardTitle>Profile</CardTitle>
+          <CardTitle>Профиль</CardTitle>
         </CardHeader>
         <CardContent>
           <ProfileForm defaults={{ name: user.name, baseCurrency: user.baseCurrency, timezone }} />
@@ -33,7 +33,7 @@ export default async function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Appearance</CardTitle>
+          <CardTitle>Оформление</CardTitle>
         </CardHeader>
         <CardContent>
           <AppearancePicker />
@@ -43,23 +43,23 @@ export default async function SettingsPage() {
       <Card className="divide-y">
         <Link href="/settings/categories" className="flex items-center gap-3 p-4 hover:bg-muted/60">
           <Shapes className="size-5 text-muted-foreground" aria-hidden />
-          <span className="flex-1 text-sm font-medium">Categories</span>
+          <span className="flex-1 text-sm font-medium">Категории</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
         <Link href="/settings/exchange-rates" className="flex items-center gap-3 p-4 hover:bg-muted/60">
           <ArrowRightLeft className="size-5 text-muted-foreground" aria-hidden />
-          <span className="flex-1 text-sm font-medium">Exchange rates</span>
+          <span className="flex-1 text-sm font-medium">Курсы валют</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
         <Link href="/transactions/recurring" className="flex items-center gap-3 p-4 hover:bg-muted/60">
           <Repeat className="size-5 text-muted-foreground" aria-hidden />
-          <span className="flex-1 text-sm font-medium">Recurring items</span>
+          <span className="flex-1 text-sm font-medium">Регулярные платежи</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
         <Link href="/settings/notifications" className="flex items-center gap-3 p-4 hover:bg-muted/60">
           <Bell className="size-5 text-muted-foreground" aria-hidden />
-          <span className="flex-1 text-sm font-medium">Notifications &amp; Telegram</span>
-          {connection.status === "CONNECTED" ? <Badge tone="success">Connected</Badge> : null}
+          <span className="flex-1 text-sm font-medium">Уведомления и Telegram</span>
+          {connection.status === "CONNECTED" ? <Badge tone="success">Подключён</Badge> : null}
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
       </Card>

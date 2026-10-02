@@ -38,7 +38,7 @@ export function RecurringList({
     startTransition(async () => {
       const result = await setRecurringActiveAction({ id: item.id, archived: item.isActive });
       if (!result.ok) return void toast.error(result.error);
-      toast.success(item.isActive ? `“${item.name}” paused` : `“${item.name}” resumed`);
+      toast.success(item.isActive ? `«${item.name}» приостановлен` : `«${item.name}» возобновлён`);
       router.refresh();
     });
 
@@ -47,29 +47,29 @@ export function RecurringList({
       if (!deleting) return;
       const result = await deleteRecurringAction(deleting.id);
       if (!result.ok) return void toast.error(result.error);
-      toast.success("Recurring item deleted — recorded transactions are kept");
+      toast.success("Регулярный платёж удалён, записанные операции сохранены");
       setDeleting(null);
       router.refresh();
     });
 
   const groups = [
-    { title: "Expenses & subscriptions", rows: items.filter((i) => i.kind === "EXPENSE") },
-    { title: "Income", rows: items.filter((i) => i.kind === "INCOME") },
+    { title: "Расходы и подписки", rows: items.filter((i) => i.kind === "EXPENSE") },
+    { title: "Доходы", rows: items.filter((i) => i.kind === "INCOME") },
   ].filter((g) => g.rows.length);
 
   return (
     <div className="grid gap-6">
       <div>
         <Button onClick={() => setEditing("new")}>
-          <Plus /> New recurring item
+          <Plus /> Новый регулярный платёж
         </Button>
       </div>
 
       {items.length === 0 ? (
         <EmptyState
           icon={Repeat}
-          title="No recurring items yet"
-          description="Add bills, subscriptions and salary so the calendar and your projected balance know what's coming."
+          title="Регулярных платежей пока нет"
+          description="Добавьте счета, подписки и зарплату — тогда календарь и прогноз баланса будут знать, что впереди."
         />
       ) : (
         groups.map((g) => (
@@ -82,12 +82,12 @@ export function RecurringList({
                   <div className="grid min-w-0 flex-1 gap-0.5">
                     <p className="flex items-center gap-1.5 truncate text-sm font-medium">
                       {item.name}
-                      {item.isSubscription ? <Badge tone="primary">Subscription</Badge> : null}
-                      {!item.isActive ? <Badge>Paused</Badge> : null}
+                      {item.isSubscription ? <Badge tone="primary">Подписка</Badge> : null}
+                      {!item.isActive ? <Badge>Приостановлен</Badge> : null}
                     </p>
                     <p className="truncate text-[13px] text-muted-foreground">
                       {describeRule(item)} · {item.account.name}
-                      {item.nextOccurrence ? ` · next ${formatLocalDate(item.nextOccurrence, undefined, { day: "numeric", month: "short" })}` : item.isActive ? " · ended" : ""}
+                      {item.nextOccurrence ? ` · следующий ${formatLocalDate(item.nextOccurrence, undefined, { day: "numeric", month: "short" })}` : item.isActive ? " · завершён" : ""}
                     </p>
                   </div>
                   <Money
@@ -99,19 +99,19 @@ export function RecurringList({
                   />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${item.name}`} disabled={pending}>
+                      <Button variant="ghost" size="icon-sm" aria-label={`Действия: ${item.name}`} disabled={pending}>
                         <MoreHorizontal />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onSelect={() => setEditing(item)}>
-                        <Pencil /> Edit
+                        <Pencil /> Изменить
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => toggle(item)}>
-                        {item.isActive ? <Pause /> : <Play />} {item.isActive ? "Pause" : "Resume"}
+                        {item.isActive ? <Pause /> : <Play />} {item.isActive ? "Приостановить" : "Возобновить"}
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => setDeleting(item)} className="text-danger">
-                        <Trash2 /> Delete
+                        <Trash2 /> Удалить
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -122,7 +122,7 @@ export function RecurringList({
         ))
       )}
 
-      <ResponsiveDialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)} title={editing === "new" ? "New recurring item" : "Edit recurring item"}>
+      <ResponsiveDialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)} title={editing === "new" ? "Новый регулярный платёж" : "Изменить регулярный платёж"}>
         {editing ? (
           <RecurringForm
             key={editing === "new" ? "new" : editing.id}
@@ -138,15 +138,15 @@ export function RecurringList({
       <ResponsiveDialog
         open={deleting !== null}
         onOpenChange={(open) => !open && setDeleting(null)}
-        title={`Delete “${deleting?.name ?? ""}”?`}
-        description="Future occurrences disappear from the calendar and projections. Transactions you already recorded stay. To stop it temporarily, pause it instead."
+        title={`Удалить «${deleting?.name ?? ""}»?`}
+        description="Будущие платежи исчезнут из календаря и прогнозов. Уже записанные операции останутся. Чтобы остановить на время, лучше приостановите."
       >
         <div className="flex gap-2">
           <Button variant="destructive" onClick={remove} disabled={pending}>
-            Delete
+            Удалить
           </Button>
           <Button variant="ghost" onClick={() => setDeleting(null)}>
-            Cancel
+            Отмена
           </Button>
         </div>
       </ResponsiveDialog>

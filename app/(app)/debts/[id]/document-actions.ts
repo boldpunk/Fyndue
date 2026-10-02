@@ -12,9 +12,9 @@ export async function uploadDocumentAction(formData: FormData) {
     const user = await requireUser();
     const file = formData.get("file");
     if (!(file instanceof File) || file.size === 0) {
-      throw new DomainError("Choose a file to upload.", "VALIDATION", { file: "Choose a PDF, JPG or PNG file." });
+      throw new DomainError("Выберите файл для загрузки.", "VALIDATION", { file: "Выберите файл PDF, JPG или PNG." });
     }
-    if (file.size > MAX_DOCUMENT_BYTES) throw new DomainError("Files can be up to 10 MB.", "VALIDATION", { file: "Files can be up to 10 MB." });
+    if (file.size > MAX_DOCUMENT_BYTES) throw new DomainError("Файл должен быть не больше 10 МБ.", "VALIDATION", { file: "Файл должен быть не больше 10 МБ." });
     const meta = documentUploadSchema.parse({
       debtId: formData.get("debtId"),
       debtPaymentId: formData.get("debtPaymentId") ?? undefined,
@@ -39,7 +39,7 @@ export async function updateDocumentAction(input: unknown) {
 export async function deleteDocumentAction(id: unknown) {
   return runAction(async () => {
     const user = await requireUser();
-    if (typeof id !== "string" || !id) throw new DomainError("Document not found.");
+    if (typeof id !== "string" || !id) throw new DomainError("Документ не найден.");
     await deleteDocument(user.id, id);
     revalidatePath("/debts/[id]", "page");
     return null;

@@ -13,8 +13,9 @@ import { formatLocalDate, todayIn, yearMonthOf } from "@/lib/finance/dates";
 import { listAccounts } from "@/lib/services/accounts";
 import { listTransactions, type TransactionDTO } from "@/lib/services/transactions";
 import { transactionFiltersSchema } from "@/lib/validations/transactions";
+import { pluralRu } from "@/lib/finance/recurrence";
 
-export const metadata: Metadata = { title: "Transactions" };
+export const metadata: Metadata = { title: "Операции" };
 
 function groupByDate(items: TransactionDTO[]) {
   const groups = new Map<string, TransactionDTO[]>();
@@ -40,19 +41,19 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
   return (
     <div className="grid gap-6">
       <PageHeader
-        title="Transactions"
-        description={`${result.total} ${result.total === 1 ? "transaction" : "transactions"}${filtered ? " match the filters" : ""}`}
+        title="Операции"
+        description={`${result.total} ${pluralRu(result.total, ["операция", "операции", "операций"])}${filtered ? " по выбранным фильтрам" : ""}`}
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" asChild>
               <Link href="/transactions/recurring">
-                <Repeat /> Recurring
+                <Repeat /> Регулярные
               </Link>
             </Button>
             <span className="hidden gap-2 sm:flex">
-              <QuickAddButton kind="INCOME" label="Income" className="bg-secondary text-secondary-foreground hover:bg-secondary/70" />
-              <QuickAddButton kind="TRANSFER" label="Transfer" className="bg-secondary text-secondary-foreground hover:bg-secondary/70" />
-              <QuickAddButton kind="EXPENSE" label="Expense" />
+              <QuickAddButton kind="INCOME" label="Доход" className="bg-secondary text-secondary-foreground hover:bg-secondary/70" />
+              <QuickAddButton kind="TRANSFER" label="Перевод" className="bg-secondary text-secondary-foreground hover:bg-secondary/70" />
+              <QuickAddButton kind="EXPENSE" label="Расход" />
             </span>
           </div>
         }
@@ -63,15 +64,15 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
       {result.items.length === 0 ? (
         <EmptyState
           icon={ArrowLeftRight}
-          title={filtered ? "Nothing matches these filters" : "No transactions yet"}
-          description={filtered ? "Try another month, account or search." : "Record an expense, income or transfer to get started."}
+          title={filtered ? "По этим фильтрам ничего нет" : "Операций пока нет"}
+          description={filtered ? "Попробуйте другой месяц, счёт или поиск." : "Запишите расход, доход или перевод, чтобы начать."}
           action={
             filtered ? (
               <Button variant="outline" asChild>
-                <Link href="/transactions">Clear filters</Link>
+                <Link href="/transactions">Сбросить фильтры</Link>
               </Button>
             ) : (
-              <QuickAddButton label="Add transaction" />
+              <QuickAddButton label="Добавить операцию" />
             )
           }
         />
@@ -80,7 +81,7 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
           {groupByDate(result.items).map(([date, items]) => (
             <section key={date} aria-label={date} className="grid gap-1">
               <h2 className="px-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                {date === today ? "Today" : formatLocalDate(date, undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                {date === today ? "Сегодня" : formatLocalDate(date, undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
               </h2>
               <Card className="grid gap-0.5 p-1.5">
                 {items.map((t) => (
@@ -93,15 +94,15 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
       )}
 
       {result.pageCount > 1 ? (
-        <nav aria-label="Pagination" className="flex items-center justify-between gap-3">
+        <nav aria-label="Страницы" className="flex items-center justify-between gap-3">
           <Button variant="outline" size="sm" asChild disabled={result.page <= 1}>
-            {result.page > 1 ? <Link href={pageHref(result.page - 1)}>Previous</Link> : <span aria-disabled>Previous</span>}
+            {result.page > 1 ? <Link href={pageHref(result.page - 1)}>Назад</Link> : <span aria-disabled>Назад</span>}
           </Button>
           <span className="text-sm text-muted-foreground">
-            Page {result.page} of {result.pageCount}
+            Страница {result.page} из {result.pageCount}
           </span>
           <Button variant="outline" size="sm" asChild>
-            {result.page < result.pageCount ? <Link href={pageHref(result.page + 1)}>Next</Link> : <span aria-disabled>Next</span>}
+            {result.page < result.pageCount ? <Link href={pageHref(result.page + 1)}>Дальше</Link> : <span aria-disabled>Дальше</span>}
           </Button>
         </nav>
       ) : null}

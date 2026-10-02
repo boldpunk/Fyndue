@@ -15,7 +15,7 @@ import { todayIn } from "@/lib/finance/dates";
 import { getAccount } from "@/lib/services/accounts";
 import { listTransactions } from "@/lib/services/transactions";
 
-export const metadata: Metadata = { title: "Account" };
+export const metadata: Metadata = { title: "Счёт" };
 
 export default async function AccountPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -29,7 +29,7 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
   return (
     <div className="grid gap-6">
       <Link href="/accounts" className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" /> Accounts
+        <ArrowLeft className="size-4" /> Счета
       </Link>
 
       <header className="flex flex-wrap items-start justify-between gap-6">
@@ -48,10 +48,10 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
             />
             <div className="flex flex-wrap gap-1.5">
               <Badge>
-                Opening <Money amount={account.openingBalance} currency={account.currency} />
+                Начальный баланс <Money amount={account.openingBalance} currency={account.currency} />
               </Badge>
-              {!account.includeInTotal ? <Badge>Excluded from total</Badge> : null}
-              {account.isArchived ? <Badge tone="warning">Archived</Badge> : null}
+              {!account.includeInTotal ? <Badge>Не входит в общий баланс</Badge> : null}
+              {account.isArchived ? <Badge tone="warning">В архиве</Badge> : null}
             </div>
           </div>
         </div>
@@ -60,16 +60,16 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
 
       <Card>
         <CardHeader>
-          <CardTitle>Transactions</CardTitle>
+          <CardTitle>Операции</CardTitle>
           {transactions.total > transactions.items.length ? (
             <Link href={`/transactions?account=${account.id}`} className="text-sm font-medium text-primary hover:underline">
-              View all {transactions.total}
+              Все операции ({transactions.total})
             </Link>
           ) : null}
         </CardHeader>
         <CardContent className="grid gap-0.5 pt-3">
           {transactions.items.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">No transactions on this account yet.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">По этому счёту пока нет операций.</p>
           ) : (
             transactions.items.map((t) => <TransactionRow key={t.id} transaction={t} perspectiveAccountId={account.id} />)
           )}

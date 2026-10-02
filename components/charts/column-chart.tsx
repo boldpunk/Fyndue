@@ -170,12 +170,12 @@ export function ColumnChart({
           {description ? <span className="text-xs text-muted-foreground">{description}</span> : null}
         </span>
         <Button variant="ghost" size="sm" onClick={() => setShowTable((x) => !x)} aria-pressed={showTable}>
-          <Table2 /> {showTable ? "Chart" : "Table"}
+          <Table2 /> {showTable ? "График" : "Таблица"}
         </Button>
       </figcaption>
 
       {series.length > 1 && !signedColors ? (
-        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Legend">
+        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Обозначения">
           {series.map((s) => (
             <li key={s.key} className="inline-flex items-center gap-1.5">
               <span aria-hidden className="size-2.5 rounded-[3px]" style={{ background: s.color }} />
@@ -190,7 +190,7 @@ export function ColumnChart({
           <table className="w-full text-sm">
             <thead className="border-b text-left text-xs text-muted-foreground">
               <tr>
-                <th scope="col" className="px-3 py-2 font-medium">Period</th>
+                <th scope="col" className="px-3 py-2 font-medium">Период</th>
                 {series.map((s) => (
                   <th key={s.key} scope="col" className="px-3 py-2 text-right font-medium">
                     {s.label}
@@ -217,7 +217,7 @@ export function ColumnChart({
       ) : (
         <div ref={ref} className="relative" style={{ height }} onPointerLeave={() => setActive(null)}>
           {width > 0 ? (
-            <svg width={width} height={height} role="img" aria-label={`${title}. Use Tab to step through periods, or open the table view.`} className="block overflow-visible">
+            <svg width={width} height={height} role="img" aria-label={`${title}. Переходите по периодам клавишей Tab или откройте таблицу.`} className="block overflow-visible">
               {ticks.map((t) => (
                 <g key={t}>
                   <line x1={MARGIN.left} x2={width - MARGIN.right} y1={y(t)} y2={y(t)} stroke={t === 0 ? "var(--viz-axis)" : "var(--viz-grid)"} strokeWidth={1} shapeRendering="crispEdges" />
@@ -257,7 +257,7 @@ export function ColumnChart({
             </svg>
           ) : null}
           {!hasData && width > 0 ? (
-            <p className="absolute inset-0 grid place-items-center text-sm text-muted-foreground">No data in this period</p>
+            <p className="absolute inset-0 grid place-items-center text-sm text-muted-foreground">За этот период данных нет</p>
           ) : null}
           {activeCat && active !== null ? (
             <div

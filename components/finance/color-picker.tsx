@@ -6,7 +6,7 @@ import { CATEGORY_SWATCH_CLASSES } from "./category-icon";
 
 export function ColorPicker({ value, onChange }: { value: string | undefined; onChange: (value: CategoryColor) => void }) {
   return (
-    <div role="radiogroup" aria-label="Colour" className="flex flex-wrap gap-2">
+    <div role="radiogroup" aria-label="Цвет" className="flex flex-wrap gap-2">
       {CATEGORY_COLORS.map((color) => (
         <button
           key={color}

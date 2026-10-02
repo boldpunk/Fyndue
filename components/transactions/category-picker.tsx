@@ -20,7 +20,7 @@ export function CategoryPicker({
   return (
     <div
       role="radiogroup"
-      aria-label="Category"
+      aria-label="Категория"
       aria-invalid={invalid || undefined}
       aria-describedby={describedBy}
       className="grid max-h-56 grid-cols-3 gap-1.5 overflow-y-auto sm:grid-cols-4"

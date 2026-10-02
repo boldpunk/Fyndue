@@ -22,7 +22,7 @@ export function ScheduleView({
   accounts,
   today,
   readOnly = false,
-  feeLabel = "Fees",
+  feeLabel = "Комиссии",
 }: {
   items: ScheduleItemDTO[];
   debt: PaymentDebt;
@@ -38,7 +38,7 @@ export function ScheduleView({
   const payButton = (item: ScheduleItemDTO, size: "sm" | "default" = "sm") =>
     !readOnly && item.isOpen ? (
       <Button size={size} variant={item.id === firstOpenId ? "default" : "outline"} onClick={() => setPaying(item)}>
-        Mark paid
+        Оплатить
       </Button>
     ) : null;
 
@@ -50,16 +50,16 @@ export function ScheduleView({
           <thead className="border-b text-left text-xs text-muted-foreground">
             <tr>
               <th scope="col" className="px-3 py-2.5 font-medium">#</th>
-              <th scope="col" className="px-3 py-2.5 font-medium">Due date</th>
-              <th scope="col" className="px-3 py-2.5 text-right font-medium">Opening principal</th>
-              <th scope="col" className="px-3 py-2.5 text-right font-medium">Principal</th>
-              <th scope="col" className="px-3 py-2.5 text-right font-medium">Interest</th>
+              <th scope="col" className="px-3 py-2.5 font-medium">Срок</th>
+              <th scope="col" className="px-3 py-2.5 text-right font-medium">Остаток до</th>
+              <th scope="col" className="px-3 py-2.5 text-right font-medium">Основной долг</th>
+              <th scope="col" className="px-3 py-2.5 text-right font-medium">Проценты</th>
               <th scope="col" className="px-3 py-2.5 text-right font-medium">{feeLabel}</th>
-              <th scope="col" className="px-3 py-2.5 text-right font-medium">Planned</th>
-              <th scope="col" className="px-3 py-2.5 text-right font-medium">Actual</th>
-              <th scope="col" className="px-3 py-2.5 text-right font-medium">Closing principal</th>
-              <th scope="col" className="px-3 py-2.5 font-medium">Status</th>
-              {!readOnly ? <th scope="col" className="px-3 py-2.5"><span className="sr-only">Actions</span></th> : null}
+              <th scope="col" className="px-3 py-2.5 text-right font-medium">По графику</th>
+              <th scope="col" className="px-3 py-2.5 text-right font-medium">Оплачено</th>
+              <th scope="col" className="px-3 py-2.5 text-right font-medium">Остаток после</th>
+              <th scope="col" className="px-3 py-2.5 font-medium">Статус</th>
+              {!readOnly ? <th scope="col" className="px-3 py-2.5"><span className="sr-only">Действия</span></th> : null}
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -74,7 +74,7 @@ export function ScheduleView({
                 <td className="px-3 py-2.5 text-right">{show(item.plannedPrincipal)}</td>
                 <td className="px-3 py-2.5 text-right">
                   {show(item.plannedInterest)}
-                  {item.isEstimate && money(item.plannedInterest).gt(0) ? <span className="ml-0.5 text-xs text-muted-foreground" title="Estimate">*</span> : null}
+                  {item.isEstimate && money(item.plannedInterest).gt(0) ? <span className="ml-0.5 text-xs text-muted-foreground" title="Оценка">*</span> : null}
                 </td>
                 <td className="px-3 py-2.5 text-right">{show(item.plannedFees)}</td>
                 <td className="px-3 py-2.5 text-right font-medium text-foreground">{show(item.plannedTotal)}</td>
@@ -90,7 +90,7 @@ export function ScheduleView({
         </table>
       </div>
 
-      <ul className="grid gap-2 md:hidden" aria-label={`Repayment schedule in ${cur}`}>
+      <ul className="grid gap-2 md:hidden" aria-label={`График платежей в ${cur}`}>
         {items.map((item) => (
           <li key={item.id} className={cn("rounded-xl border bg-card", item.id === firstOpenId && "border-primary/40")}>
             <details className="group">
@@ -98,7 +98,7 @@ export function ScheduleView({
                 <span className="tabular grid size-8 shrink-0 place-items-center rounded-full bg-muted text-xs font-medium">{item.installmentNumber}</span>
                 <span className="grid min-w-0 flex-1 gap-0.5">
                   <span className="text-sm font-medium">{formatLocalDate(item.dueDate)}</span>
-                  <span className="text-xs text-muted-foreground">{item.isOpen ? daysLabel(item.days) : "Settled"}</span>
+                  <span className="text-xs text-muted-foreground">{item.isOpen ? daysLabel(item.days) : "Закрыт"}</span>
                 </span>
                 <span className="grid justify-items-end gap-1">
                   <Money amount={item.isOpen ? item.remainingTotal : item.plannedTotal} currency={cur} className="text-sm font-semibold" />
@@ -106,19 +106,19 @@ export function ScheduleView({
                 </span>
               </summary>
               <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 border-t px-3 py-3 text-[13px]">
-                <dt className="text-muted-foreground">Opening principal</dt>
+                <dt className="text-muted-foreground">Остаток до</dt>
                 <dd className="text-right">{show(item.openingPrincipal)}</dd>
-                <dt className="text-muted-foreground">Principal</dt>
+                <dt className="text-muted-foreground">Основной долг</dt>
                 <dd className="text-right">{show(item.plannedPrincipal)}</dd>
-                <dt className="text-muted-foreground">Interest{item.isEstimate && money(item.plannedInterest).gt(0) ? " (estimate)" : ""}</dt>
+                <dt className="text-muted-foreground">Проценты{item.isEstimate && money(item.plannedInterest).gt(0) ? " (estimate)" : ""}</dt>
                 <dd className="text-right">{show(item.plannedInterest)}</dd>
                 <dt className="text-muted-foreground">{feeLabel}</dt>
                 <dd className="text-right">{show(item.plannedFees)}</dd>
-                <dt className="text-muted-foreground">Planned payment</dt>
+                <dt className="text-muted-foreground">Платёж по графику</dt>
                 <dd className="text-right font-medium">{show(item.plannedTotal)}</dd>
-                <dt className="text-muted-foreground">Actual payment</dt>
+                <dt className="text-muted-foreground">Фактически оплачено</dt>
                 <dd className="text-right">{show(item.paidTotal)}</dd>
-                <dt className="text-muted-foreground">Closing principal</dt>
+                <dt className="text-muted-foreground">Остаток после</dt>
                 <dd className="text-right">{show(item.closingPrincipal)}</dd>
               </dl>
               {!readOnly && item.isOpen ? <div className="border-t p-3">{payButton(item, "default")}</div> : null}
@@ -130,7 +130,7 @@ export function ScheduleView({
       {items.some((i) => i.isEstimate && money(i.plannedInterest).gt(0)) ? (
         <p className="text-xs text-muted-foreground">
           <Badge className="mr-1">*</Badge>
-          Interest is an estimate from the loan terms. The bank&apos;s schedule always wins — replace it via &ldquo;Edit schedule&rdquo;.
+          Проценты рассчитаны примерно по условиям займа. График банка всегда главнее — замените его через «Изменить график».
         </p>
       ) : null}
 

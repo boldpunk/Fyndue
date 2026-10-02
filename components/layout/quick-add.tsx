@@ -41,7 +41,7 @@ export function QuickAddProvider({
       <ResponsiveDialog
         open={state.open}
         onOpenChange={(next) => setState((s) => ({ ...s, open: next }))}
-        title="Add transaction"
+        title="Добавить операцию"
       >
         <TransactionForm
           key={state.key}
@@ -56,7 +56,7 @@ export function QuickAddProvider({
   );
 }
 
-export function QuickAddButton({ kind, label = "Add", className }: { kind?: TransactionKind; label?: string; className?: string }) {
+export function QuickAddButton({ kind, label = "Добавить", className }: { kind?: TransactionKind; label?: string; className?: string }) {
   const { open } = useQuickAdd();
   return (
     <Button onClick={() => open(kind)} className={className}>

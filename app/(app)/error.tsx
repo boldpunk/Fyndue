@@ -7,9 +7,9 @@ export default function AppError({ reset }: { error: Error & { digest?: string }
   return (
     <EmptyState
       icon={TriangleAlert}
-      title="Something went wrong"
-      description="Your data is safe. Try again, and if it keeps happening, reload the page."
-      action={<Button onClick={reset}>Try again</Button>}
+      title="Что-то пошло не так"
+      description="Ваши данные в безопасности. Попробуйте ещё раз, а если ошибка повторится — перезагрузите страницу."
+      action={<Button onClick={reset}>Попробовать снова</Button>}
     />
   );
 }

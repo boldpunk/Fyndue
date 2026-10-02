@@ -11,10 +11,10 @@ import { cn } from "@/lib/utils/cn";
 function describe(t: TransactionDTO, perspectiveAccountId?: string) {
   if (t.type === "TRANSFER") {
     const incoming = perspectiveAccountId ? t.direction === "INFLOW" : false;
-    return incoming ? `Transfer from ${t.counterpart?.accountName ?? "account"}` : `Transfer to ${t.counterpart?.accountName ?? "account"}`;
+    return incoming ? `Перевод со счёта ${t.counterpart?.accountName ?? ""}` : `Перевод на счёт ${t.counterpart?.accountName ?? ""}`;
   }
   if (t.type === "EXPENSE" || t.type === "INCOME") return t.merchant ?? t.category?.name ?? TRANSACTION_TYPE_LABELS[t.type];
-  if (t.debt) return t.type === "LOAN_DISBURSEMENT" ? `${t.debt.name} · loan received` : t.debt.name;
+  if (t.debt) return t.type === "LOAN_DISBURSEMENT" ? `${t.debt.name} · получен заём` : t.debt.name;
   return TRANSACTION_TYPE_LABELS[t.type];
 }
 

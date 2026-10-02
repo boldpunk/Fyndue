@@ -18,16 +18,17 @@ import { formatLocalDate, monthGrid, parseLocalDate, type YearMonth } from "@/li
 import type { CalendarEvent, CalendarEventKind } from "@/lib/services/calendar";
 import { cn } from "@/lib/utils/cn";
 import { RecordOccurrenceDialog, type OccurrenceTarget } from "./record-occurrence-dialog";
+import { pluralRu } from "@/lib/finance/recurrence";
 
 const KIND_META: Record<CalendarEventKind, { label: string; dot: string; icon: typeof Landmark }> = {
-  DEBT_PAYMENT: { label: "Debt payment", dot: "bg-primary", icon: Landmark },
-  EXPECTED_INCOME: { label: "Expected income", dot: "bg-success", icon: ArrowDownLeft },
-  RECURRING_INCOME: { label: "Recurring income", dot: "bg-success", icon: Repeat },
-  RECURRING_EXPENSE: { label: "Recurring expense", dot: "bg-warning", icon: Repeat },
-  SUBSCRIPTION: { label: "Subscription", dot: "bg-info", icon: Tv },
+  DEBT_PAYMENT: { label: "Платёж по долгу", dot: "bg-primary", icon: Landmark },
+  EXPECTED_INCOME: { label: "Ожидаемый доход", dot: "bg-success", icon: ArrowDownLeft },
+  RECURRING_INCOME: { label: "Регулярный доход", dot: "bg-success", icon: Repeat },
+  RECURRING_EXPENSE: { label: "Регулярный расход", dot: "bg-warning", icon: Repeat },
+  SUBSCRIPTION: { label: "Подписка", dot: "bg-info", icon: Tv },
 };
 
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEKDAYS = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
 
 function EventRow({
   event,
@@ -75,25 +76,25 @@ function EventRow({
           <PaymentStatusBadge status={event.displayStatus} />
         ) : event.done ? (
           <Badge tone="success">
-            <CheckCircle2 aria-hidden /> Recorded
+            <CheckCircle2 aria-hidden /> Записано
           </Badge>
         ) : (
-          <Badge>Planned</Badge>
+          <Badge>Запланировано</Badge>
         )}
       </div>
       {!event.done ? (
         <div className="basis-full sm:basis-auto">
           {event.kind === "DEBT_PAYMENT" ? (
             <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={() => onPay(event)}>
-              Mark as paid
+              Оплачено
             </Button>
           ) : event.kind === "EXPECTED_INCOME" ? (
             <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={() => onConfirm(event)} disabled={pending}>
-              Mark received
+              Получено
             </Button>
           ) : (
             <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={() => onRecord(event)}>
-              Record
+              Записать
             </Button>
           )}
         </div>
@@ -143,7 +144,7 @@ export function CalendarView({
       if (!e.transactionId) return;
       const result = await confirmIncomeAction(e.transactionId);
       if (!result.ok) return void toast.error(result.error);
-      toast.success("Income received — balance updated");
+      toast.success("Доход получен, баланс обновлён");
       router.refresh();
     });
   const rowProps = { onPay, onRecord, onConfirm, pending };
@@ -172,7 +173,7 @@ export function CalendarView({
                   key={date}
                   type="button"
                   onClick={() => setSelected(date)}
-                  aria-label={`${formatLocalDate(date, undefined, { weekday: "long", day: "numeric", month: "long" })}, ${dayEvents.length} event${dayEvents.length === 1 ? "" : "s"}`}
+                  aria-label={`${formatLocalDate(date, undefined, { weekday: "long", day: "numeric", month: "long" })}, ${dayEvents.length} ${pluralRu(dayEvents.length, ["событие", "события", "событий"])}`}
                   className={cn(
                     "flex min-h-16 flex-col items-stretch gap-1 border-r border-b p-1.5 text-left transition-colors hover:bg-muted/60 lg:min-h-28",
                     !inMonth && "bg-muted/30 text-muted-foreground",
@@ -196,7 +197,7 @@ export function CalendarView({
                           <span className="truncate">{e.title}</span>
                         </span>
                       ))}
-                      {dayEvents.length > 3 ? <span className="px-1 text-[11px] text-muted-foreground">+{dayEvents.length - 3} more</span> : null}
+                      {dayEvents.length > 3 ? <span className="px-1 text-[11px] text-muted-foreground">ещё +{dayEvents.length - 3}</span> : null}
                     </span>
                   ) : dayEvents.length ? (
                     <span className="flex flex-wrap gap-0.5" aria-hidden>
@@ -213,12 +214,12 @@ export function CalendarView({
       ) : (
         <div className="grid gap-4">
           {timelineDates.length === 0 ? (
-            <p className="rounded-xl border border-dashed py-10 text-center text-sm text-muted-foreground">Nothing planned in this period.</p>
+            <p className="rounded-xl border border-dashed py-10 text-center text-sm text-muted-foreground">В этот период ничего не запланировано.</p>
           ) : (
             timelineDates.map((date) => (
               <section key={date} aria-label={date} className="grid gap-1">
                 <h2 className={cn("px-1 text-xs font-medium tracking-wide uppercase", date === today ? "text-primary" : date < today ? "text-muted-foreground" : "text-foreground")}>
-                  {date === today ? "Today · " : ""}
+                  {date === today ? "Сегодня · " : ""}
                   {formatLocalDate(date, undefined, { weekday: "short", day: "numeric", month: "short" })}
                 </h2>
                 <Card className="divide-y px-4">
@@ -232,21 +233,21 @@ export function CalendarView({
         </div>
       )}
 
-      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground" aria-label="Legend">
+      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground" aria-label="Обозначения">
         {(Object.keys(KIND_META) as CalendarEventKind[]).map((k) => (
           <span key={k} className="inline-flex items-center gap-1.5">
             <span aria-hidden className={cn("size-2 rounded-full", KIND_META[k].dot)} />
             {KIND_META[k].label}
           </span>
         ))}
-        <span>· amounts in {primaryCurrency} unless shown otherwise</span>
+        <span>· суммы в {primaryCurrency}, если не указано иное</span>
       </div>
 
       <Sheet open={selected !== null} onOpenChange={(o) => !o && setSelected(null)}>
         <SheetContent side={desktop ? "right" : "bottom"}>
           <SheetHeader>
             <SheetTitle>{selected ? formatLocalDate(selected, undefined, { weekday: "long", day: "numeric", month: "long" }) : ""}</SheetTitle>
-            <SheetDescription>{selectedEvents.length ? `${selectedEvents.length} planned item${selectedEvents.length === 1 ? "" : "s"}` : "Nothing planned on this day."}</SheetDescription>
+            <SheetDescription>{selectedEvents.length ? `Запланировано: ${selectedEvents.length}` : "На этот день ничего не запланировано."}</SheetDescription>
           </SheetHeader>
           <div className="divide-y">
             {selectedEvents.map((e) => (
@@ -256,7 +257,7 @@ export function CalendarView({
           <div className="flex flex-wrap gap-2 border-t pt-3">
             <Button variant="outline" size="sm" asChild>
               <Link href="/transactions/recurring">
-                <Repeat /> Recurring items
+                <Repeat /> Регулярные платежи
               </Link>
             </Button>
           </div>

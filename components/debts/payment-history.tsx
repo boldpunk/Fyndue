@@ -19,12 +19,12 @@ import { cn } from "@/lib/utils/cn";
 
 function Breakdown({ p, currency }: { p: DebtPaymentDTO; currency: string }) {
   const parts: [string, string][] = [
-    ["Principal", p.principal],
-    ["Interest", p.interest],
-    ["Origination fee", p.originationFee],
-    ["Other fees", p.otherFee],
-    ["Penalty", p.penalty],
-    ["Card / transfer fee", p.processingFee],
+    ["Основной долг", p.principal],
+    ["Проценты", p.interest],
+    ["Комиссия за выдачу", p.originationFee],
+    ["Прочие комиссии", p.otherFee],
+    ["Штраф", p.penalty],
+    ["Комиссия за перевод", p.processingFee],
   ];
   return (
     <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-[13px] sm:grid-cols-3">
@@ -66,14 +66,14 @@ export function PaymentHistory({
       setError(null);
       const result = await reversePaymentAction({ paymentId: reversing.id, reason });
       if (!result.ok) return setError(result.fieldErrors?.reason ?? result.error);
-      toast.success("Payment reversed — balances restored");
+      toast.success("Платёж отменён, балансы восстановлены");
       setReversing(null);
       setReason("");
       router.refresh();
     });
 
   if (payments.length === 0) {
-    return <p className="rounded-xl border border-dashed py-10 text-center text-sm text-muted-foreground">No payments recorded yet.</p>;
+    return <p className="rounded-xl border border-dashed py-10 text-center text-sm text-muted-foreground">Платежей пока нет.</p>;
   }
 
   return (
@@ -85,10 +85,10 @@ export function PaymentHistory({
               <div className="grid gap-0.5">
                 <p className="text-sm font-medium">
                   {formatLocalDate(p.paymentDate)}
-                  {p.installmentNumber ? <span className="text-muted-foreground"> · installment #{p.installmentNumber}</span> : null}
+                  {p.installmentNumber ? <span className="text-muted-foreground"> · платёж №{p.installmentNumber}</span> : null}
                 </p>
                 <p className="text-[13px] text-muted-foreground">
-                  from{" "}
+                  со счёта{" "}
                   {p.transactionId ? (
                     <Link href={`/transactions/${p.transactionId}`} className="hover:underline">
                       {p.account.name}
@@ -102,13 +102,13 @@ export function PaymentHistory({
               <div className="grid justify-items-end gap-1">
                 <Money amount={p.actualAccountDebit} currency={currency} className={cn("font-semibold", p.isReversed && "line-through")} />
                 <div className="flex gap-1">
-                  {p.isEarlyRepayment ? <Badge tone="primary">Extra principal</Badge> : null}
-                  {p.isReversed ? <Badge>Reversed</Badge> : null}
+                  {p.isEarlyRepayment ? <Badge tone="primary">Досрочно</Badge> : null}
+                  {p.isReversed ? <Badge>Отменён</Badge> : null}
                 </div>
               </div>
             </div>
             <Breakdown p={p} currency={currency} />
-            {p.isReversed && p.reversalReason ? <p className="text-[13px] text-muted-foreground">Reversed: {p.reversalReason}</p> : null}
+            {p.isReversed && p.reversalReason ? <p className="text-[13px] text-muted-foreground">Причина отмены: {p.reversalReason}</p> : null}
             {receipts[p.id]?.length ? (
               <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[13px]">
                 {receipts[p.id]!.map((r) => (
@@ -123,12 +123,12 @@ export function PaymentHistory({
             <div className="flex flex-wrap gap-1">
               <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
                 <Link href={`/debts/${debtId}?tab=documents&payment=${p.id}`}>
-                  <Paperclip /> Attach receipt
+                  <Paperclip /> Прикрепить чек
                 </Link>
               </Button>
               {!p.isReversed ? (
                 <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setReversing(p)}>
-                  <Undo2 /> Reverse
+                  <Undo2 /> Отменить
                 </Button>
               ) : null}
             </div>
@@ -144,8 +144,8 @@ export function PaymentHistory({
             setError(null);
           }
         }}
-        title="Reverse payment?"
-        description="The payment stays in history, marked as reversed. The account balance, principal and installment are restored."
+        title="Отменить платёж?"
+        description="Платёж останется в истории с пометкой «отменён». Баланс счёта, остаток долга и платёж по графику восстановятся."
       >
         <form
           className="grid gap-4"
@@ -156,18 +156,18 @@ export function PaymentHistory({
         >
           {reversing ? (
             <p className="text-sm">
-              <Money amount={reversing.actualAccountDebit} currency={currency} className="font-semibold" /> returns to {reversing.account.name}.
+              <Money amount={reversing.actualAccountDebit} currency={currency} className="font-semibold" /> вернётся на счёт {reversing.account.name}.
             </p>
           ) : null}
-          <Field label="Reason" htmlFor="reverse-reason" error={error ?? undefined}>
-            <Input id="reverse-reason" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} autoFocus placeholder="e.g. Recorded twice" />
+          <Field label="Причина" htmlFor="reverse-reason" error={error ?? undefined}>
+            <Input id="reverse-reason" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} autoFocus placeholder="например, записан дважды" />
           </Field>
           <div className="flex gap-2">
             <Button type="submit" variant="destructive" disabled={pending}>
-              {pending ? "Reversing…" : "Reverse payment"}
+              {pending ? "Отменяем…" : "Отменить платёж"}
             </Button>
             <Button type="button" variant="ghost" onClick={() => setReversing(null)}>
-              Cancel
+              Отмена
             </Button>
           </div>
         </form>

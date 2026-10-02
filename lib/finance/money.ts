@@ -146,6 +146,14 @@ export function percentage(part: MoneyLike, whole: MoneyLike): FinDecimal | null
   return money(part).div(denominator).times(100);
 }
 
+/** "30.56" → "30,56%" in the app locale (keeps the given decimals). Display only. */
+export function formatPercent(value: string | number, locale = APP_LOCALE): string {
+  const text = String(value);
+  const decimals = text.includes(".") ? text.split(".")[1]!.length : 0;
+  const formatter = new Intl.NumberFormat(locale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  return `${formatter.format(text as unknown as number)}%`;
+}
+
 /** Short display form for axes and dense lists: 12,500,000 → "12.5M". Display only. */
 export function formatCompactMoney(value: MoneyLike, locale = APP_LOCALE): string {
   const formatter = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 });

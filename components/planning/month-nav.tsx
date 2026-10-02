@@ -10,11 +10,11 @@ export function MonthNav({ month, basePath, params = {} }: { month: YearMonth; b
   };
   return (
     <div className="flex items-center gap-1 rounded-md border bg-card p-0.5">
-      <Link href={href(shiftYearMonth(month, -1))} aria-label="Previous month" className="grid size-8 place-items-center rounded-md hover:bg-muted">
+      <Link href={href(shiftYearMonth(month, -1))} aria-label="Предыдущий месяц" className="grid size-8 place-items-center rounded-md hover:bg-muted">
         <ChevronLeft className="size-4" />
       </Link>
       <span className="min-w-36 px-2 text-center text-sm font-medium">{formatYearMonthLabel(month)}</span>
-      <Link href={href(shiftYearMonth(month, 1))} aria-label="Next month" className="grid size-8 place-items-center rounded-md hover:bg-muted">
+      <Link href={href(shiftYearMonth(month, 1))} aria-label="Следующий месяц" className="grid size-8 place-items-center rounded-md hover:bg-muted">
         <ChevronRight className="size-4" />
       </Link>
     </div>
@@ -24,7 +24,7 @@ export function MonthNav({ month, basePath, params = {} }: { month: YearMonth; b
 export function CurrencySwitch({ current, currencies, basePath, params = {} }: { current: string; currencies: string[]; basePath: string; params?: Record<string, string | undefined> }) {
   if (currencies.length < 2) return null;
   return (
-    <div className="flex gap-1 rounded-md border bg-card p-0.5" role="group" aria-label="Currency">
+    <div className="flex gap-1 rounded-md border bg-card p-0.5" role="group" aria-label="Валюта">
       {currencies.map((c) => {
         const q = new URLSearchParams(Object.entries({ ...params, currency: c }).filter((e): e is [string, string] => Boolean(e[1])));
         return (

@@ -25,7 +25,7 @@ export function DebtSettings({
       setErrors({});
       const result = await updateDebtAction({ id: debt.id, name, lender, notes });
       if (!result.ok) return setErrors({ ...(result.fieldErrors ?? {}), form: result.error });
-      toast.success("Debt updated");
+      toast.success("Долг обновлён");
       router.refresh();
     });
 
@@ -34,7 +34,7 @@ export function DebtSettings({
       const archived = debt.status !== "ARCHIVED";
       const result = await archiveDebtAction({ id: debt.id, archived });
       if (!result.ok) return void toast.error(result.error);
-      toast.success(archived ? "Debt archived" : "Debt restored");
+      toast.success(archived ? "Долг перенесён в архив" : "Долг восстановлен");
       router.refresh();
     });
 
@@ -47,34 +47,34 @@ export function DebtSettings({
           save();
         }}
       >
-        <Field label="Name" htmlFor="debt-name" error={errors.name}>
+        <Field label="Название" htmlFor="debt-name" error={errors.name}>
           <Input id="debt-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
         </Field>
-        <Field label="Lender" htmlFor="debt-lender" error={errors.lender}>
-          <Input id="debt-lender" value={lender} onChange={(e) => setLender(e.target.value)} maxLength={80} placeholder="Optional" />
+        <Field label="Кредитор" htmlFor="debt-lender" error={errors.lender}>
+          <Input id="debt-lender" value={lender} onChange={(e) => setLender(e.target.value)} maxLength={80} placeholder="Необязательно" />
         </Field>
-        <Field label="Notes" htmlFor="debt-notes" error={errors.notes}>
+        <Field label="Заметки" htmlFor="debt-notes" error={errors.notes}>
           <Textarea id="debt-notes" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={1000} rows={3} />
         </Field>
         {errors.form ? <p role="alert" className="text-sm text-danger">{errors.form}</p> : null}
         <div>
           <Button type="submit" disabled={pending}>
-            {pending ? "Saving…" : "Save changes"}
+            {pending ? "Сохраняем…" : "Сохранить"}
           </Button>
         </div>
       </form>
 
       <div className="grid max-w-xl gap-2 rounded-xl border p-4">
-        <p className="text-sm font-medium">{debt.status === "ARCHIVED" ? "Restore this debt" : "Archive this debt"}</p>
+        <p className="text-sm font-medium">{debt.status === "ARCHIVED" ? "Восстановить долг" : "Перенести долг в архив"}</p>
         <p className="text-[13px] text-muted-foreground">
           {debt.status === "ARCHIVED"
-            ? "It returns to your active or paid-off debts."
-            : "Hides it from active debts and reminders. Its schedule, payments and history are kept."}
+            ? "Он вернётся в активные или погашенные долги."
+            : "Скроет его из активных долгов и напоминаний. График, платежи и история сохранятся."}
         </p>
         <div>
           <Button variant="outline" onClick={toggleArchive} disabled={pending}>
             {debt.status === "ARCHIVED" ? <ArchiveRestore /> : <Archive />}
-            {debt.status === "ARCHIVED" ? "Restore" : "Archive"}
+            {debt.status === "ARCHIVED" ? "Восстановить" : "В архив"}
           </Button>
         </div>
       </div>

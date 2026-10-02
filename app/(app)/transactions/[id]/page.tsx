@@ -16,7 +16,7 @@ import { listAccounts } from "@/lib/services/accounts";
 import { listCategories } from "@/lib/services/categories";
 import { getTransaction } from "@/lib/services/transactions";
 
-export const metadata: Metadata = { title: "Transaction" };
+export const metadata: Metadata = { title: "Операция" };
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -42,7 +42,7 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
   return (
     <div className="mx-auto grid w-full max-w-2xl gap-6">
       <Link href="/transactions" className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" /> Transactions
+        <ArrowLeft className="size-4" /> Операции
       </Link>
 
       <Card>
@@ -62,34 +62,34 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
               </div>
             </div>
             <div className="flex flex-wrap justify-end gap-1">
-              {t.isVoided ? <Badge>Voided</Badge> : null}
-              {t.status === "EXPECTED" ? <Badge tone="info">Expected</Badge> : null}
+              {t.isVoided ? <Badge>Аннулирована</Badge> : null}
+              {t.status === "EXPECTED" ? <Badge tone="info">Ожидается</Badge> : null}
             </div>
           </div>
           <dl className="divide-y">
-            <Row label="Date">{formatLocalDate(t.date, undefined, { weekday: "short", day: "numeric", month: "long", year: "numeric" })}</Row>
-            <Row label={t.type === "TRANSFER" ? "From" : "Account"}>
+            <Row label="Дата">{formatLocalDate(t.date, undefined, { weekday: "short", day: "numeric", month: "long", year: "numeric" })}</Row>
+            <Row label={t.type === "TRANSFER" ? "Откуда" : "Счёт"}>
               <Link href={`/accounts/${t.account.id}`} className="hover:underline">{t.account.name}</Link>
             </Row>
             {t.counterpart ? (
-              <Row label="To">
+              <Row label="Куда">
                 <Link href={`/accounts/${t.counterpart.accountId}`} className="hover:underline">{t.counterpart.accountName}</Link>
                 {t.counterpart.currency !== t.currency ? (
                   <span className="block text-muted-foreground">
-                    received <Money amount={t.counterpart.amount} currency={t.counterpart.currency} />
+                    зачислено <Money amount={t.counterpart.amount} currency={t.counterpart.currency} />
                   </span>
                 ) : null}
               </Row>
             ) : null}
             {t.debt ? (
-              <Row label="Debt">
+              <Row label="Долг">
                 <Link href={`/debts/${t.debt.id}?tab=payments`} className="hover:underline">{t.debt.name}</Link>
               </Row>
             ) : null}
-            {t.category ? <Row label="Category">{t.category.name}</Row> : null}
-            {t.merchant ? <Row label="Merchant">{t.merchant}</Row> : null}
-            {t.note ? <Row label="Note">{t.note}</Row> : null}
-            {t.isVoided && t.voidReason ? <Row label="Void reason">{t.voidReason}</Row> : null}
+            {t.category ? <Row label="Категория">{t.category.name}</Row> : null}
+            {t.merchant ? <Row label="Где">{t.merchant}</Row> : null}
+            {t.note ? <Row label="Комментарий">{t.note}</Row> : null}
+            {t.isVoided && t.voidReason ? <Row label="Причина аннулирования">{t.voidReason}</Row> : null}
           </dl>
           <TransactionDetailActions transaction={t} />
         </CardContent>
@@ -98,7 +98,7 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
       {t.editable ? (
         <Card>
           <CardHeader>
-            <CardTitle>Edit</CardTitle>
+            <CardTitle>Изменить</CardTitle>
           </CardHeader>
           <CardContent>
             <TransactionForm accounts={accounts} categories={categories} today={todayIn(user.timezone)} initial={t} />

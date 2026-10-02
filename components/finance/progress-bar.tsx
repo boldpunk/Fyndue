@@ -1,3 +1,4 @@
+import { formatPercent } from "@/lib/finance/money";
 import { cn } from "@/lib/utils/cn";
 
 /** Accessible progress bar; the percentage is also rendered as text by callers. */
@@ -22,7 +23,7 @@ export function ProgressBar({
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Number(value.toFixed(2))}
-      aria-valuetext={`${percent}%`}
+      aria-valuetext={formatPercent(percent)}
       className={cn("h-2 w-full overflow-hidden rounded-full bg-muted", className)}
     >
       {/* Display only — the figure itself comes from lib/finance. */}

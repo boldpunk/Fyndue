@@ -11,7 +11,7 @@ import { listAccounts } from "@/lib/services/accounts";
 import { listCategories } from "@/lib/services/categories";
 import { listRecurring, recurringMonthlyTotals } from "@/lib/services/recurring";
 
-export const metadata: Metadata = { title: "Recurring" };
+export const metadata: Metadata = { title: "Регулярные платежи" };
 
 export default async function RecurringPage() {
   const user = await requireUser();
@@ -25,20 +25,20 @@ export default async function RecurringPage() {
   return (
     <div className="mx-auto grid w-full max-w-3xl gap-6">
       <Link href="/transactions" className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" /> Transactions
+        <ArrowLeft className="size-4" /> Операции
       </Link>
-      <PageHeader title="Recurring" description="Bills, subscriptions and income that repeat. They're plans until you record them." />
+      <PageHeader title="Регулярные платежи" description="Повторяющиеся счета, подписки и доходы. Это планы, пока вы их не запишете." />
       {totals.length ? (
         <div className="grid gap-3 sm:grid-cols-2">
           {totals.map((t) => (
             <Card key={t.currency} className="grid gap-2 p-4 text-sm">
               <p className="text-xs text-muted-foreground">Average per month · {t.currency}</p>
               <div className="flex justify-between gap-3">
-                <span className="text-muted-foreground">Recurring expenses</span>
+                <span className="text-muted-foreground">Регулярные расходы</span>
                 <Money amount={t.expenses} currency={t.currency} className="font-medium" />
               </div>
               <div className="flex justify-between gap-3">
-                <span className="text-muted-foreground">Recurring income</span>
+                <span className="text-muted-foreground">Регулярный доход</span>
                 <Money amount={t.income} currency={t.currency} className="font-medium" tone="positive" />
               </div>
             </Card>

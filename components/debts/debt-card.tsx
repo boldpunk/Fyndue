@@ -6,8 +6,9 @@ import { ProgressBar } from "@/components/finance/progress-bar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { DEBT_TYPE_LABELS } from "@/lib/constants/debts";
-import { formatLocalDate } from "@/lib/finance/dates";
+import { formatLocalDate, formatYearMonthLabel, yearMonthOf } from "@/lib/finance/dates";
 import type { DebtSummaryDTO } from "@/lib/services/debts";
+import { formatPercent } from "@/lib/finance/money";
 
 export const DEBT_TYPE_ICONS: Record<DebtSummaryDTO["type"], LucideIcon> = {
   CREDIT: Landmark,
@@ -42,23 +43,23 @@ export function DebtCard({ debt }: { debt: DebtSummaryDTO }) {
               {DEBT_TYPE_LABELS[debt.type]}
             </p>
           </div>
-          {debt.status === "PAID_OFF" ? <Badge tone="success">Paid off</Badge> : null}
+          {debt.status === "PAID_OFF" ? <Badge tone="success">Погашен</Badge> : null}
         </div>
 
         <div className="grid gap-1">
-          <p className="text-xs text-muted-foreground">Remaining principal</p>
+          <p className="text-xs text-muted-foreground">Осталось выплатить</p>
           <Money amount={debt.currentPrincipal} currency={debt.currency} className="text-xl font-semibold tracking-tight" />
         </div>
 
         <div className="grid gap-1.5">
-          <ProgressBar percent={debt.paidPercent} label={`${debt.name} repaid`} tone={debt.status === "PAID_OFF" ? "success" : "primary"} />
+          <ProgressBar percent={debt.paidPercent} label={`${debt.name}: выплачено`} tone={debt.status === "PAID_OFF" ? "success" : "primary"} />
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>
-              <span className="tabular font-medium text-foreground">{debt.paidPercent}%</span> paid ·{" "}
+              выплачено <span className="tabular font-medium text-foreground">{formatPercent(debt.paidPercent)}</span> ·{" "}
               <Money amount={debt.paidPrincipal} currency={debt.currency} />
             </span>
             <span>
-              of <Money amount={debt.principalBasis} currency={debt.currency} />
+              из <Money amount={debt.principalBasis} currency={debt.currency} />
             </span>
           </div>
         </div>
@@ -66,9 +67,9 @@ export function DebtCard({ debt }: { debt: DebtSummaryDTO }) {
         {debt.nextPayment ? (
           <div className="flex items-center justify-between gap-3 rounded-lg bg-muted/60 px-3 py-2">
             <div className="grid gap-0.5">
-              <span className="text-xs text-muted-foreground">Next payment · {daysLabel(debt.nextPayment.daysUntil)}</span>
+              <span className="text-xs text-muted-foreground">Следующий платёж · {daysLabel(debt.nextPayment.daysUntil)}</span>
               <span className="text-sm">
-                <Money amount={debt.nextPayment.amountDue} currency={debt.currency} className="font-semibold" /> on{" "}
+                <Money amount={debt.nextPayment.amountDue} currency={debt.currency} className="font-semibold" /> —{" "}
                 {formatLocalDate(debt.nextPayment.dueDate, undefined, { day: "numeric", month: "short" })}
               </span>
             </div>
@@ -77,8 +78,8 @@ export function DebtCard({ debt }: { debt: DebtSummaryDTO }) {
         ) : null}
 
         <p className="text-xs text-muted-foreground">
-          {debt.paymentsCompleted} paid · {debt.paymentsRemaining} remaining
-          {debt.projectedPayoffDate ? ` · payoff ${formatLocalDate(debt.projectedPayoffDate, undefined, { month: "short", year: "numeric" })}` : ""}
+          Оплачено платежей: {debt.paymentsCompleted} · осталось: {debt.paymentsRemaining}
+          {debt.projectedPayoffDate ? ` · погашение в ${formatYearMonthLabel(yearMonthOf(debt.projectedPayoffDate)).toLowerCase()}` : ""}
         </p>
       </Card>
     </Link>

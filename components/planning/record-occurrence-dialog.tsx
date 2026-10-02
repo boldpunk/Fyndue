@@ -37,7 +37,7 @@ function RecordForm({ target, accounts, today, onDone }: { target: OccurrenceTar
       setError(null);
       const result = await recordOccurrenceAction({ clientRequestId: requestId, recurringId: target.recurringId, occurrenceDate: target.occurrenceDate, amount, date, accountId });
       if (!result.ok) return setError(result.fieldErrors?.amount ?? result.error);
-      toast.success(target.direction === "IN" ? "Income recorded" : "Payment recorded");
+      toast.success(target.direction === "IN" ? "Доход записан" : "Платёж записан");
       router.refresh();
       onDone();
     });
@@ -52,13 +52,13 @@ function RecordForm({ target, accounts, today, onDone }: { target: OccurrenceTar
       }}
     >
       <p className="text-sm text-muted-foreground">
-        Planned for {formatLocalDate(target.occurrenceDate, undefined, { weekday: "short", day: "numeric", month: "long" })}. Record what actually {target.direction === "IN" ? "arrived" : "left your account"}.
+        Запланировано на {formatLocalDate(target.occurrenceDate, undefined, { weekday: "short", day: "numeric", month: "long" })}. Запишите, сколько на самом деле {target.direction === "IN" ? "пришло" : "ушло со счёта"}.
       </p>
-      <Field label="Amount" htmlFor="occ-amount" error={error ?? undefined}>
+      <Field label="Сумма" htmlFor="occ-amount" error={error ?? undefined}>
         <MoneyInput id="occ-amount" size="lg" currency={target.currency} value={amount} onChange={setAmount} autoFocus />
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Account" htmlFor="occ-account">
+        <Field label="Счёт" htmlFor="occ-account">
           <NativeSelect id="occ-account" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
             {usable.map((a) => (
               <option key={a.id} value={a.id}>
@@ -67,12 +67,12 @@ function RecordForm({ target, accounts, today, onDone }: { target: OccurrenceTar
             ))}
           </NativeSelect>
         </Field>
-        <Field label="Date" htmlFor="occ-date">
+        <Field label="Дата" htmlFor="occ-date">
           <Input id="occ-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
       </div>
       <Button type="submit" size="lg" disabled={pending}>
-        {pending ? "Recording…" : target.direction === "IN" ? "Record income" : "Record payment"}
+        {pending ? "Записываем…" : target.direction === "IN" ? "Записать доход" : "Записать платёж"}
       </Button>
     </form>
   );
@@ -90,7 +90,7 @@ export function RecordOccurrenceDialog({
   today: string;
 }) {
   return (
-    <ResponsiveDialog open={target !== null} onOpenChange={(o) => !o && onClose()} title={target ? `Record · ${target.name}` : "Record"}>
+    <ResponsiveDialog open={target !== null} onOpenChange={(o) => !o && onClose()} title={target ? `Записать · ${target.name}` : "Записать"}>
       {target ? <RecordForm key={`${target.recurringId}-${target.occurrenceDate}`} target={target} accounts={accounts} today={today} onDone={onClose} /> : null}
     </ResponsiveDialog>
   );

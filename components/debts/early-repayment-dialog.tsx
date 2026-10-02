@@ -81,7 +81,7 @@ function EarlyRepaymentForm({
         strategy,
       });
       if (!result.ok) return setError(result.error);
-      toast.success("Extra payment recorded — schedule updated");
+      toast.success("Досрочный платёж записан, график пересчитан");
       router.refresh();
       onDone();
     });
@@ -96,23 +96,23 @@ function EarlyRepaymentForm({
       }}
     >
       <p className="text-sm text-muted-foreground">
-        Remaining principal <Money amount={debt.currentPrincipal} currency={debt.currency} className="font-medium text-foreground" />.
-        The whole amount goes to principal; the rest of the schedule is recalculated and the old one is kept in history.
+        Остаток долга <Money amount={debt.currentPrincipal} currency={debt.currency} className="font-medium text-foreground" />.
+        Вся сумма пойдёт в основной долг; оставшийся график пересчитается, а старый сохранится в истории.
       </p>
-      <Field label="Extra principal" htmlFor="early-amount" error={current?.error ?? undefined}>
+      <Field label="Сумма досрочного погашения" htmlFor="early-amount" error={current?.error ?? undefined}>
         <MoneyInput id="early-amount" size="lg" currency={debt.currency} value={amount} onChange={setAmount} autoFocus />
       </Field>
       <Segmented
-        label="After the extra payment"
+        label="После досрочного платежа"
         value={strategy}
         onChange={setStrategy}
         options={[
-          { value: "REDUCE_TERM", label: "Finish sooner" },
-          { value: "REDUCE_PAYMENT", label: "Pay less monthly" },
+          { value: "REDUCE_TERM", label: "Закончить раньше" },
+          { value: "REDUCE_PAYMENT", label: "Платить меньше каждый месяц" },
         ]}
       />
       <div className="grid grid-cols-2 gap-3">
-        <Field label="From account" htmlFor="early-account">
+        <Field label="Со счёта" htmlFor="early-account">
           <NativeSelect id="early-account" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
             {usable.map((a) => (
               <option key={a.id} value={a.id}>
@@ -121,48 +121,48 @@ function EarlyRepaymentForm({
             ))}
           </NativeSelect>
         </Field>
-        <Field label="Date" htmlFor="early-date">
+        <Field label="Дата" htmlFor="early-date">
           <Input id="early-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
       </div>
-      <Field label="Card / transfer fee" htmlFor="early-fee">
+      <Field label="Комиссия за перевод" htmlFor="early-fee">
         <MoneyInput id="early-fee" value={processingFee} onChange={setProcessingFee} />
       </Field>
 
       {shown ? (
         <dl className="grid grid-cols-2 gap-3 rounded-lg border p-3 text-sm">
           <div>
-            <dt className="text-muted-foreground">Old payoff date</dt>
+            <dt className="text-muted-foreground">Было: дата погашения</dt>
             <dd className="font-medium">{shown.oldPayoffDate ? formatLocalDate(shown.oldPayoffDate) : "—"}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">New projected payoff</dt>
-            <dd className="font-medium">{shown.newPayoffDate ? formatLocalDate(shown.newPayoffDate) : "Paid off"}</dd>
+            <dt className="text-muted-foreground">Станет: дата погашения</dt>
+            <dd className="font-medium">{shown.newPayoffDate ? formatLocalDate(shown.newPayoffDate) : "Погашен"}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Months reduced</dt>
+            <dt className="text-muted-foreground">Срок короче на (мес.)</dt>
             <dd className="tabular font-medium">{shown.monthsReduced}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Principal after</dt>
+            <dt className="text-muted-foreground">Остаток после</dt>
             <dd className="font-medium">
               <Money amount={shown.principalAfter} currency={debt.currency} />
             </dd>
           </div>
           {shown.isEstimate ? (
             <div className="col-span-2">
-              <dt className="text-muted-foreground">Interest saved (estimate)</dt>
+              <dt className="text-muted-foreground">Экономия на процентах (оценка)</dt>
               <dd className="font-medium text-success">
                 <Money amount={shown.interestSavedEstimate} currency={debt.currency} />
               </dd>
-              <dd className="mt-1 text-xs text-muted-foreground">An estimate until confirmed against the bank&apos;s schedule.</dd>
+              <dd className="mt-1 text-xs text-muted-foreground">Это оценка, пока её не подтвердит график банка.</dd>
             </div>
           ) : null}
           {shown.newLines[0] ? (
             <div className="col-span-2">
-              <dt className="text-muted-foreground">Next payment becomes</dt>
+              <dt className="text-muted-foreground">Следующий платёж станет</dt>
               <dd className="font-medium">
-                <Money amount={shown.newLines[0].total} currency={debt.currency} /> on {formatLocalDate(shown.newLines[0].dueDate)}
+                <Money amount={shown.newLines[0].total} currency={debt.currency} /> — {formatLocalDate(shown.newLines[0].dueDate)}
               </dd>
             </div>
           ) : null}
@@ -175,7 +175,7 @@ function EarlyRepaymentForm({
         </p>
       ) : null}
       <Button type="submit" size="lg" disabled={pending || !shown}>
-        {pending ? "Recording…" : "Confirm extra payment"}
+        {pending ? "Записываем…" : "Подтвердить досрочный платёж"}
       </Button>
     </form>
   );
@@ -193,7 +193,7 @@ export function EarlyRepaymentDialog({
   today: string;
 }) {
   return (
-    <ResponsiveDialog open={open} onOpenChange={onOpenChange} title="Extra principal payment">
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange} title="Досрочное погашение">
       {open ? <EarlyRepaymentForm {...props} onDone={() => onOpenChange(false)} /> : null}
     </ResponsiveDialog>
   );

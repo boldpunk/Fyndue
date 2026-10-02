@@ -23,7 +23,7 @@ export function SignOutButton({ className }: { className?: string }) {
       }
     >
       <LogOut />
-      {pending ? "Signing out…" : "Log out"}
+      {pending ? "Выходим…" : "Выйти"}
     </Button>
   );
 }

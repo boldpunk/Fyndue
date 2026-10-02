@@ -11,33 +11,27 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { requireUser } from "@/lib/auth/session";
 import { CURRENCIES } from "@/lib/constants/finance";
-import {
-  formatLocalDate,
-  parseYearMonth,
-  RANGE_PRESETS,
-  resolveRange,
-  todayIn,
-  yearMonthOf,
-  type RangePreset,
-} from "@/lib/finance/dates";
+import { formatLocalDate, formatYearMonthLabel, parseYearMonth, RANGE_PRESETS, type RangePreset, resolveRange, todayIn, yearMonthOf } from "@/lib/finance/dates";
 import { getAnalytics, getMonthlySummary } from "@/lib/services/analytics";
 import { cn } from "@/lib/utils/cn";
+import { formatPercent } from "@/lib/finance/money";
+import { pluralRu } from "@/lib/finance/recurrence";
 
-export const metadata: Metadata = { title: "Analytics" };
+export const metadata: Metadata = { title: "Аналитика" };
 
 const PRESET_LABELS: Record<RangePreset, string> = {
-  "this-month": "This month",
-  "last-month": "Last month",
-  "3m": "3 months",
-  "6m": "6 months",
-  year: "Year",
-  custom: "Custom",
+  "this-month": "Этот месяц",
+  "last-month": "Прошлый месяц",
+  "3m": "3 месяца",
+  "6m": "6 месяцев",
+  year: "Год",
+  custom: "Свой период",
 };
 
 const TABS = [
-  { value: "overview", label: "Overview" },
-  { value: "debts", label: "Debt" },
-  { value: "summary", label: "Monthly summary" },
+  { value: "overview", label: "Обзор" },
+  { value: "debts", label: "Долги" },
+  { value: "summary", label: "Итоги месяца" },
 ] as const;
 
 function Tile({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
@@ -51,7 +45,7 @@ function Tile({ label, children, hint }: { label: string; children: React.ReactN
 }
 
 const monthLabel = (key: string) => formatLocalDate(`${key}-01`, undefined, { month: "short" });
-const monthFull = (key: string) => formatLocalDate(`${key}-01`, undefined, { month: "long", year: "numeric" });
+const monthFull = (key: string) => formatYearMonthLabel(parseYearMonth(key)!);
 
 export default async function AnalyticsPage({
   searchParams,
@@ -89,11 +83,11 @@ export default async function AnalyticsPage({
 
   return (
     <div className="grid gap-6">
-      <PageHeader title="Analytics" description={`${formatLocalDate(range.from)} – ${formatLocalDate(range.to)} · ${cur}`} />
+      <PageHeader title="Аналитика" description={`${formatLocalDate(range.from)} – ${formatLocalDate(range.to)} · ${cur}`} />
 
       {/* One filter row above everything it scopes. */}
       <div className="flex flex-wrap items-center gap-2">
-        <nav aria-label="Date range" className="flex flex-wrap gap-1 rounded-md border bg-card p-0.5">
+        <nav aria-label="Период" className="flex flex-wrap gap-1 rounded-md border bg-card p-0.5">
           {RANGE_PRESETS.filter((p) => p !== "custom").map((p) => (
             <Link
               key={p}
@@ -109,17 +103,17 @@ export default async function AnalyticsPage({
           <input type="hidden" name="range" value="custom" />
           {cur !== user.baseCurrency ? <input type="hidden" name="currency" value={cur} /> : null}
           {tab !== "overview" ? <input type="hidden" name="tab" value={tab} /> : null}
-          <Input type="date" name="from" defaultValue={range.from} aria-label="From" className="h-8 w-auto px-2 text-xs md:text-xs" />
+          <Input type="date" name="from" defaultValue={range.from} aria-label="С" className="h-8 w-auto px-2 text-xs md:text-xs" />
           <span className="text-xs text-muted-foreground">to</span>
-          <Input type="date" name="to" defaultValue={range.to} aria-label="To" className="h-8 w-auto px-2 text-xs md:text-xs" />
+          <Input type="date" name="to" defaultValue={range.to} aria-label="По" className="h-8 w-auto px-2 text-xs md:text-xs" />
           <Button type="submit" size="sm" variant={preset === "custom" ? "default" : "outline"}>
-            Apply
+            Применить
           </Button>
         </form>
         <CurrencySwitch current={cur} currencies={data.currencies} basePath="/analytics" params={{ ...current, currency: undefined }} />
       </div>
 
-      <nav aria-label="Analytics sections" className="flex gap-1 border-b">
+      <nav aria-label="Разделы аналитики" className="flex gap-1 border-b">
         {TABS.map((t) => (
           <Link
             key={t.value}
@@ -134,21 +128,21 @@ export default async function AnalyticsPage({
 
       {tab === "overview" ? (
         <>
-          <section aria-label="Totals" className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-            <Tile label="Income">
+          <section aria-label="Итоги" className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <Tile label="Доходы">
               <Money amount={data.totals.income} currency={cur} />
             </Tile>
-            <Tile label="Expenses" hint="Excludes transfers and debt payments">
+            <Tile label="Расходы" hint="Без переводов и платежей по долгам">
               <Money amount={data.totals.expenses} currency={cur} />
             </Tile>
-            <Tile label="Debt payments" hint="Actual debits incl. card fees">
+            <Tile label="Платежи по долгам" hint="Фактические списания, включая комиссии">
               <Money amount={data.totals.debtPayments} currency={cur} />
             </Tile>
-            <Tile label="Net cash flow">
+            <Tile label="Чистый денежный поток">
               <Money amount={data.totals.net} currency={cur} tone="auto" signed />
             </Tile>
-            <Tile label="Debt-to-income" hint="Informational only">
-              {data.totals.debtToIncome === null ? <span className="text-muted-foreground">N/A</span> : <span>{data.totals.debtToIncome}%</span>}
+            <Tile label="Долговая нагрузка" hint="Только для информации">
+              {data.totals.debtToIncome === null ? <span className="text-muted-foreground">—</span> : <span>{formatPercent(data.totals.debtToIncome)}</span>}
             </Tile>
           </section>
 
@@ -156,21 +150,21 @@ export default async function AnalyticsPage({
             <Card className="p-5">
               {single && data.daily ? (
                 <ColumnChart
-                  title="Daily spending"
-                  description="Expenses per day"
+                  title="Расходы по дням"
+                  description="Сколько потрачено за день"
                   categories={data.daily.map((d) => ({ key: d.key, label: String(Number(d.key.slice(8))), fullLabel: formatLocalDate(d.key, undefined, { weekday: "short", day: "numeric", month: "short" }) }))}
-                  series={[{ key: "expenses", label: "Expenses", color: "var(--viz-2)", values: data.daily.map((d) => d.expenses) }]}
+                  series={[{ key: "expenses", label: "Расходы", color: "var(--viz-2)", values: data.daily.map((d) => d.expenses) }]}
                   currency={cur}
                 />
               ) : (
                 <ColumnChart
-                  title="Income vs expenses"
-                  description="Per month, with debt payments shown separately"
+                  title="Доходы и расходы"
+                  description="По месяцам, платежи по долгам — отдельно"
                   categories={categories}
                   series={[
-                    { key: "income", label: "Income", color: "var(--viz-1)", values: data.monthly.map((m) => m.income) },
-                    { key: "expenses", label: "Expenses", color: "var(--viz-2)", values: data.monthly.map((m) => m.expenses) },
-                    { key: "debt", label: "Debt payments", color: "var(--viz-3)", values: data.monthly.map((m) => m.debtPayments) },
+                    { key: "income", label: "Доходы", color: "var(--viz-1)", values: data.monthly.map((m) => m.income) },
+                    { key: "expenses", label: "Расходы", color: "var(--viz-2)", values: data.monthly.map((m) => m.expenses) },
+                    { key: "debt", label: "Платежи по долгам", color: "var(--viz-3)", values: data.monthly.map((m) => m.debtPayments) },
                   ]}
                   currency={cur}
                 />
@@ -178,8 +172,8 @@ export default async function AnalyticsPage({
             </Card>
             <Card className="p-5">
               <BarList
-                title="Expenses by category"
-                description={`${data.byCategory.length} categor${data.byCategory.length === 1 ? "y" : "ies"} · share of spending`}
+                title="Расходы по категориям"
+                description={`${data.byCategory.length} ${pluralRu(data.byCategory.length, ["категория", "категории", "категорий"])} · доля в расходах`}
                 rows={data.byCategoryTop.map((c) => ({ key: c.id ?? c.name, label: c.name, icon: c.icon, color: c.color, amount: c.amount, share: c.share }))}
                 currency={cur}
               />
@@ -188,10 +182,10 @@ export default async function AnalyticsPage({
 
           <Card className="p-5">
             <ColumnChart
-              title="Net cash flow"
-              description="Income − expenses − debt payments, per month"
+              title="Чистый денежный поток"
+              description="Доходы − расходы − платежи по долгам, по месяцам"
               categories={categories}
-              series={[{ key: "net", label: "Net cash flow", color: "var(--viz-pos)", values: data.monthly.map((m) => m.net) }]}
+              series={[{ key: "net", label: "Чистый денежный поток", color: "var(--viz-pos)", values: data.monthly.map((m) => m.net) }]}
               signedColors={{ positive: "var(--viz-pos)", negative: "var(--viz-neg)" }}
               currency={cur}
               height={180}
@@ -202,47 +196,47 @@ export default async function AnalyticsPage({
 
       {tab === "debts" ? (
         <>
-          <section aria-label="Debt totals" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Tile label="Original principal">
+          <section aria-label="Итоги по долгам" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Tile label="Сумма долгов">
               <Money amount={data.debt.principalBasis} currency={cur} />
             </Tile>
-            <Tile label="Principal paid">
+            <Tile label="Выплачено">
               <Money amount={data.debt.principalPaid} currency={cur} />
             </Tile>
-            <Tile label="Principal remaining">
+            <Tile label="Осталось выплатить">
               <Money amount={data.debt.principalRemaining} currency={cur} />
             </Tile>
-            <Tile label="Interest remaining (estimate)">
+            <Tile label="Осталось процентов (оценка)">
               <Money amount={data.debt.interestRemainingEstimate} currency={cur} />
             </Tile>
-            <Tile label="Interest paid">
+            <Tile label="Уплачено процентов">
               <Money amount={data.debt.interestPaid} currency={cur} />
             </Tile>
-            <Tile label="Fees paid" hint="Origination, card/transfer and other fees">
+            <Tile label="Уплачено комиссий" hint="За выдачу, за переводы и прочие">
               <Money amount={data.debt.feesPaid} currency={cur} />
             </Tile>
-            <Tile label="Penalties paid">
+            <Tile label="Уплачено штрафов">
               <Money amount={data.debt.penaltiesPaid} currency={cur} />
             </Tile>
-            <Tile label="Total cost above principal" hint="Interest + fees + penalties">
+            <Tile label="Переплата сверх суммы долга" hint="Проценты + комиссии + штрафы">
               <Money amount={data.debt.costAbovePrincipal} currency={cur} />
             </Tile>
           </section>
           <p className="-mt-2 text-xs text-muted-foreground">
-            Totals are all-time for {cur} debts (paid off included, archived excluded). Total cash outflow — what actually left your accounts:{" "}
+            Итоги за всё время по долгам в {cur} (погашенные включены, архивные — нет). Всего ушло денег со счетов:{" "}
             <Money amount={data.debt.cashOutflow} currency={cur} className="font-medium text-foreground" />.
           </p>
 
           <Card className="p-5">
             <ColumnChart
-              title="Monthly debt payments"
-              description="What your payments went to, in the selected range"
+              title="Платежи по долгам по месяцам"
+              description="На что пошли платежи за выбранный период"
               mode="stacked"
               categories={categories}
               series={[
-                { key: "principal", label: "Principal", color: "var(--viz-1)", values: data.debt.monthlyPayments.map((m) => m.principal) },
-                { key: "interest", label: "Interest", color: "var(--viz-2)", values: data.debt.monthlyPayments.map((m) => m.interest) },
-                { key: "fees", label: "Fees & penalties", color: "var(--viz-3)", values: data.debt.monthlyPayments.map((m) => m.fees) },
+                { key: "principal", label: "Основной долг", color: "var(--viz-1)", values: data.debt.monthlyPayments.map((m) => m.principal) },
+                { key: "interest", label: "Проценты", color: "var(--viz-2)", values: data.debt.monthlyPayments.map((m) => m.interest) },
+                { key: "fees", label: "Комиссии и штрафы", color: "var(--viz-3)", values: data.debt.monthlyPayments.map((m) => m.fees) },
               ]}
               currency={cur}
             />
@@ -250,20 +244,20 @@ export default async function AnalyticsPage({
 
           <Card className="divide-y">
             {data.debt.debts.length === 0 ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">No {cur} debts.</p>
+              <p className="p-6 text-center text-sm text-muted-foreground">Долгов в {cur} нет.</p>
             ) : (
               data.debt.debts.map((d) => (
                 <Link key={d.id} href={`/debts/${d.id}?tab=analytics`} className="grid gap-2 p-4 hover:bg-muted/50">
                   <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
                     <span className="font-medium">{d.name}</span>
                     <span className="text-muted-foreground">
-                      <Money amount={d.currentPrincipal} currency={cur} className="font-medium text-foreground" /> left ·{" "}
-                      {d.status === "PAID_OFF" ? "paid off" : d.projectedPayoffDate ? `payoff ${formatLocalDate(d.projectedPayoffDate, undefined, { month: "short", year: "numeric" })}` : "no schedule"}
+                      <Money amount={d.currentPrincipal} currency={cur} className="font-medium text-foreground" /> осталось ·{" "}
+                      {d.status === "PAID_OFF" ? "погашен" : d.projectedPayoffDate ? `погашение в ${formatYearMonthLabel(yearMonthOf(d.projectedPayoffDate)).toLowerCase()}` : "без графика"}
                     </span>
                   </div>
-                  <ProgressBar percent={d.paidPercent} label={`${d.name} repaid`} tone={d.status === "PAID_OFF" ? "success" : "primary"} />
+                  <ProgressBar percent={d.paidPercent} label={`${d.name}: выплачено`} tone={d.status === "PAID_OFF" ? "success" : "primary"} />
                   <span className="text-xs text-muted-foreground">
-                    <span className="tabular font-medium text-foreground">{d.paidPercent}%</span> repaid
+                    выплачено <span className="tabular font-medium text-foreground">{formatPercent(d.paidPercent)}</span>
                   </span>
                 </Link>
               ))
@@ -276,8 +270,8 @@ export default async function AnalyticsPage({
         <section className="grid gap-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
-              Recomputed from your transactions every time, so past months stay reproducible.
-              {summary.isCurrentMonth ? " This month is still in progress." : ""}
+              Пересчитывается из ваших операций каждый раз, поэтому итоги прошлых месяцев всегда воспроизводимы.
+              {summary.isCurrentMonth ? " Этот месяц ещё не закончился." : ""}
             </p>
             <MonthNav
               month={summaryMonth}
@@ -289,13 +283,13 @@ export default async function AnalyticsPage({
             <dl className="divide-y">
               {(
                 [
-                  ["Income", <Money key="i" amount={summary.income} currency={cur} />],
-                  ["Expenses", <Money key="e" amount={summary.expenses} currency={cur} />],
-                  ["Debt payments", <Money key="d" amount={summary.debtPayments} currency={cur} />],
-                  ["Net cash flow", <Money key="n" amount={summary.netCashFlow} currency={cur} tone="auto" signed />],
-                  ["Debt reduction (principal repaid)", <Money key="r" amount={summary.debtReduction} currency={cur} />],
+                  ["Доходы", <Money key="i" amount={summary.income} currency={cur} />],
+                  ["Расходы", <Money key="e" amount={summary.expenses} currency={cur} />],
+                  ["Платежи по долгам", <Money key="d" amount={summary.debtPayments} currency={cur} />],
+                  ["Чистый денежный поток", <Money key="n" amount={summary.netCashFlow} currency={cur} tone="auto" signed />],
+                  ["Долг уменьшился (выплачено основного долга)", <Money key="r" amount={summary.debtReduction} currency={cur} />],
                   [
-                    "Largest expense category",
+                    "Самая крупная категория расходов",
                     summary.largestExpenseCategory ? (
                       <span key="c">
                         {summary.largestExpenseCategory.name} · <Money amount={summary.largestExpenseCategory.amount} currency={cur} />
@@ -304,8 +298,8 @@ export default async function AnalyticsPage({
                       "—"
                     ),
                   ],
-                  ["Total remaining debt", <Money key="t" amount={summary.totalRemainingDebt} currency={cur} />],
-                  [summary.isCurrentMonth ? "Balance so far" : "Ending balance", <Money key="b" amount={summary.endingBalance} currency={cur} />],
+                  ["Всего осталось по долгам", <Money key="t" amount={summary.totalRemainingDebt} currency={cur} />],
+                  [summary.isCurrentMonth ? "Баланс на сегодня" : "Баланс на конец месяца", <Money key="b" amount={summary.endingBalance} currency={cur} />],
                 ] as const
               ).map(([label, value]) => (
                 <div key={label} className="flex items-center justify-between gap-4 px-5 py-3 text-sm">

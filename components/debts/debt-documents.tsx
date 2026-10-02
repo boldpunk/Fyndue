@@ -25,13 +25,13 @@ const TYPES = Object.entries(DOCUMENT_TYPE_LABELS) as [DocType, string][];
 const ACCEPT = "application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png";
 
 function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes < 1024) return `${bytes} Б`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} КБ`;
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} МБ`;
 }
 
 function paymentText(p: PaymentOption, currency: string) {
-  return `${formatLocalDate(p.paymentDate)} · ${formatMoney(p.amount, currency)}${p.isReversed ? " (reversed)" : ""}`;
+  return `${formatLocalDate(p.paymentDate)} · ${formatMoney(p.amount, currency)}${p.isReversed ? " (отменён)" : ""}`;
 }
 
 function UploadForm({ debtId, currency, payments, initialPaymentId }: { debtId: string; currency: string; payments: PaymentOption[]; initialPaymentId?: string }) {
@@ -48,13 +48,13 @@ function UploadForm({ debtId, currency, payments, initialPaymentId }: { debtId: 
   const choose = (f: File | undefined) => {
     setErrors({});
     if (!f) return;
-    if (f.size > MAX_DOCUMENT_BYTES) return setErrors({ file: "Files can be up to 10 MB." });
+    if (f.size > MAX_DOCUMENT_BYTES) return setErrors({ file: "Файл должен быть не больше 10 МБ." });
     setFile(f);
   };
 
   const submit = () =>
     startTransition(async () => {
-      if (!file) return setErrors({ file: "Choose a PDF, JPG or PNG file." });
+      if (!file) return setErrors({ file: "Выберите файл PDF, JPG или PNG." });
       const form = new FormData();
       form.set("file", file);
       form.set("debtId", debtId);
@@ -63,7 +63,7 @@ function UploadForm({ debtId, currency, payments, initialPaymentId }: { debtId: 
       if (paymentId) form.set("debtPaymentId", paymentId);
       const result = await uploadDocumentAction(form);
       if (!result.ok) return setErrors({ ...(result.fieldErrors ?? {}), form: result.error });
-      toast.success("Document uploaded");
+      toast.success("Документ загружен");
       setFile(null);
       setName("");
       if (fileRef.current) fileRef.current.value = "";
@@ -105,10 +105,10 @@ function UploadForm({ debtId, currency, payments, initialPaymentId }: { debtId: 
             </span>
           ) : (
             <span>
-              <span className="font-medium text-primary">Choose a file</span> or drop it here
+              <span className="font-medium text-primary">Выберите файл</span> или перетащите его сюда
             </span>
           )}
-          <span className="text-[13px] text-muted-foreground">PDF, JPG or PNG, up to 10 MB. Only you can open it.</span>
+          <span className="text-[13px] text-muted-foreground">PDF, JPG или PNG, до 10 МБ. Открыть его сможете только вы.</span>
           <input
             ref={fileRef}
             id="doc-file"
@@ -126,7 +126,7 @@ function UploadForm({ debtId, currency, payments, initialPaymentId }: { debtId: 
         ) : null}
 
         <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
-          <Field label="Type" htmlFor="doc-type" error={errors.type}>
+          <Field label="Тип" htmlFor="doc-type" error={errors.type}>
             <NativeSelect id="doc-type" value={type} onChange={(e) => setType(e.target.value as DocType)}>
               {TYPES.map(([value, label]) => (
                 <option key={value} value={value}>
@@ -135,14 +135,14 @@ function UploadForm({ debtId, currency, payments, initialPaymentId }: { debtId: 
               ))}
             </NativeSelect>
           </Field>
-          <Field label="Name" htmlFor="doc-name" error={errors.name} hint="Optional. Defaults to the file name.">
-            <Input id="doc-name" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} placeholder={file ? file.name.replace(/\.[^.]+$/, "") : "e.g. Signed agreement"} />
+          <Field label="Название" htmlFor="doc-name" error={errors.name} hint="Необязательно. По умолчанию — имя файла.">
+            <Input id="doc-name" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} placeholder={file ? file.name.replace(/\.[^.]+$/, "") : "например, Подписанный договор"} />
           </Field>
         </div>
         {payments.length ? (
-          <Field label="For payment" htmlFor="doc-payment" error={errors.debtPaymentId} hint="Link a receipt to the payment it proves.">
+          <Field label="К платежу" htmlFor="doc-payment" error={errors.debtPaymentId} hint="Привяжите чек к платежу, который он подтверждает.">
             <NativeSelect id="doc-payment" value={paymentId} onChange={(e) => setPaymentId(e.target.value)}>
-              <option value="">Not linked to a payment</option>
+              <option value="">Без привязки к платежу</option>
               {payments.map((p) => (
                 <option key={p.id} value={p.id}>
                   {paymentText(p, currency)}
@@ -158,7 +158,7 @@ function UploadForm({ debtId, currency, payments, initialPaymentId }: { debtId: 
         ) : null}
         <div>
           <Button type="submit" disabled={pending}>
-            <Upload /> {pending ? "Uploading…" : "Upload"}
+            <Upload /> {pending ? "Загружаем…" : "Загрузить"}
           </Button>
         </div>
       </form>
@@ -175,12 +175,12 @@ function EditDialog({ doc, currency, payments, onClose }: { doc: DocumentDTO; cu
     startTransition(async () => {
       const result = await updateDocumentAction({ id: doc.id, ...v });
       if (!result.ok) return setErrors({ ...(result.fieldErrors ?? {}), form: result.error });
-      toast.success("Document updated");
+      toast.success("Документ обновлён");
       onClose();
       router.refresh();
     });
   return (
-    <ResponsiveDialog open onOpenChange={(open) => !open && onClose()} title="Edit document">
+    <ResponsiveDialog open onOpenChange={(open) => !open && onClose()} title="Изменить документ">
       <form
         noValidate
         className="grid gap-4"
@@ -189,10 +189,10 @@ function EditDialog({ doc, currency, payments, onClose }: { doc: DocumentDTO; cu
           save();
         }}
       >
-        <Field label="Name" htmlFor="edit-doc-name" error={errors.name}>
+        <Field label="Название" htmlFor="edit-doc-name" error={errors.name}>
           <Input id="edit-doc-name" value={v.name} maxLength={120} onChange={(e) => setV({ ...v, name: e.target.value })} autoFocus />
         </Field>
-        <Field label="Type" htmlFor="edit-doc-type">
+        <Field label="Тип" htmlFor="edit-doc-type">
           <NativeSelect id="edit-doc-type" value={v.type} onChange={(e) => setV({ ...v, type: e.target.value as DocType })}>
             {TYPES.map(([value, label]) => (
               <option key={value} value={value}>
@@ -202,9 +202,9 @@ function EditDialog({ doc, currency, payments, onClose }: { doc: DocumentDTO; cu
           </NativeSelect>
         </Field>
         {payments.length ? (
-          <Field label="For payment" htmlFor="edit-doc-payment" error={errors.debtPaymentId}>
+          <Field label="К платежу" htmlFor="edit-doc-payment" error={errors.debtPaymentId}>
             <NativeSelect id="edit-doc-payment" value={v.debtPaymentId} onChange={(e) => setV({ ...v, debtPaymentId: e.target.value })}>
-              <option value="">Not linked to a payment</option>
+              <option value="">Без привязки к платежу</option>
               {payments.map((p) => (
                 <option key={p.id} value={p.id}>
                   {paymentText(p, currency)}
@@ -220,10 +220,10 @@ function EditDialog({ doc, currency, payments, onClose }: { doc: DocumentDTO; cu
         ) : null}
         <div className="flex gap-2">
           <Button type="submit" disabled={pending}>
-            {pending ? "Saving…" : "Save"}
+            {pending ? "Сохраняем…" : "Сохранить"}
           </Button>
           <Button type="button" variant="ghost" onClick={onClose}>
-            Cancel
+            Отмена
           </Button>
         </div>
       </form>
@@ -236,7 +236,7 @@ function DocumentRow({ doc, currency, onEdit, onDelete }: { doc: DocumentDTO; cu
   const href = `/api/documents/${doc.id}`;
   return (
     <li className="flex flex-wrap items-center gap-3 p-4 sm:flex-nowrap">
-      <a href={href} target="_blank" rel="noopener" className="shrink-0" aria-label={`Open ${doc.name}`}>
+      <a href={href} target="_blank" rel="noopener" className="shrink-0" aria-label={`Открыть «${doc.name}»`}>
         {isImage ? (
           // eslint-disable-next-line @next/next/no-img-element -- private, session-authenticated file; next/image would cache it
           <img src={href} alt="" loading="lazy" className="size-12 rounded-md border object-cover" />
@@ -255,29 +255,29 @@ function DocumentRow({ doc, currency, onEdit, onDelete }: { doc: DocumentDTO; cu
             {isImage ? <ImageIcon className="size-3.5" aria-hidden /> : <FileText className="size-3.5" aria-hidden />}
             {doc.mimeType === "application/pdf" ? "PDF" : doc.mimeType === "image/png" ? "PNG" : "JPG"} · {formatSize(doc.size)}
           </span>
-          <span>· added {new Date(doc.createdAt).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" })}</span>
+          <span>· добавлен {new Date(doc.createdAt).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" })}</span>
         </p>
         {doc.payment ? (
           <p className="flex items-start gap-1 text-[13px] text-muted-foreground [&>svg]:mt-0.5">
-            <Paperclip className="size-3.5 shrink-0" aria-hidden /> Payment {paymentText(doc.payment, currency)}
+            <Paperclip className="size-3.5 shrink-0" aria-hidden /> Платёж {paymentText(doc.payment, currency)}
           </p>
         ) : null}
       </div>
       <div className="flex w-full justify-end gap-1 sm:w-auto">
-        <Button asChild variant="ghost" size="icon-sm" aria-label={`Open ${doc.name}`} title="Open">
+        <Button asChild variant="ghost" size="icon-sm" aria-label={`Открыть «${doc.name}»`} title="Открыть">
           <a href={href} target="_blank" rel="noopener">
             <ExternalLink />
           </a>
         </Button>
-        <Button asChild variant="ghost" size="icon-sm" aria-label={`Download ${doc.name}`} title="Download">
+        <Button asChild variant="ghost" size="icon-sm" aria-label={`Скачать «${doc.name}»`} title="Скачать">
           <a href={`${href}?download=1`}>
             <Download />
           </a>
         </Button>
-        <Button variant="ghost" size="icon-sm" aria-label={`Edit ${doc.name}`} title="Edit" onClick={onEdit}>
+        <Button variant="ghost" size="icon-sm" aria-label={`Изменить «${doc.name}»`} title="Изменить" onClick={onEdit}>
           <Pencil />
         </Button>
-        <Button variant="ghost" size="icon-sm" aria-label={`Delete ${doc.name}`} title="Delete" onClick={onDelete}>
+        <Button variant="ghost" size="icon-sm" aria-label={`Удалить «${doc.name}»`} title="Удалить" onClick={onDelete}>
           <Trash2 />
         </Button>
       </div>
@@ -309,7 +309,7 @@ export function DebtDocuments({
       if (!deleting) return;
       const result = await deleteDocumentAction(deleting.id);
       if (!result.ok) return void toast.error(result.error);
-      toast.success("Document deleted");
+      toast.success("Документ удалён");
       setDeleting(null);
       router.refresh();
     });
@@ -319,7 +319,7 @@ export function DebtDocuments({
       <UploadForm key={initialPaymentId ?? "new"} debtId={debtId} currency={currency} payments={payments} initialPaymentId={initialPaymentId} />
 
       {groups.length === 0 ? (
-        <EmptyState icon={FileText} title="No documents yet" description="Keep the loan agreement, the bank's schedule and payment receipts next to the debt." />
+        <EmptyState icon={FileText} title="Документов пока нет" description="Храните кредитный договор, график банка и чеки об оплате рядом с долгом." />
       ) : (
         groups.map((g) => (
           <section key={g.type} className="grid gap-2">
@@ -342,15 +342,15 @@ export function DebtDocuments({
       <ResponsiveDialog
         open={deleting !== null}
         onOpenChange={(open) => !open && setDeleting(null)}
-        title="Delete document?"
-        description="The file is removed permanently. Your debt and payments are not affected."
+        title="Удалить документ?"
+        description="Файл удалится навсегда. Долг и платежи не изменятся."
       >
         <div className="flex gap-2">
           <Button variant="destructive" onClick={remove} disabled={pending}>
-            {pending ? "Deleting…" : "Delete"}
+            {pending ? "Удаляем…" : "Удалить"}
           </Button>
           <Button variant="ghost" onClick={() => setDeleting(null)}>
-            Cancel
+            Отмена
           </Button>
         </div>
       </ResponsiveDialog>

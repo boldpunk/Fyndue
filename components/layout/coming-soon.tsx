@@ -17,7 +17,7 @@ export function ComingSoon({
   return (
     <div className="grid gap-6">
       <PageHeader title={title} />
-      <EmptyState icon={icon} title={`Arrives in ${phase}`} description={description} />
+      <EmptyState icon={icon} title={`Появится в ${phase}`} description={description} />
     </div>
   );
 }

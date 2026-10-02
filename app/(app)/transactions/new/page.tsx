@@ -7,7 +7,7 @@ import { todayIn } from "@/lib/finance/dates";
 import { listAccounts } from "@/lib/services/accounts";
 import { listCategories } from "@/lib/services/categories";
 
-export const metadata: Metadata = { title: "New transaction" };
+export const metadata: Metadata = { title: "Новая операция" };
 
 const KINDS: TransactionKind[] = ["EXPENSE", "INCOME", "TRANSFER"];
 
@@ -19,7 +19,7 @@ export default async function NewTransactionPage({ searchParams }: { searchParam
 
   return (
     <div className="mx-auto grid w-full max-w-xl gap-6">
-      <PageHeader title="New transaction" />
+      <PageHeader title="Новая операция" />
       <Card className="p-6">
         <TransactionForm
           accounts={accounts}

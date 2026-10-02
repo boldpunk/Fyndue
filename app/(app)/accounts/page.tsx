@@ -11,7 +11,7 @@ import { totalsByCurrency } from "@/lib/finance/balance";
 import { toMoneyString } from "@/lib/finance/money";
 import { listAccounts } from "@/lib/services/accounts";
 
-export const metadata: Metadata = { title: "Accounts" };
+export const metadata: Metadata = { title: "Счета" };
 
 export default async function AccountsPage({ searchParams }: { searchParams: Promise<{ archived?: string }> }) {
   const user = await requireUser();
@@ -27,12 +27,12 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
   return (
     <div className="grid gap-8">
       <PageHeader
-        title="Accounts"
-        description="Balances are totalled per currency and never mixed."
+        title="Счета"
+        description="Балансы считаются отдельно по каждой валюте и никогда не смешиваются."
         actions={
           <Button asChild>
             <Link href="/accounts/new">
-              <Plus /> New account
+              <Plus /> Новый счёт
             </Link>
           </Button>
         }
@@ -41,11 +41,11 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
       {active.length === 0 ? (
         <EmptyState
           icon={Wallet}
-          title="No accounts yet"
-          description="Add the cards, cash and savings you want Fyndue to track — e.g. Uzcard, Visa, Cash UZS."
+          title="Счетов пока нет"
+          description="Добавьте карты, наличные и накопления, которые хотите отслеживать: например Uzcard, Visa, наличные в сумах."
           action={
             <Button asChild>
-              <Link href="/accounts/new">Add account</Link>
+              <Link href="/accounts/new">Добавить счёт</Link>
             </Button>
           }
         />
@@ -59,7 +59,7 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
                   {currency}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Total{" "}
+                  Всего{" "}
                   <Money amount={total ? toMoneyString(total) : "0"} currency={currency} className="font-semibold text-foreground" />
                 </p>
               </div>
@@ -78,7 +78,7 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
       {archived.length > 0 ? (
         <section className="grid gap-3">
           <Link href={showArchived ? "/accounts" : "/accounts?archived=1"} className="text-sm font-medium text-muted-foreground hover:text-foreground">
-            {showArchived ? "Hide" : "Show"} archived accounts ({archived.length})
+            {showArchived ? "Скрыть" : "Показать"} счета в архиве ({archived.length})
           </Link>
           {showArchived ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

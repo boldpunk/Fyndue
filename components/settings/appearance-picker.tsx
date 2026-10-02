@@ -4,15 +4,15 @@ import { useThemeChoice } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/utils/cn";
 
 const OPTIONS = [
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
-  { value: "system", label: "System", icon: Monitor },
+  { value: "light", label: "Светлая", icon: Sun },
+  { value: "dark", label: "Тёмная", icon: Moon },
+  { value: "system", label: "Как в системе", icon: Monitor },
 ] as const;
 
 export function AppearancePicker() {
   const { theme, choose } = useThemeChoice();
   return (
-    <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-2">
+    <div role="radiogroup" aria-label="Тема" className="grid grid-cols-3 gap-2">
       {OPTIONS.map(({ value, label, icon: Icon }) => (
         <button
           key={value}

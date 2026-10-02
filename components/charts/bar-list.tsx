@@ -1,5 +1,6 @@
 import { CategoryIcon } from "@/components/finance/category-icon";
 import { Money } from "@/components/finance/money";
+import { formatPercent } from "@/lib/finance/money";
 
 /**
  * Horizontal bars for a ranked breakdown (expenses by category). One series,
@@ -29,7 +30,7 @@ export function BarList({
         {description ? <span className="text-xs text-muted-foreground">{description}</span> : null}
       </figcaption>
       {list.length === 0 ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">No spending in this period</p>
+        <p className="py-6 text-center text-sm text-muted-foreground">За этот период расходов нет</p>
       ) : (
         <ul className="grid gap-3">
           {list.map((r) => (
@@ -38,7 +39,7 @@ export function BarList({
                 {r.icon ? <CategoryIcon icon={r.icon} color={r.color} size="sm" /> : <span className="size-7" aria-hidden />}
                 <span className="flex-1 truncate">{r.label}</span>
                 <Money amount={r.amount} currency={currency} className="font-medium" />
-                <span className="tabular w-12 text-right text-xs text-muted-foreground">{r.share}%</span>
+                <span className="tabular w-12 text-right text-xs text-muted-foreground">{formatPercent(r.share)}</span>
               </div>
               <div className="ml-9 h-2 overflow-hidden rounded-r-[4px] bg-muted" aria-hidden>
                 <div className="h-full rounded-r-[4px] bg-viz-1" style={{ width: `${(Number(r.share) / top) * 100}%` }} />

@@ -9,7 +9,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
       <div className="grid w-full max-w-sm gap-8">
         <div className="grid justify-items-center gap-3 text-center">
           <Logo />
-          <p className="text-sm text-muted-foreground">No missed payments. One clear picture of your money.</p>
+          <p className="text-sm text-muted-foreground">Ни одного пропущенного платежа. Вся картина денег — в одном месте.</p>
         </div>
         {children}
       </div>

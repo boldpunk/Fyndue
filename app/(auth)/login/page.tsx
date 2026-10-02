@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { AuthForm } from "@/components/auth/auth-form";
 import { googleAuthEnabled } from "@/lib/env";
 
-export const metadata: Metadata = { title: "Sign in" };
+export const metadata: Metadata = { title: "Вход" };
 
 export default function LoginPage() {
   return (

@@ -59,7 +59,7 @@ export function AccountForm({ account, defaultCurrency }: { account?: AccountDTO
         for (const [key, message] of Object.entries(result.fieldErrors ?? {})) setError(key as keyof Values, { message });
         return;
       }
-      toast.success(account ? "Account updated" : "Account created");
+      toast.success(account ? "Счёт обновлён" : "Счёт создан");
       router.push(`/accounts/${result.data.id}`);
       router.refresh();
     });
@@ -67,12 +67,12 @@ export function AccountForm({ account, defaultCurrency }: { account?: AccountDTO
 
   return (
     <form onSubmit={onSubmit} noValidate className="grid gap-5">
-      <Field label="Name" htmlFor="name" error={errors.name?.message}>
-        <Input id="name" placeholder="e.g. Uzcard, Cash UZS" autoFocus={!account} {...register("name")} />
+      <Field label="Название" htmlFor="name" error={errors.name?.message}>
+        <Input id="name" placeholder="например Uzcard, Наличные" autoFocus={!account} {...register("name")} />
       </Field>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Type" htmlFor="type" error={errors.type?.message}>
+        <Field label="Тип" htmlFor="type" error={errors.type?.message}>
           <NativeSelect id="type" {...register("type")}>
             {ACCOUNT_TYPES.map((t) => (
               <option key={t} value={t}>
@@ -82,10 +82,10 @@ export function AccountForm({ account, defaultCurrency }: { account?: AccountDTO
           </NativeSelect>
         </Field>
         <Field
-          label="Currency"
+          label="Валюта"
           htmlFor="currency"
           error={errors.currency?.message}
-          hint={account ? "Currency can't change after creation." : undefined}
+          hint={account ? "Валюту нельзя изменить после создания." : undefined}
         >
           <NativeSelect id="currency" disabled={Boolean(account)} {...register("currency")}>
             {CURRENCIES.map((c) => (
@@ -98,10 +98,10 @@ export function AccountForm({ account, defaultCurrency }: { account?: AccountDTO
       </div>
 
       <Field
-        label="Opening balance"
+        label="Начальный баланс"
         htmlFor="openingBalance"
         error={errors.openingBalance?.message}
-        hint={account ? "Changing it shifts the current balance by the same difference." : "What the account held when you started tracking it."}
+        hint={account ? "Если изменить, текущий баланс сдвинется на ту же разницу." : "Сколько было на счёте, когда вы начали его вести."}
       >
         <Controller
           control={control}
@@ -110,11 +110,11 @@ export function AccountForm({ account, defaultCurrency }: { account?: AccountDTO
         />
       </Field>
 
-      <Field label="Bank" htmlFor="bank" error={errors.bank?.message}>
-        <Input id="bank" placeholder="Optional" {...register("bank")} />
+      <Field label="Банк" htmlFor="bank" error={errors.bank?.message}>
+        <Input id="bank" placeholder="Необязательно" {...register("bank")} />
       </Field>
 
-      <Field label="Colour" htmlFor="color">
+      <Field label="Цвет" htmlFor="color">
         <Controller control={control} name="color" render={({ field }) => <ColorPicker value={field.value} onChange={field.onChange} />} />
       </Field>
 
@@ -124,10 +124,10 @@ export function AccountForm({ account, defaultCurrency }: { account?: AccountDTO
         render={({ field }) => (
           <label className="flex items-start justify-between gap-4 rounded-lg border p-3">
             <span className="grid gap-0.5">
-              <span className="text-sm font-medium">Include in total balance</span>
-              <span className="text-[13px] text-muted-foreground">Turn off for money you don&apos;t want counted as available.</span>
+              <span className="text-sm font-medium">Учитывать в общем балансе</span>
+              <span className="text-[13px] text-muted-foreground">Выключите для денег, которые не нужно считать доступными.</span>
             </span>
-            <Switch checked={field.value} onCheckedChange={field.onChange} aria-label="Include in total balance" />
+            <Switch checked={field.value} onCheckedChange={field.onChange} aria-label="Учитывать в общем балансе" />
           </label>
         )}
       />
@@ -140,10 +140,10 @@ export function AccountForm({ account, defaultCurrency }: { account?: AccountDTO
 
       <div className="flex gap-2">
         <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : account ? "Save changes" : "Create account"}
+          {pending ? "Сохраняем…" : account ? "Сохранить" : "Создать счёт"}
         </Button>
         <Button type="button" variant="ghost" onClick={() => router.back()}>
-          Cancel
+          Отмена
         </Button>
       </div>
     </form>

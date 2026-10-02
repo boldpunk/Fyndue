@@ -4,22 +4,22 @@ import { formatLocalDate } from "@/lib/finance/dates";
 import type { NotificationLogDTO } from "@/lib/services/notifications";
 
 const TYPE_LABEL: Record<NotificationLogDTO["type"], { label: string; icon: typeof BellRing }> = {
-  DUE_IN_DAYS: { label: "Upcoming payment", icon: CalendarClock },
-  DUE_TODAY: { label: "Due today", icon: BellRing },
-  OVERDUE: { label: "Overdue", icon: AlertTriangle },
-  TEST: { label: "Test message", icon: Send },
+  DUE_IN_DAYS: { label: "Скоро платёж", icon: CalendarClock },
+  DUE_TODAY: { label: "Платёж сегодня", icon: BellRing },
+  OVERDUE: { label: "Просрочка", icon: AlertTriangle },
+  TEST: { label: "Тестовое сообщение", icon: Send },
 };
 
 const STATUS: Record<NotificationLogDTO["status"], { label: string; tone: BadgeTone; icon: typeof Check }> = {
-  SENT: { label: "Sent", tone: "success", icon: Check },
-  PENDING: { label: "Sending", tone: "info", icon: Clock },
-  FAILED: { label: "Will retry", tone: "warning", icon: AlertTriangle },
-  CANCELLED: { label: "Cancelled", tone: "neutral", icon: CircleSlash },
+  SENT: { label: "Отправлено", tone: "success", icon: Check },
+  PENDING: { label: "Отправляется", tone: "info", icon: Clock },
+  FAILED: { label: "Повторим", tone: "warning", icon: AlertTriangle },
+  CANCELLED: { label: "Отменено", tone: "neutral", icon: CircleSlash },
 };
 
 export function NotificationLog({ entries, timeZone }: { entries: NotificationLogDTO[]; timeZone: string }) {
   if (entries.length === 0) {
-    return <p className="text-sm text-muted-foreground">No reminders yet. They appear here once Telegram is connected and a payment is coming up.</p>;
+    return <p className="text-sm text-muted-foreground">Напоминаний пока нет. Они появятся, когда Telegram будет подключён и подойдёт срок платежа.</p>;
   }
   const time = new Intl.DateTimeFormat("ru-RU", { timeZone, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   return (
@@ -27,7 +27,7 @@ export function NotificationLog({ entries, timeZone }: { entries: NotificationLo
       {entries.map((e) => {
         const type = TYPE_LABEL[e.type];
         // A failed row that used up its retries is final.
-        const status = e.status === "FAILED" && e.attempts >= 5 ? { ...STATUS.FAILED, label: "Failed", tone: "danger" as const } : STATUS[e.status];
+        const status = e.status === "FAILED" && e.attempts >= 5 ? { ...STATUS.FAILED, label: "Не доставлено", tone: "danger" as const } : STATUS[e.status];
         const Icon = type.icon;
         const StatusIcon = status.icon;
         return (
@@ -37,7 +37,7 @@ export function NotificationLog({ entries, timeZone }: { entries: NotificationLo
               <span className="truncate font-medium">{e.debtName ?? type.label}</span>
               <span className="text-[13px] text-muted-foreground">
                 {e.debtName ? type.label : null}
-                {e.dueDate ? ` · due ${formatLocalDate(e.dueDate, undefined, { day: "numeric", month: "short" })}` : null}
+                {e.dueDate ? ` · срок ${formatLocalDate(e.dueDate, undefined, { day: "numeric", month: "short" })}` : null}
                 {e.debtName || e.dueDate ? " · " : null}
                 {time.format(new Date(e.sentAt ?? e.createdAt))}
               </span>

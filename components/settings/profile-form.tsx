@@ -24,18 +24,18 @@ export function ProfileForm({ defaults }: { defaults: ProfileInput }) {
     startTransition(async () => {
       const result = await updateProfileAction(values);
       if (!result.ok) return void toast.error(result.error);
-      toast.success("Profile saved");
+      toast.success("Профиль сохранён");
       router.refresh();
     });
   });
 
   return (
     <form onSubmit={onSubmit} noValidate className="grid gap-5">
-      <Field label="Name" htmlFor="name" error={formState.errors.name?.message}>
+      <Field label="Имя" htmlFor="name" error={formState.errors.name?.message}>
         <Input id="name" autoComplete="name" {...register("name")} />
       </Field>
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Primary currency" htmlFor="baseCurrency" hint="Shown first in totals. Other currencies are never converted.">
+        <Field label="Основная валюта" htmlFor="baseCurrency" hint="Показывается первой в итогах. Другие валюты никогда не пересчитываются.">
           <NativeSelect id="baseCurrency" {...register("baseCurrency")}>
             {CURRENCIES.map((c) => (
               <option key={c} value={c}>
@@ -44,7 +44,7 @@ export function ProfileForm({ defaults }: { defaults: ProfileInput }) {
             ))}
           </NativeSelect>
         </Field>
-        <Field label="Time zone" htmlFor="timezone" hint="Due dates and “today” use this time zone.">
+        <Field label="Часовой пояс" htmlFor="timezone" hint="По этому поясу считаются сроки платежей и «сегодня».">
           <NativeSelect id="timezone" {...register("timezone")}>
             {TIMEZONES.map((tz) => (
               <option key={tz} value={tz}>
@@ -56,7 +56,7 @@ export function ProfileForm({ defaults }: { defaults: ProfileInput }) {
       </div>
       <div>
         <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Save profile"}
+          {pending ? "Сохраняем…" : "Сохранить профиль"}
         </Button>
       </div>
     </form>

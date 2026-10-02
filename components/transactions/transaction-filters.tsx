@@ -8,11 +8,11 @@ import { formatYearMonth, formatYearMonthLabel, parseYearMonth, shiftYearMonth, 
 import { cn } from "@/lib/utils/cn";
 
 const TYPE_FILTERS = [
-  { value: "", label: "All" },
-  { value: "EXPENSE", label: "Expenses" },
-  { value: "INCOME", label: "Income" },
-  { value: "TRANSFER", label: "Transfers" },
-  { value: "BALANCE_ADJUSTMENT", label: "Adjustments" },
+  { value: "", label: "Все" },
+  { value: "EXPENSE", label: "Расходы" },
+  { value: "INCOME", label: "Доходы" },
+  { value: "TRANSFER", label: "Переводы" },
+  { value: "BALANCE_ADJUSTMENT", label: "Корректировки" },
 ] as const;
 
 /** Filters live in the URL so every view is linkable and server-rendered. */
@@ -65,25 +65,25 @@ export function TransactionFilters({
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="Previous month"
+            aria-label="Предыдущий месяц"
             onClick={() => update({ month: formatYearMonth(shiftYearMonth(month ?? currentMonth, -1)) })}
           >
             <ChevronLeft />
           </Button>
           <button type="button" onClick={() => update({ month: month ? null : formatYearMonth(currentMonth) })} className="min-w-32 px-2 text-sm font-medium">
-            {month ? formatYearMonthLabel(month) : "All time"}
+            {month ? formatYearMonthLabel(month) : "За всё время"}
           </button>
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="Next month"
+            aria-label="Следующий месяц"
             onClick={() => update({ month: formatYearMonth(shiftYearMonth(month ?? currentMonth, 1)) })}
           >
             <ChevronRight />
           </Button>
         </div>
-        <NativeSelect aria-label="Account" value={params.get("account") ?? ""} onChange={(e) => update({ account: e.target.value || null })}>
-          <option value="">All accounts</option>
+        <NativeSelect aria-label="Счёт" value={params.get("account") ?? ""} onChange={(e) => update({ account: e.target.value || null })}>
+          <option value="">Все счета</option>
           {accounts.map((a) => (
             <option key={a.id} value={a.id}>
               {a.name}
@@ -99,7 +99,7 @@ export function TransactionFilters({
           className="relative"
         >
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-          <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search note, merchant, category" aria-label="Search transactions" className="pl-9" />
+          <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Поиск по комментарию, месту, категории" aria-label="Поиск операций" className="pl-9" />
         </form>
       </div>
     </div>

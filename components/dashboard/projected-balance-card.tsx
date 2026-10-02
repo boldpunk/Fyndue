@@ -13,7 +13,7 @@ export function ProjectedBalanceCard({ primary, others }: { primary: CurrencyDas
   return (
     <Card className="grid content-start gap-4 p-5">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-medium text-muted-foreground">Projected balance · {formatLocalDate(p.until, undefined, { day: "numeric", month: "short" })}</h2>
+        <h2 className="text-sm font-medium text-muted-foreground">Прогноз баланса на {formatLocalDate(p.until, undefined, { day: "numeric", month: "short" })}</h2>
         <span className="grid size-8 place-items-center rounded-lg bg-info-subtle text-info">
           <TrendingUp className="size-4" aria-hidden />
         </span>
@@ -21,21 +21,21 @@ export function ProjectedBalanceCard({ primary, others }: { primary: CurrencyDas
       <Money amount={p.projected} currency={cur} tone={p.projected.startsWith("-") ? "negative" : "neutral"} className="text-3xl font-semibold tracking-tight" />
       <dl className="grid gap-1.5 border-t pt-3 text-sm">
         <div className="flex justify-between gap-3">
-          <dt className="text-muted-foreground">Current balance</dt>
+          <dt className="text-muted-foreground">Сейчас на счетах</dt>
           <dd><Money amount={p.balance} currency={cur} /></dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-muted-foreground">+ Expected income</dt>
+          <dt className="text-muted-foreground">+ Ожидаемый доход</dt>
           <dd><Money amount={p.expectedIncome} currency={cur} /></dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-muted-foreground">− Planned expenses</dt>
+          <dt className="text-muted-foreground">− Плановые расходы</dt>
           <dd>
-            {money(p.plannedExpenses).isZero() ? <span className="text-muted-foreground">— none planned</span> : <Money amount={p.plannedExpenses} currency={cur} />}
+            {money(p.plannedExpenses).isZero() ? <span className="text-muted-foreground">— не запланированы</span> : <Money amount={p.plannedExpenses} currency={cur} />}
           </dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-muted-foreground">− Scheduled debt payments</dt>
+          <dt className="text-muted-foreground">− Платежи по долгам</dt>
           <dd><Money amount={p.debtPayments} currency={cur} /></dd>
         </div>
       </dl>
@@ -50,9 +50,9 @@ export function ProjectedBalanceCard({ primary, others }: { primary: CurrencyDas
         </ul>
       ) : null}
       <p className="text-xs text-muted-foreground">
-        Projected, not guaranteed. Planned expenses and recurring income come from your{" "}
+        Это прогноз, а не гарантия. Плановые расходы и регулярный доход берутся из{" "}
         <Link href="/transactions/recurring" className="text-primary hover:underline">
-          recurring items
+          регулярных платежей
         </Link>
         .
       </p>

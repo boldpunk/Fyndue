@@ -41,9 +41,9 @@ type FormValues = {
 };
 
 const KIND_OPTIONS = [
-  { value: "EXPENSE", label: "Expense" },
-  { value: "INCOME", label: "Income" },
-  { value: "TRANSFER", label: "Transfer" },
+  { value: "EXPENSE", label: "Расход" },
+  { value: "INCOME", label: "Доход" },
+  { value: "TRANSFER", label: "Перевод" },
 ] as const;
 
 function groupAmount(amount: string) {
@@ -187,7 +187,7 @@ export function TransactionForm({
         applyErrors(result.fieldErrors);
         return;
       }
-      toast.success(editing ? "Transaction updated" : kind === "TRANSFER" ? "Transfer recorded" : `${kind === "INCOME" ? "Income" : "Expense"} recorded`);
+      toast.success(editing ? "Операция обновлена" : kind === "TRANSFER" ? "Перевод записан" : kind === "INCOME" ? "Доход записан" : "Расход записан");
       if (!editing) {
         reset({ ...values, amount: "", toAmount: "", merchant: "", note: "", categoryId: "" });
         setRequestId(crypto.randomUUID());
@@ -200,8 +200,8 @@ export function TransactionForm({
   if (accounts.length === 0) {
     return (
       <div className="grid gap-3 text-sm">
-        <p className="text-muted-foreground">Create an account first — every transaction belongs to one.</p>
-        <Button onClick={() => { onDone?.(); router.push("/accounts/new"); }}>Create account</Button>
+        <p className="text-muted-foreground">Сначала создайте счёт: каждая операция привязана к счёту.</p>
+        <Button onClick={() => { onDone?.(); router.push("/accounts/new"); }}>Создать счёт</Button>
       </div>
     );
   }
@@ -210,7 +210,7 @@ export function TransactionForm({
     <form onSubmit={onSubmit} noValidate className="grid gap-5">
       {!editing ? (
         <Segmented
-          label="Transaction type"
+          label="Тип операции"
           value={kind}
           onChange={(value) => {
             setKind(value);
@@ -221,7 +221,7 @@ export function TransactionForm({
         />
       ) : null}
 
-      <Field label="Amount" htmlFor="amount" error={errors.amount?.message}>
+      <Field label="Сумма" htmlFor="amount" error={errors.amount?.message}>
         <Controller
           control={control}
           name="amount"
@@ -241,7 +241,7 @@ export function TransactionForm({
       </Field>
 
       {kind !== "TRANSFER" ? (
-        <Field label="Category" htmlFor="categoryId" error={errors.categoryId?.message}>
+        <Field label="Категория" htmlFor="categoryId" error={errors.categoryId?.message}>
           <Controller
             control={control}
             name="categoryId"
@@ -259,7 +259,7 @@ export function TransactionForm({
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label={kind === "TRANSFER" ? "From account" : "Account"} htmlFor="accountId" error={errors.accountId?.message}>
+        <Field label={kind === "TRANSFER" ? "Со счёта" : "Счёт"} htmlFor="accountId" error={errors.accountId?.message}>
           <NativeSelect id="accountId" disabled={editing && kind === "TRANSFER"} {...register("accountId")}>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
@@ -269,7 +269,7 @@ export function TransactionForm({
           </NativeSelect>
         </Field>
         {kind === "TRANSFER" ? (
-          <Field label="To account" htmlFor="toAccountId" error={errors.toAccountId?.message}>
+          <Field label="На счёт" htmlFor="toAccountId" error={errors.toAccountId?.message}>
             <NativeSelect id="toAccountId" disabled={editing} {...register("toAccountId")}>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -279,7 +279,7 @@ export function TransactionForm({
             </NativeSelect>
           </Field>
         ) : (
-          <Field label="Date" htmlFor="date" error={errors.date?.message}>
+          <Field label="Дата" htmlFor="date" error={errors.date?.message}>
             <Input id="date" type="date" {...register("date")} />
           </Field>
         )}
@@ -287,10 +287,10 @@ export function TransactionForm({
 
       {crossCurrency ? (
         <Field
-          label={`Amount received in ${toAccount?.currency}`}
+          label={`Зачислено в ${toAccount?.currency}`}
           htmlFor="toAmount"
           error={errors.toAmount?.message}
-          hint="Different currencies: enter exactly what arrived. Fyndue never guesses exchange rates."
+          hint="Валюты разные: укажите, сколько пришло на самом деле. Fyndue никогда не угадывает курс."
         >
           <Controller
             control={control}
@@ -301,17 +301,17 @@ export function TransactionForm({
       ) : null}
 
       {kind === "TRANSFER" ? (
-        <Field label="Date" htmlFor="date" error={errors.date?.message}>
+        <Field label="Дата" htmlFor="date" error={errors.date?.message}>
           <Input id="date" type="date" {...register("date")} />
         </Field>
       ) : (
-        <Field label="Merchant" htmlFor="merchant" error={errors.merchant?.message}>
-          <Input id="merchant" placeholder="Optional" autoComplete="off" {...register("merchant")} />
+        <Field label="Где / у кого" htmlFor="merchant" error={errors.merchant?.message}>
+          <Input id="merchant" placeholder="Необязательно" autoComplete="off" {...register("merchant")} />
         </Field>
       )}
 
-      <Field label="Note" htmlFor="note" error={errors.note?.message}>
-        <Textarea id="note" rows={2} placeholder="Optional" {...register("note")} />
+      <Field label="Комментарий" htmlFor="note" error={errors.note?.message}>
+        <Textarea id="note" rows={2} placeholder="Необязательно" {...register("note")} />
       </Field>
 
       {kind === "INCOME" ? (
@@ -321,10 +321,10 @@ export function TransactionForm({
           render={({ field }) => (
             <label className="flex items-start justify-between gap-4 rounded-lg border p-3">
               <span className="grid gap-0.5">
-                <span className="text-sm font-medium">Expected, not yet received</span>
-                <span className="text-[13px] text-muted-foreground">Won&apos;t change your balance until you confirm it.</span>
+                <span className="text-sm font-medium">Ожидается, ещё не получен</span>
+                <span className="text-[13px] text-muted-foreground">Не изменит баланс, пока вы не подтвердите получение.</span>
               </span>
-              <Switch checked={field.value} onCheckedChange={field.onChange} aria-label="Expected income" />
+              <Switch checked={field.value} onCheckedChange={field.onChange} aria-label="Ожидаемый доход" />
             </label>
           )}
         />
@@ -343,7 +343,7 @@ export function TransactionForm({
       ) : null}
 
       <Button type="submit" size="lg" disabled={pending}>
-        {pending ? "Saving…" : editing ? "Save changes" : "Save"}
+        {pending ? "Сохраняем…" : editing ? "Сохранить изменения" : "Сохранить"}
       </Button>
     </form>
   );

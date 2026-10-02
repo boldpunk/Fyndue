@@ -34,8 +34,8 @@ export function AccountCard({ account }: { account: AccountDTO }) {
         <div className="flex items-start justify-between gap-3">
           <AccountIcon account={account} />
           <div className="flex flex-wrap justify-end gap-1">
-            {!account.includeInTotal ? <Badge>Excluded from total</Badge> : null}
-            {account.isArchived ? <Badge>Archived</Badge> : null}
+            {!account.includeInTotal ? <Badge>Не входит в общий баланс</Badge> : null}
+            {account.isArchived ? <Badge>В архиве</Badge> : null}
           </div>
         </div>
         <div className="grid gap-1">

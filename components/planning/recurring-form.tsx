@@ -54,7 +54,7 @@ export function RecurringForm({
       setErrors({});
       const result = await saveRecurringAction({ ...(item ? { id: item.id } : {}), ...v, interval: v.interval });
       if (!result.ok) return setErrors({ ...(result.fieldErrors ?? {}), form: result.error });
-      toast.success(item ? "Recurring item updated" : "Recurring item added");
+      toast.success(item ? "Регулярный платёж обновлён" : "Регулярный платёж добавлен");
       router.refresh();
       onDone();
     });
@@ -69,27 +69,27 @@ export function RecurringForm({
       }}
     >
       <Segmented
-        label="Type"
+        label="Тип"
         value={v.kind}
         onChange={(kind) => setValues((s) => ({ ...s, kind, categoryId: "", isSubscription: kind === "INCOME" ? false : s.isSubscription }))}
         options={[
-          { value: "EXPENSE", label: "Expense" },
-          { value: "INCOME", label: "Income" },
+          { value: "EXPENSE", label: "Расход" },
+          { value: "INCOME", label: "Доход" },
         ]}
       />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Name" htmlFor="rec-name" error={errors.name}>
-          <Input id="rec-name" value={v.name} onChange={(e) => set("name", e.target.value)} placeholder={v.kind === "INCOME" ? "e.g. Salary" : "e.g. Internet"} autoFocus={!item} />
+        <Field label="Название" htmlFor="rec-name" error={errors.name}>
+          <Input id="rec-name" value={v.name} onChange={(e) => set("name", e.target.value)} placeholder={v.kind === "INCOME" ? "например, Зарплата" : "например, Интернет"} autoFocus={!item} />
         </Field>
-        <Field label="Amount" htmlFor="rec-amount" error={errors.amount}>
+        <Field label="Сумма" htmlFor="rec-amount" error={errors.amount}>
           <MoneyInput id="rec-amount" currency={currency} value={v.amount} onChange={(x) => set("amount", x)} />
         </Field>
       </div>
-      <Field label="Category" htmlFor="rec-category" error={errors.categoryId}>
+      <Field label="Категория" htmlFor="rec-category" error={errors.categoryId}>
         <CategoryPicker categories={categories.filter((c) => c.type === v.kind)} value={v.categoryId} onChange={(id) => set("categoryId", id)} />
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Account" htmlFor="rec-account" error={errors.accountId}>
+        <Field label="Счёт" htmlFor="rec-account" error={errors.accountId}>
           <NativeSelect id="rec-account" value={v.accountId} onChange={(e) => set("accountId", e.target.value)}>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
@@ -98,38 +98,38 @@ export function RecurringForm({
             ))}
           </NativeSelect>
         </Field>
-        <Field label="Repeats" htmlFor="rec-frequency" error={errors.interval}>
+        <Field label="Повторяется каждые" htmlFor="rec-frequency" error={errors.interval}>
           <div className="grid grid-cols-[5rem_1fr] gap-2">
-            <Input id="rec-interval" aria-label="Every how many" inputMode="numeric" value={v.interval} onChange={(e) => set("interval", e.target.value)} />
+            <Input id="rec-interval" aria-label="Через сколько" inputMode="numeric" value={v.interval} onChange={(e) => set("interval", e.target.value)} />
             <NativeSelect id="rec-frequency" value={v.frequency} onChange={(e) => set("frequency", e.target.value as Frequency)}>
-              <option value="WEEKLY">week(s)</option>
-              <option value="MONTHLY">month(s)</option>
-              <option value="YEARLY">year(s)</option>
+              <option value="WEEKLY">нед.</option>
+              <option value="MONTHLY">мес.</option>
+              <option value="YEARLY">г.</option>
             </NativeSelect>
           </div>
         </Field>
-        <Field label="First date" htmlFor="rec-start" error={errors.startDate} hint="Monthly items repeat on this day of the month.">
+        <Field label="Первая дата" htmlFor="rec-start" error={errors.startDate} hint="Ежемесячные платежи повторяются в этот день месяца.">
           <Input id="rec-start" type="date" value={v.startDate} onChange={(e) => set("startDate", e.target.value)} />
         </Field>
-        <Field label="Ends" htmlFor="rec-end" error={errors.endDate} hint="Optional">
+        <Field label="Заканчивается" htmlFor="rec-end" error={errors.endDate} hint="Необязательно">
           <Input id="rec-end" type="date" value={v.endDate} onChange={(e) => set("endDate", e.target.value)} />
         </Field>
       </div>
       {v.kind === "EXPENSE" ? (
         <label className="flex items-center justify-between gap-4 rounded-lg border p-3">
-          <span className="text-sm font-medium">Subscription</span>
-          <Switch checked={v.isSubscription} onCheckedChange={(x) => set("isSubscription", x)} aria-label="Subscription" />
+          <span className="text-sm font-medium">Подписка</span>
+          <Switch checked={v.isSubscription} onCheckedChange={(x) => set("isSubscription", x)} aria-label="Подписка" />
         </label>
       ) : null}
-      <Field label="Note" htmlFor="rec-note">
-        <Textarea id="rec-note" rows={2} value={v.note} onChange={(e) => set("note", e.target.value)} placeholder="Optional" />
+      <Field label="Комментарий" htmlFor="rec-note">
+        <Textarea id="rec-note" rows={2} value={v.note} onChange={(e) => set("note", e.target.value)} placeholder="Необязательно" />
       </Field>
       <p className="text-[13px] text-muted-foreground">
-        Planned only: each occurrence shows on the calendar and in your projections, and becomes a real transaction when you record it.
+        Это только план: каждый платёж виден в календаре и прогнозах, а реальной операцией становится, когда вы его запишете.
       </p>
       {errors.form ? <p role="alert" className="rounded-md bg-danger-subtle px-3 py-2 text-sm text-danger">{errors.form}</p> : null}
       <Button type="submit" disabled={pending}>
-        {pending ? "Saving…" : item ? "Save changes" : "Add recurring item"}
+        {pending ? "Сохраняем…" : item ? "Сохранить" : "Добавить"}
       </Button>
     </form>
   );

@@ -36,7 +36,7 @@ function CategoryEditor({ draft, type, onDone }: { draft: Draft; type: "EXPENSE"
         ? await updateCategoryAction({ id: value.id, name: value.name, icon: value.icon, color: value.color })
         : await createCategoryAction({ name: value.name, icon: value.icon, color: value.color, type });
       if (!result.ok) return setError(result.fieldErrors?.name ?? result.error);
-      toast.success(value.id ? "Category updated" : "Category created");
+      toast.success(value.id ? "Категория обновлена" : "Категория создана");
       router.refresh();
       onDone();
     });
@@ -51,12 +51,12 @@ function CategoryEditor({ draft, type, onDone }: { draft: Draft; type: "EXPENSE"
     >
       <div className="flex items-center gap-3">
         <CategoryIcon icon={value.icon} color={value.color} size="lg" />
-        <Field label="Name" htmlFor="category-name" error={error ?? undefined} className="flex-1">
+        <Field label="Название" htmlFor="category-name" error={error ?? undefined} className="flex-1">
           <Input id="category-name" value={value.name} maxLength={40} autoFocus onChange={(e) => setValue({ ...value, name: e.target.value })} />
         </Field>
       </div>
-      <Field label="Icon" htmlFor="category-icon">
-        <div id="category-icon" role="radiogroup" aria-label="Icon" className="grid grid-cols-6 gap-1.5 sm:grid-cols-10">
+      <Field label="Иконка" htmlFor="category-icon">
+        <div id="category-icon" role="radiogroup" aria-label="Иконка" className="grid grid-cols-6 gap-1.5 sm:grid-cols-10">
           {CATEGORY_ICONS.map((key) => {
             const Icon = CATEGORY_ICON_COMPONENTS[key];
             return (
@@ -75,11 +75,11 @@ function CategoryEditor({ draft, type, onDone }: { draft: Draft; type: "EXPENSE"
           })}
         </div>
       </Field>
-      <Field label="Colour" htmlFor="category-color">
+      <Field label="Цвет" htmlFor="category-color">
         <ColorPicker value={value.color} onChange={(color) => setValue({ ...value, color })} />
       </Field>
       <Button type="submit" disabled={pending || !value.name.trim()}>
-        {pending ? "Saving…" : value.id ? "Save" : "Create category"}
+        {pending ? "Сохраняем…" : value.id ? "Сохранить" : "Создать категорию"}
       </Button>
     </form>
   );
@@ -111,7 +111,7 @@ export function CategoryManager({ categories }: { categories: CategoryDTO[] }) {
     startTransition(async () => {
       const result = await archiveCategoryAction({ id: category.id, archived: archivedValue });
       if (!result.ok) return void toast.error(result.error);
-      toast.success(archivedValue ? `“${category.name}” archived` : `“${category.name}” restored`);
+      toast.success(archivedValue ? `«${category.name}» в архиве` : `«${category.name}» восстановлена`);
       router.refresh();
     });
 
@@ -119,17 +119,17 @@ export function CategoryManager({ categories }: { categories: CategoryDTO[] }) {
     <div className="grid gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Segmented
-          label="Category type"
+          label="Тип категории"
           value={type}
           onChange={setType}
           options={[
-            { value: "EXPENSE", label: "Expenses" },
-            { value: "INCOME", label: "Income" },
+            { value: "EXPENSE", label: "Расходы" },
+            { value: "INCOME", label: "Доходы" },
           ]}
           className="w-full sm:w-64"
         />
         <Button onClick={() => setEditing({ name: "", icon: "circle-dashed", color: "indigo" })}>
-          <Plus /> New category
+          <Plus /> Новая категория
         </Button>
       </div>
 
@@ -144,22 +144,22 @@ export function CategoryManager({ categories }: { categories: CategoryDTO[] }) {
               </Badge>
             ) : null}
             <div className="flex items-center">
-              <Button variant="ghost" size="icon-sm" aria-label={`Move ${category.name} up`} disabled={index === 0 || pending} onClick={() => move(index, -1)}>
+              <Button variant="ghost" size="icon-sm" aria-label={`Переместить «${category.name}» выше`} disabled={index === 0 || pending} onClick={() => move(index, -1)}>
                 <ArrowUp />
               </Button>
-              <Button variant="ghost" size="icon-sm" aria-label={`Move ${category.name} down`} disabled={index === active.length - 1 || pending} onClick={() => move(index, 1)}>
+              <Button variant="ghost" size="icon-sm" aria-label={`Переместить «${category.name}» ниже`} disabled={index === active.length - 1 || pending} onClick={() => move(index, 1)}>
                 <ArrowDown />
               </Button>
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label={`Edit ${category.name}`}
+                aria-label={`Изменить «${category.name}»`}
                 onClick={() => setEditing({ id: category.id, name: category.name, icon: category.icon as CategoryIconKey, color: (category.color ?? undefined) as CategoryColor | undefined })}
               >
                 <Pencil />
               </Button>
               {!category.isSystem ? (
-                <Button variant="ghost" size="icon-sm" aria-label={`Archive ${category.name}`} disabled={pending} onClick={() => archive(category, true)}>
+                <Button variant="ghost" size="icon-sm" aria-label={`В архив «${category.name}»`} disabled={pending} onClick={() => archive(category, true)}>
                   <Archive />
                 </Button>
               ) : null}
@@ -170,14 +170,14 @@ export function CategoryManager({ categories }: { categories: CategoryDTO[] }) {
 
       {archived.length > 0 ? (
         <section className="grid gap-2">
-          <h2 className="text-sm font-medium text-muted-foreground">Archived</h2>
+          <h2 className="text-sm font-medium text-muted-foreground">В архиве</h2>
           <Card className="divide-y">
             {archived.map((category) => (
               <div key={category.id} className="flex items-center gap-3 px-3 py-2.5 opacity-70">
                 <CategoryIcon icon={category.icon} color={category.color} />
                 <span className="flex-1 truncate text-sm">{category.name}</span>
                 <Button variant="ghost" size="sm" disabled={pending} onClick={() => archive(category, false)}>
-                  <ArchiveRestore /> Restore
+                  <ArchiveRestore /> Восстановить
                 </Button>
               </div>
             ))}
@@ -185,7 +185,7 @@ export function CategoryManager({ categories }: { categories: CategoryDTO[] }) {
         </section>
       ) : null}
 
-      <ResponsiveDialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)} title={editing?.id ? "Edit category" : "New category"}>
+      <ResponsiveDialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)} title={editing?.id ? "Изменить категорию" : "Новая категория"}>
         {editing ? <CategoryEditor key={editing.id ?? "new"} draft={editing} type={type} onDone={() => setEditing(null)} /> : null}
       </ResponsiveDialog>
     </div>

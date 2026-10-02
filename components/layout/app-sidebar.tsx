@@ -15,7 +15,7 @@ export function AppSidebar({ user }: { user: { name: string; email: string } }) 
       <Link href="/dashboard" className="mb-6 px-2">
         <Logo />
       </Link>
-      <nav aria-label="Main" className="grid gap-0.5">
+      <nav aria-label="Основное" className="grid gap-0.5">
         {MAIN_NAV.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (

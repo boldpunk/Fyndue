@@ -14,7 +14,7 @@ export async function createTelegramCodeAction() {
   return runAction(async () => {
     const user = await requireUser();
     const bot = botUsername();
-    if (!bot) throw new DomainError("Telegram is not configured on this server.");
+    if (!bot) throw new DomainError("Telegram на этом сервере не настроен.");
     const { code, expiresAt } = await createConnectionCode(user.id);
     revalidatePath(PATH);
     return { code, expiresAt, deepLink: `https://t.me/${bot}?start=${code}`, bot };
@@ -34,7 +34,7 @@ export async function sendTestNotificationAction() {
   return runAction(async () => {
     const user = await requireUser();
     const client = getTelegramClient();
-    if (!client) throw new DomainError("Telegram is not configured on this server.");
+    if (!client) throw new DomainError("Telegram на этом сервере не настроен.");
     await sendTestNotification(user.id, client);
     revalidatePath(PATH);
     return null;

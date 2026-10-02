@@ -18,7 +18,7 @@ export function TransactionDetailActions({ transaction }: { transaction: Transac
 
   if (transaction.isVoided || transaction.type === "DEBT_PAYMENT" || transaction.type === "LOAN_DISBURSEMENT") {
     return transaction.type === "DEBT_PAYMENT" && !transaction.isVoided ? (
-      <p className="text-[13px] text-muted-foreground">Debt payments are reversed from the debt&apos;s Payments tab, so the principal and schedule are restored too.</p>
+      <p className="text-[13px] text-muted-foreground">Платёж по долгу отменяется на вкладке «Платежи» этого долга — тогда восстановятся и остаток, и график.</p>
     ) : null;
   }
 
@@ -26,7 +26,7 @@ export function TransactionDetailActions({ transaction }: { transaction: Transac
     startTransition(async () => {
       const result = await confirmIncomeAction(transaction.id);
       if (!result.ok) return void toast.error(result.error);
-      toast.success("Income confirmed — balance updated");
+      toast.success("Доход подтверждён, баланс обновлён");
       router.refresh();
     });
 
@@ -34,7 +34,7 @@ export function TransactionDetailActions({ transaction }: { transaction: Transac
     startTransition(async () => {
       const result = await voidTransactionAction({ id: transaction.id, reason });
       if (!result.ok) return void toast.error(result.error);
-      toast.success("Transaction voided");
+      toast.success("Операция аннулирована");
       setVoidOpen(false);
       router.push("/transactions");
       router.refresh();
@@ -44,32 +44,32 @@ export function TransactionDetailActions({ transaction }: { transaction: Transac
     <div className="flex flex-wrap gap-2">
       {transaction.status === "EXPECTED" ? (
         <Button onClick={confirmIncome} disabled={pending}>
-          <CheckCircle2 /> Mark as received
+          <CheckCircle2 /> Деньги получены
         </Button>
       ) : null}
       <Button variant="outline" className="text-danger" onClick={() => setVoidOpen(true)}>
-        <Trash2 /> Void
+        <Trash2 /> Аннулировать
       </Button>
       <ResponsiveDialog
         open={voidOpen}
         onOpenChange={setVoidOpen}
-        title={transaction.type === "TRANSFER" ? "Void transfer?" : "Void transaction?"}
+        title={transaction.type === "TRANSFER" ? "Аннулировать перевод?" : "Аннулировать операцию?"}
         description={
           transaction.type === "TRANSFER"
-            ? "Both sides of the transfer are voided and both balances are restored. The record stays in history."
-            : "The balance effect is reversed. The record stays in history, marked as voided."
+            ? "Обе части перевода аннулируются, балансы обоих счетов восстановятся. Запись останется в истории."
+            : "Влияние на баланс отменится. Запись останется в истории с пометкой «аннулирована»."
         }
       >
         <div className="grid gap-4">
-          <Field label="Reason" htmlFor="void-reason" hint="Optional, for your own history.">
+          <Field label="Причина" htmlFor="void-reason" hint="Необязательно, для вашей истории.">
             <Input id="void-reason" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} />
           </Field>
           <div className="flex gap-2">
             <Button variant="destructive" onClick={doVoid} disabled={pending}>
-              {pending ? "Voiding…" : "Void"}
+              {pending ? "Аннулируем…" : "Аннулировать"}
             </Button>
             <Button variant="ghost" onClick={() => setVoidOpen(false)}>
-              Cancel
+              Отмена
             </Button>
           </div>
         </div>

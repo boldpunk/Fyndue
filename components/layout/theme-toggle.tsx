@@ -14,9 +14,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const THEMES = [
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
-  { value: "system", label: "System", icon: Monitor },
+  { value: "light", label: "Светлая", icon: Sun },
+  { value: "dark", label: "Тёмная", icon: Moon },
+  { value: "system", label: "Как в системе", icon: Monitor },
 ] as const;
 
 const useMounted = () =>
@@ -42,13 +42,13 @@ export function ThemeToggle({ withLabel = false }: { withLabel?: boolean }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size={withLabel ? "default" : "icon"} className={withLabel ? "w-full justify-start px-3 text-muted-foreground hover:text-foreground" : undefined} aria-label="Theme">
+        <Button variant="ghost" size={withLabel ? "default" : "icon"} className={withLabel ? "w-full justify-start px-3 text-muted-foreground hover:text-foreground" : undefined} aria-label="Тема">
           <Current />
-          {withLabel ? <span>Theme</span> : null}
+          {withLabel ? <span>Тема</span> : null}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
-        <DropdownMenuLabel>Theme</DropdownMenuLabel>
+        <DropdownMenuLabel>Тема</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={theme} onValueChange={choose}>
           {THEMES.map(({ value, label, icon: Icon }) => (
             <DropdownMenuRadioItem key={value} value={value}>

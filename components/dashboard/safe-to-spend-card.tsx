@@ -13,7 +13,7 @@ export function SafeToSpendCard({ primary, others }: { primary: CurrencyDashboar
   return (
     <Card className="grid content-start gap-4 p-5">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-medium text-muted-foreground">Safe to spend</h2>
+        <h2 className="text-sm font-medium text-muted-foreground">Можно потратить</h2>
         <span className={cn("grid size-8 place-items-center rounded-lg", s.isShort ? "bg-danger-subtle text-danger" : "bg-success-subtle text-success")}>
           {s.isShort ? <TriangleAlert className="size-4" aria-hidden /> : <ShieldCheck className="size-4" aria-hidden />}
         </span>
@@ -21,18 +21,18 @@ export function SafeToSpendCard({ primary, others }: { primary: CurrencyDashboar
       <div className="grid gap-1">
         <Money amount={s.amount} currency={primary.currency} tone={s.isShort ? "negative" : "neutral"} className="text-3xl font-semibold tracking-tight" />
         <p className="text-sm text-muted-foreground">
-          {s.isShort ? "Short by this much for payments due " : "Left after payments due "}
-          {s.basis === "NEXT_INCOME" ? `before your next expected income (${until})` : `by the end of the month (${until})`}.
+          {s.isShort ? "Столько не хватает на обязательные платежи " : "Останется после обязательных платежей "}
+          {s.basis === "NEXT_INCOME" ? `до следующего ожидаемого дохода (${until})` : `до конца месяца (${until})`}.
         </p>
       </div>
       <dl className="grid gap-1.5 border-t pt-3 text-sm">
         <div className="flex justify-between gap-3">
-          <dt className="text-muted-foreground">Available balance</dt>
+          <dt className="text-muted-foreground">Доступно сейчас</dt>
           <dd><Money amount={primary.balance} currency={primary.currency} /></dd>
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">
-            Mandatory payments{" "}
+            Обязательные платежи{" "}
             <Link href="/payments" className="text-primary hover:underline">
               ({s.obligationCount})
             </Link>
@@ -41,12 +41,12 @@ export function SafeToSpendCard({ primary, others }: { primary: CurrencyDashboar
         </div>
         {s.nextIncome ? (
           <div className="flex justify-between gap-3 text-muted-foreground">
-            <dt>Next expected income · {formatLocalDate(s.nextIncome.date, undefined, { day: "numeric", month: "short" })}</dt>
+            <dt>Следующий доход · {formatLocalDate(s.nextIncome.date, undefined, { day: "numeric", month: "short" })}</dt>
             <dd><Money amount={s.nextIncome.amount} currency={primary.currency} tone="muted" /></dd>
           </div>
         ) : (
           <p className="text-xs text-muted-foreground">
-            Add an expected income (Income → &ldquo;Expected, not yet received&rdquo;) to plan up to your next payday.
+            Добавьте ожидаемый доход (Доход → «Ожидается, ещё не получен»), чтобы планировать до следующей зарплаты.
           </p>
         )}
       </dl>
@@ -60,7 +60,7 @@ export function SafeToSpendCard({ primary, others }: { primary: CurrencyDashboar
           ))}
         </ul>
       ) : null}
-      <p className="text-xs text-muted-foreground">An estimate from your balances and schedules — not financial advice.</p>
+      <p className="text-xs text-muted-foreground">Оценка по вашим балансам и графикам платежей, а не финансовый совет.</p>
     </Card>
   );
 }

@@ -8,7 +8,7 @@ import { formatYearMonth, parseYearMonth, todayIn, yearMonthOf } from "@/lib/fin
 import { getBudgetMonth } from "@/lib/services/budgets";
 import { listCategories } from "@/lib/services/categories";
 
-export const metadata: Metadata = { title: "Budgets" };
+export const metadata: Metadata = { title: "Бюджеты" };
 
 export default async function BudgetsPage({ searchParams }: { searchParams: Promise<{ month?: string; currency?: string }> }) {
   const user = await requireUser();
@@ -24,8 +24,8 @@ export default async function BudgetsPage({ searchParams }: { searchParams: Prom
   return (
     <div className="mx-auto grid w-full max-w-3xl gap-6">
       <PageHeader
-        title="Budgets"
-        description="Monthly limits, overall and per category. Transfers and debt payments are never counted as spending."
+        title="Бюджеты"
+        description="Лимиты на месяц — общий и по категориям. Переводы и платежи по долгам никогда не считаются расходами."
         actions={
           <div className="flex flex-wrap gap-2">
             <CurrencySwitch current={data.currency} currencies={data.currencies} basePath="/budgets" params={{ month: formatYearMonth(month) }} />

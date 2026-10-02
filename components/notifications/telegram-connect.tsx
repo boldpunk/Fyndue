@@ -41,7 +41,7 @@ export function TelegramConnect({ connection, bot }: { connection: TelegramConne
   }, [issued, connected, expired, router]);
 
   useEffect(() => {
-    if (connected && issued) toast.success("Telegram connected");
+    if (connected && issued) toast.success("Telegram подключён");
   }, [connected, issued]);
 
   const createCode = () =>
@@ -55,7 +55,7 @@ export function TelegramConnect({ connection, bot }: { connection: TelegramConne
     startTransition(async () => {
       const result = await sendTestNotificationAction();
       if (!result.ok) return void toast.error(result.error);
-      toast.success("Test message sent");
+      toast.success("Тестовое сообщение отправлено");
       router.refresh();
     });
   const disconnect = () =>
@@ -64,7 +64,7 @@ export function TelegramConnect({ connection, bot }: { connection: TelegramConne
       if (!result.ok) return void toast.error(result.error);
       setConfirming(false);
       setIssued(null);
-      toast.success("Telegram disconnected");
+      toast.success("Telegram отключён");
       router.refresh();
     });
   const copy = async (text: string) => {
@@ -72,19 +72,19 @@ export function TelegramConnect({ connection, bot }: { connection: TelegramConne
       await navigator.clipboard.writeText(text);
       setCopied(true);
     } catch {
-      toast.error("Couldn't copy. Select the code and copy it manually.");
+      toast.error("Не удалось скопировать. Выделите код и скопируйте вручную.");
     }
   };
 
   if (!bot) {
     return (
       <div className="grid gap-2 text-sm">
-        <p>Telegram isn&apos;t set up on this server yet.</p>
+        <p>Telegram на этом сервере ещё не настроен.</p>
         <p className="text-muted-foreground">
-          Create a bot with <span className="font-medium text-foreground">@BotFather</span>, put its token and username in{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-[13px]">TELEGRAM_BOT_TOKEN</code> and{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-[13px]">TELEGRAM_BOT_USERNAME</code> in <code className="rounded bg-muted px-1 py-0.5 text-[13px]">.env</code>,
-          restart the app, and run <code className="rounded bg-muted px-1 py-0.5 text-[13px]">pnpm telegram:dev</code>.
+          Создайте бота через <span className="font-medium text-foreground">@BotFather</span>, укажите его токен и имя в{" "}
+          <code className="rounded bg-muted px-1 py-0.5 text-[13px]">TELEGRAM_BOT_TOKEN</code> и{" "}
+          <code className="rounded bg-muted px-1 py-0.5 text-[13px]">TELEGRAM_BOT_USERNAME</code> в <code className="rounded bg-muted px-1 py-0.5 text-[13px]">.env</code>,
+          перезапустите приложение и запустите <code className="rounded bg-muted px-1 py-0.5 text-[13px]">pnpm telegram:dev</code>.
         </p>
       </div>
     );
@@ -95,36 +95,36 @@ export function TelegramConnect({ connection, bot }: { connection: TelegramConne
       <div className="grid gap-4">
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <Badge tone="success">
-            <Check aria-hidden /> Connected
+            <Check aria-hidden /> Подключён
           </Badge>
           <span className="text-muted-foreground">
-            {connection.username ? `@${connection.username}` : "Telegram chat"}
-            {connection.connectedAt ? ` · since ${new Date(connection.connectedAt).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" })}` : ""}
+            {connection.username ? `@${connection.username}` : "Чат Telegram"}
+            {connection.connectedAt ? ` · с ${new Date(connection.connectedAt).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" })}` : ""}
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={sendTest} disabled={pending}>
-            <Send /> Send test message
+            <Send /> Отправить тестовое сообщение
           </Button>
           <Button variant="ghost" className="text-muted-foreground" onClick={() => setConfirming(true)} disabled={pending}>
-            <Unlink /> Disconnect
+            <Unlink /> Отключить
           </Button>
         </div>
         <p className="text-[13px] text-muted-foreground">
-          In the chat, try /today, /upcoming, /debts or /month.
+          В чате попробуйте /today, /upcoming, /debts или /month.
         </p>
         <ResponsiveDialog
           open={confirming}
           onOpenChange={setConfirming}
-          title="Disconnect Telegram?"
-          description="Reminders stop right away. You can connect again at any time."
+          title="Отключить Telegram?"
+          description="Напоминания сразу прекратятся. Подключить снова можно в любой момент."
         >
           <div className="flex gap-2">
             <Button variant="destructive" onClick={disconnect} disabled={pending}>
-              {pending ? "Disconnecting…" : "Disconnect"}
+              {pending ? "Отключаем…" : "Отключить"}
             </Button>
             <Button variant="ghost" onClick={() => setConfirming(false)}>
-              Cancel
+              Отмена
             </Button>
           </div>
         </ResponsiveDialog>
@@ -136,25 +136,25 @@ export function TelegramConnect({ connection, bot }: { connection: TelegramConne
     return (
       <div className="grid gap-4">
         <ol className="grid list-decimal gap-1 pl-5 text-sm">
-          <li>Open @{issued.bot} in Telegram and press Start.</li>
-          <li>If Telegram doesn&apos;t send it for you, send the code below.</li>
+          <li>Откройте @{issued.bot} в Telegram и нажмите «Запустить» (Start).</li>
+          <li>Если Telegram не отправит код сам, отправьте код ниже.</li>
         </ol>
         <div className="flex flex-wrap items-center gap-3">
-          <code className="tabular rounded-lg border bg-muted px-4 py-2 font-mono text-xl font-semibold tracking-[0.2em]" aria-label={`Code ${issued.code.split("").join(" ")}`}>
+          <code className="tabular rounded-lg border bg-muted px-4 py-2 font-mono text-xl font-semibold tracking-[0.2em]" aria-label={`Код ${issued.code.split("").join(" ")}`}>
             {issued.code}
           </code>
           <Button variant="ghost" size="sm" onClick={() => copy(`/start ${issued.code}`)}>
-            {copied ? <Check /> : <Copy />} {copied ? "Copied" : "Copy /start command"}
+            {copied ? <Check /> : <Copy />} {copied ? "Скопировано" : "Скопировать команду /start"}
           </Button>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <Button asChild>
             <a href={issued.deepLink} target="_blank" rel="noopener noreferrer">
-              <ExternalLink /> Open Telegram
+              <ExternalLink /> Открыть Telegram
             </a>
           </Button>
           <span className="text-[13px] text-muted-foreground" aria-live="polite">
-            Waiting for the bot… code expires in {countdown?.label}
+            Ждём бота… код действует ещё {countdown?.label}
           </span>
         </div>
       </div>
@@ -165,14 +165,14 @@ export function TelegramConnect({ connection, bot }: { connection: TelegramConne
     <div className="grid gap-3">
       <p className="text-sm text-muted-foreground">
         {connection.status === "DISCONNECTED"
-          ? "Telegram is disconnected. Connect again to get reminders."
+          ? "Telegram отключён. Подключите снова, чтобы получать напоминания."
           : expired
-            ? "The code expired. Create a new one."
-            : "Get payment reminders from the Fyndue bot. You'll get a one-time code that works for 10 minutes."}
+            ? "Код устарел. Создайте новый."
+            : "Получайте напоминания о платежах от бота Fyndue. Вы получите одноразовый код, он действует 10 минут."}
       </p>
       <div>
         <Button onClick={createCode} disabled={pending}>
-          <Send /> {pending ? "Creating code…" : "Connect Telegram"}
+          <Send /> {pending ? "Создаём код…" : "Подключить Telegram"}
         </Button>
       </div>
     </div>

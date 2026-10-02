@@ -66,13 +66,13 @@ type Values = {
 };
 
 const STEPS = [
-  { id: "type", label: "Type" },
-  { id: "details", label: "Details" },
-  { id: "amount", label: "Amount" },
-  { id: "model", label: "Repayment" },
-  { id: "terms", label: "Terms" },
-  { id: "schedule", label: "Schedule" },
-  { id: "review", label: "Review" },
+  { id: "type", label: "Тип" },
+  { id: "details", label: "Данные" },
+  { id: "amount", label: "Сумма" },
+  { id: "model", label: "Погашение" },
+  { id: "terms", label: "Условия" },
+  { id: "schedule", label: "График" },
+  { id: "review", label: "Проверка" },
 ] as const;
 type StepId = (typeof STEPS)[number]["id"];
 
@@ -203,7 +203,7 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
     if (!parsed.success) {
       for (const issue of parsed.error.issues) {
         const key = String(issue.path[0] ?? "");
-        if (STEP_FIELDS[id].includes(key)) found[key] ??= issue.path.length > 1 ? `Row ${Number(issue.path[1]) + 1}: ${issue.message}` : issue.message;
+        if (STEP_FIELDS[id].includes(key)) found[key] ??= issue.path.length > 1 ? `Строка ${Number(issue.path[1]) + 1}: ${issue.message}` : issue.message;
       }
     }
     if (id === "terms" && Object.keys(found).length === 0 && planResult && !planResult.ok) {
@@ -236,7 +236,7 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
         setErrors(result.fieldErrors ?? {});
         return;
       }
-      toast.success("Debt added with its schedule");
+      toast.success("Долг добавлен вместе с графиком");
       router.push(`/debts/${result.data.id}`);
       router.refresh();
     });
@@ -246,7 +246,7 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
 
   return (
     <div className="grid gap-6">
-      <ol className="flex gap-1 overflow-x-auto pb-1" aria-label="Steps">
+      <ol className="flex gap-1 overflow-x-auto pb-1" aria-label="Шаги">
         {STEPS.map((s, i) => (
           <li key={s.id} className="flex shrink-0 items-center gap-1.5">
             <span
@@ -267,8 +267,8 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
       <Card className="grid gap-5 p-5 sm:p-6">
         {current === "type" ? (
           <>
-            <h2 className="text-lg font-semibold">What kind of debt is it?</h2>
-            <div role="radiogroup" aria-label="Debt type" className="grid gap-2 sm:grid-cols-2">
+            <h2 className="text-lg font-semibold">Что это за долг?</h2>
+            <div role="radiogroup" aria-label="Тип долга" className="grid gap-2 sm:grid-cols-2">
               {DEBT_TYPES.map((t) => {
                 const Icon = DEBT_TYPE_ICONS[t];
                 return (
@@ -287,14 +287,14 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
 
         {current === "details" ? (
           <>
-            <h2 className="text-lg font-semibold">Basic information</h2>
-            <Field label="Name" htmlFor="w-name" error={errors.name}>
-              <Input id="w-name" value={v.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Car Installment" autoFocus />
+            <h2 className="text-lg font-semibold">Основные данные</h2>
+            <Field label="Название" htmlFor="w-name" error={errors.name}>
+              <Input id="w-name" value={v.name} onChange={(e) => set("name", e.target.value)} placeholder="например, Рассрочка за машину" autoFocus />
             </Field>
-            <Field label="Lender" htmlFor="w-lender" error={errors.lender}>
-              <Input id="w-lender" value={v.lender} onChange={(e) => set("lender", e.target.value)} placeholder="Bank, dealer or person — optional" />
+            <Field label="Кредитор" htmlFor="w-lender" error={errors.lender}>
+              <Input id="w-lender" value={v.lender} onChange={(e) => set("lender", e.target.value)} placeholder="Банк, автосалон или человек — необязательно" />
             </Field>
-            <Field label="Currency" htmlFor="w-currency" error={errors.currency}>
+            <Field label="Валюта" htmlFor="w-currency" error={errors.currency}>
               <NativeSelect id="w-currency" value={v.currency} onChange={(e) => set("currency", e.target.value as Values["currency"])}>
                 {CURRENCIES.map((c) => (
                   <option key={c} value={c}>
@@ -308,19 +308,19 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
 
         {current === "amount" ? (
           <>
-            <h2 className="text-lg font-semibold">How much?</h2>
-            <Field label="Original principal" htmlFor="w-principal" error={errors.originalPrincipal} hint="The contract amount you borrowed.">
+            <h2 className="text-lg font-semibold">Сколько?</h2>
+            <Field label="Сумма долга" htmlFor="w-principal" error={errors.originalPrincipal} hint="Сумма по договору, которую вы заняли.">
               <MoneyInput id="w-principal" size="lg" currency={cur} value={v.originalPrincipal} onChange={(x) => set("originalPrincipal", x)} autoFocus />
             </Field>
             <Field
-              label="Already paid before today"
+              label="Уже выплачено до сегодняшнего дня"
               htmlFor="w-paid"
               error={errors.paidBeforeTracking}
-              hint="Principal repaid before you started tracking it here. It counts toward progress but doesn't touch your accounts."
+              hint="Сколько основного долга вы вернули до того, как начали вести его здесь. Учитывается в прогрессе, но не меняет балансы счетов."
             >
               <MoneyInput id="w-paid" currency={cur} value={v.paidBeforeTracking} onChange={(x) => set("paidBeforeTracking", x)} placeholder="0" />
             </Field>
-            <Field label="Fees" htmlFor="w-fee-mode" error={errors.feeMode}>
+            <Field label="Комиссия" htmlFor="w-fee-mode" error={errors.feeMode}>
               <NativeSelect id="w-fee-mode" value={v.feeMode} onChange={(e) => set("feeMode", e.target.value as Values["feeMode"])}>
                 {FEE_MODES.map((m) => (
                   <option key={m} value={m}>
@@ -331,27 +331,27 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
             </Field>
             {v.feeMode !== "NONE" ? (
               <Field
-                label="Origination / service fee"
+                label="Комиссия за выдачу / обслуживание"
                 htmlFor="w-fee"
                 error={errors.originationFee}
-                hint={v.feeMode === "FINANCED_INTO_DEBT" ? "Only choose this if the lender added the fee to your debt." : undefined}
+                hint={v.feeMode === "FINANCED_INTO_DEBT" ? "Выбирайте, только если кредитор добавил комиссию к сумме долга." : undefined}
               >
                 <MoneyInput id="w-fee" currency={cur} value={v.originationFee} onChange={(x) => set("originationFee", x)} />
               </Field>
             ) : null}
             {v.feeMode === "CUSTOM" ? (
-              <Field label="Net amount received" htmlFor="w-net" error={errors.netAmountReceived}>
+              <Field label="Получено на руки" htmlFor="w-net" error={errors.netAmountReceived}>
                 <MoneyInput id="w-net" currency={cur} value={v.netAmountReceived} onChange={(x) => set("netAmountReceived", x)} />
               </Field>
             ) : null}
             <Field
-              label="Money received into"
+              label="Куда поступили деньги"
               htmlFor="w-disbursement"
               error={errors.disbursementAccountId}
-              hint="Only for a new loan whose money you want added to an account now. It is recorded as a loan disbursement — never as income."
+              hint="Только для нового займа, деньги которого нужно сейчас зачислить на счёт. Это запишется как получение займа, а не как доход."
             >
               <NativeSelect id="w-disbursement" value={v.disbursementAccountId} onChange={(e) => set("disbursementAccountId", e.target.value)}>
-                <option value="">Don&apos;t record — the money was received earlier</option>
+                <option value="">Не записывать — деньги получены раньше</option>
                 {receivingAccounts.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.name}
@@ -361,10 +361,10 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
             </Field>
             {plan && (v.feeMode !== "NONE" || v.disbursementAccountId) ? (
               <dl className="grid grid-cols-2 gap-3 rounded-lg bg-muted/60 p-3 text-sm sm:grid-cols-4">
-                <div><dt className="text-xs text-muted-foreground">Contract principal</dt><dd><Money amount={toMoneyString(plan.fee.contractPrincipal)} currency={cur} /></dd></div>
-                <div><dt className="text-xs text-muted-foreground">Net received</dt><dd><Money amount={toMoneyString(plan.fee.netReceived)} currency={cur} /></dd></div>
-                <div><dt className="text-xs text-muted-foreground">Fee withheld</dt><dd><Money amount={toMoneyString(plan.fee.withheldFee)} currency={cur} /></dd></div>
-                <div><dt className="text-xs text-muted-foreground">Debt basis</dt><dd><Money amount={toMoneyString(plan.fee.principalBasis)} currency={cur} /></dd></div>
+                <div><dt className="text-xs text-muted-foreground">По договору</dt><dd><Money amount={toMoneyString(plan.fee.contractPrincipal)} currency={cur} /></dd></div>
+                <div><dt className="text-xs text-muted-foreground">Получено</dt><dd><Money amount={toMoneyString(plan.fee.netReceived)} currency={cur} /></dd></div>
+                <div><dt className="text-xs text-muted-foreground">Удержана комиссия</dt><dd><Money amount={toMoneyString(plan.fee.withheldFee)} currency={cur} /></dd></div>
+                <div><dt className="text-xs text-muted-foreground">База долга</dt><dd><Money amount={toMoneyString(plan.fee.principalBasis)} currency={cur} /></dd></div>
               </dl>
             ) : null}
           </>
@@ -372,33 +372,33 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
 
         {current === "model" ? (
           <>
-            <h2 className="text-lg font-semibold">How is it repaid?</h2>
-            <div role="radiogroup" aria-label="Repayment model" className="grid gap-2">
+            <h2 className="text-lg font-semibold">Как он гасится?</h2>
+            <div role="radiogroup" aria-label="Схема погашения" className="grid gap-2">
               {REPAYMENT_TYPES.map((r) => (
                 <Choice key={r} selected={v.repaymentType === r} onClick={() => set("repaymentType", r)} title={REPAYMENT_TYPE_LABELS[r]} description={REPAYMENT_TYPE_HINTS[r]} />
               ))}
             </div>
             <label className="flex items-start justify-between gap-4 rounded-lg border p-3">
               <span className="grid gap-0.5">
-                <span className="text-sm font-medium">I know the exact total repayment amount</span>
+                <span className="text-sm font-medium">Я знаю точную общую сумму к возврату</span>
                 <span className="text-[13px] text-muted-foreground">
-                  For lenders (e.g. microfinance) that give only the amount due, without an interest/fee split. Fyndue won&apos;t invent an interest formula.
+                  Для кредиторов (например, МФО), которые называют только сумму к оплате без разбивки на проценты и комиссии. Fyndue не будет придумывать формулу процентов.
                 </span>
               </span>
-              <Switch checked={v.knownTotalRepayment} onCheckedChange={(x) => set("knownTotalRepayment", x)} aria-label="I know the exact total repayment amount" />
+              <Switch checked={v.knownTotalRepayment} onCheckedChange={(x) => set("knownTotalRepayment", x)} aria-label="Я знаю точную общую сумму к возврату" />
             </label>
           </>
         ) : null}
 
         {current === "terms" ? (
           <>
-            <h2 className="text-lg font-semibold">Terms</h2>
+            <h2 className="text-lg font-semibold">Условия</h2>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Start date" htmlFor="w-start" error={errors.startDate} hint="When the money was received / the contract began.">
+              <Field label="Дата начала" htmlFor="w-start" error={errors.startDate} hint="Когда получены деньги или начался договор.">
                 <Input id="w-start" type="date" value={v.startDate} onChange={(e) => set("startDate", e.target.value)} />
               </Field>
               {!manual && !v.knownTotalRepayment ? (
-                <Field label="Next payment date" htmlFor="w-first" error={errors.firstPaymentDate} hint="The first payment Fyndue should schedule.">
+                <Field label="Дата следующего платежа" htmlFor="w-first" error={errors.firstPaymentDate} hint="С какого платежа Fyndue начнёт график.">
                   <Input id="w-first" type="date" value={v.firstPaymentDate} onChange={(e) => set("firstPaymentDate", e.target.value)} />
                 </Field>
               ) : null}
@@ -406,13 +406,13 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
 
             {interestBearing && !v.knownTotalRepayment ? (
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Annual interest rate, %" htmlFor="w-rate" error={errors.annualInterestRate}>
-                  <Input id="w-rate" inputMode="decimal" value={v.annualInterestRate} onChange={(e) => set("annualInterestRate", e.target.value)} placeholder="e.g. 24" />
+                <Field label="Годовая ставка, %" htmlFor="w-rate" error={errors.annualInterestRate}>
+                  <Input id="w-rate" inputMode="decimal" value={v.annualInterestRate} onChange={(e) => set("annualInterestRate", e.target.value)} placeholder="например, 24" />
                 </Field>
-                <Field label="Number of payments" htmlFor="w-term" error={errors.termMonths} hint="Remaining monthly payments to schedule.">
+                <Field label="Количество платежей" htmlFor="w-term" error={errors.termMonths} hint="Сколько ежемесячных платежей осталось.">
                   <Input id="w-term" inputMode="numeric" value={v.termMonths} onChange={(e) => set("termMonths", e.target.value)} />
                 </Field>
-                <Field label="Interest calculation" htmlFor="w-daycount" hint="Check your contract; the bank's schedule always wins.">
+                <Field label="Расчёт процентов" htmlFor="w-daycount" hint="Сверьтесь с договором; график банка всегда главнее.">
                   <NativeSelect id="w-daycount" value={v.dayCountConvention} onChange={(e) => set("dayCountConvention", e.target.value as Values["dayCountConvention"])}>
                     {DAY_COUNT_CONVENTIONS.map((d) => (
                       <option key={d} value={d}>
@@ -421,10 +421,10 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
                     ))}
                   </NativeSelect>
                 </Field>
-                <Field label="Rounding" htmlFor="w-rounding">
+                <Field label="Округление" htmlFor="w-rounding">
                   <NativeSelect id="w-rounding" value={v.roundingScale} onChange={(e) => set("roundingScale", e.target.value as Values["roundingScale"])}>
-                    <option value="2">To 0.01 (tiyin)</option>
-                    <option value="0">To whole sums</option>
+                    <option value="2">До 0,01 (тийин)</option>
+                    <option value="0">До целых сумов</option>
                   </NativeSelect>
                 </Field>
               </div>
@@ -433,20 +433,20 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
             {v.repaymentType === "INTEREST_FREE" && !v.knownTotalRepayment ? (
               <div className="grid gap-4">
                 <Segmented
-                  label="Split by"
+                  label="Разделить по"
                   value={v.installmentMode}
                   onChange={(x) => set("installmentMode", x)}
                   options={[
-                    { value: "count", label: "Number of installments" },
-                    { value: "amount", label: "Monthly amount" },
+                    { value: "count", label: "Количеству платежей" },
+                    { value: "amount", label: "Сумме в месяц" },
                   ]}
                 />
                 {v.installmentMode === "count" ? (
-                  <Field label="Number of installments" htmlFor="w-count" error={errors.termMonths}>
+                  <Field label="Количество платежей" htmlFor="w-count" error={errors.termMonths}>
                     <Input id="w-count" inputMode="numeric" value={v.termMonths} onChange={(e) => set("termMonths", e.target.value)} />
                   </Field>
                 ) : (
-                  <Field label="Monthly amount" htmlFor="w-installment" error={errors.installmentAmount} hint="The last installment takes whatever remains.">
+                  <Field label="Сумма в месяц" htmlFor="w-installment" error={errors.installmentAmount} hint="В последний платёж войдёт остаток.">
                     <MoneyInput id="w-installment" currency={cur} value={v.installmentAmount} onChange={(x) => set("installmentAmount", x)} />
                   </Field>
                 )}
@@ -455,9 +455,9 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
 
             {manual && !v.knownTotalRepayment ? (
               <LinesEditor
-                label="Payments"
+                label="Платежи"
                 error={errors.manualLines ?? errors.schedule}
-                columns={["Due date", "Principal", "Interest", "Fees"]}
+                columns={["Срок", "Основной долг", "Проценты", "Комиссии"]}
                 rows={v.manualLines}
                 empty={(last) => ({ dueDate: last ? addMonthsClamped(last.dueDate, 1) : v.firstPaymentDate, principal: "", interest: "0", fees: "0" })}
                 onChange={(rows) => set("manualLines", rows)}
@@ -468,9 +468,9 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
 
             {v.knownTotalRepayment ? (
               <LinesEditor
-                label="Amounts due"
+                label="Суммы к оплате"
                 error={errors.knownTotalLines ?? errors.schedule}
-                columns={["Due date", "Total to pay"]}
+                columns={["Срок", "Всего к оплате"]}
                 rows={v.knownTotalLines}
                 empty={(last) => ({ dueDate: last ? addMonthsClamped(last.dueDate, 1) : v.firstPaymentDate, total: "" })}
                 onChange={(rows) => set("knownTotalLines", rows)}
@@ -481,8 +481,8 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
 
             {errors.schedule && !manual && !v.knownTotalRepayment ? <p role="alert" className="text-sm text-danger">{errors.schedule}</p> : null}
 
-            <Field label="Notes" htmlFor="w-notes">
-              <Textarea id="w-notes" rows={2} value={v.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Optional — contract number, conditions…" />
+            <Field label="Заметки" htmlFor="w-notes">
+              <Textarea id="w-notes" rows={2} value={v.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Необязательно — номер договора, условия…" />
             </Field>
           </>
         ) : null}
@@ -490,25 +490,25 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
         {current === "schedule" && plan && totals ? (
           <>
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="text-lg font-semibold">Schedule preview</h2>
-              {plan.isEstimate ? <p className="text-xs text-muted-foreground">Interest is an estimate — replace it with the bank&apos;s schedule any time.</p> : null}
+              <h2 className="text-lg font-semibold">Предпросмотр графика</h2>
+              {plan.isEstimate ? <p className="text-xs text-muted-foreground">Проценты рассчитаны примерно — замените их графиком банка в любой момент.</p> : null}
             </div>
             <dl className="grid grid-cols-2 gap-3 rounded-lg bg-muted/60 p-3 text-sm sm:grid-cols-4">
-              <div><dt className="text-xs text-muted-foreground">Payments</dt><dd className="tabular font-medium">{plan.lines.length}</dd></div>
-              <div><dt className="text-xs text-muted-foreground">Principal</dt><dd><Money amount={toMoneyString(totals.principal)} currency={cur} /></dd></div>
-              <div><dt className="text-xs text-muted-foreground">{v.knownTotalRepayment ? "Interest & fees" : "Interest"}</dt><dd><Money amount={toMoneyString(v.knownTotalRepayment ? totals.fees : totals.interest)} currency={cur} /></dd></div>
-              <div><dt className="text-xs text-muted-foreground">Total to repay</dt><dd className="font-medium"><Money amount={toMoneyString(totals.total)} currency={cur} /></dd></div>
+              <div><dt className="text-xs text-muted-foreground">Платежи</dt><dd className="tabular font-medium">{plan.lines.length}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Основной долг</dt><dd><Money amount={toMoneyString(totals.principal)} currency={cur} /></dd></div>
+              <div><dt className="text-xs text-muted-foreground">{v.knownTotalRepayment ? "Проценты и комиссии" : "Проценты"}</dt><dd><Money amount={toMoneyString(v.knownTotalRepayment ? totals.fees : totals.interest)} currency={cur} /></dd></div>
+              <div><dt className="text-xs text-muted-foreground">Всего вернуть</dt><dd className="font-medium"><Money amount={toMoneyString(totals.total)} currency={cur} /></dd></div>
             </dl>
             <div className="overflow-x-auto rounded-lg border">
               <table className="w-full text-sm">
                 <thead className="border-b text-left text-xs text-muted-foreground">
                   <tr>
                     <th className="px-3 py-2 font-medium">#</th>
-                    <th className="px-3 py-2 font-medium">Due</th>
-                    <th className="px-3 py-2 text-right font-medium">Principal</th>
-                    <th className="px-3 py-2 text-right font-medium">Interest</th>
-                    <th className="px-3 py-2 text-right font-medium">Fees</th>
-                    <th className="px-3 py-2 text-right font-medium">Payment</th>
+                    <th className="px-3 py-2 font-medium">Срок</th>
+                    <th className="px-3 py-2 text-right font-medium">Основной долг</th>
+                    <th className="px-3 py-2 text-right font-medium">Проценты</th>
+                    <th className="px-3 py-2 text-right font-medium">Комиссия</th>
+                    <th className="px-3 py-2 text-right font-medium">Платёж</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -530,7 +530,7 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
             </div>
             {plan.lines.length > 8 ? (
               <Button variant="ghost" size="sm" className="w-fit" onClick={() => setShowAllLines((x) => !x)}>
-                {showAllLines ? "Show fewer" : `Show all ${plan.lines.length} payments`}
+                {showAllLines ? "Свернуть" : `Показать все платежи (${plan.lines.length})`}
               </Button>
             ) : null}
           </>
@@ -538,22 +538,22 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
 
         {current === "review" && plan ? (
           <>
-            <h2 className="text-lg font-semibold">Review</h2>
+            <h2 className="text-lg font-semibold">Проверка</h2>
             <dl className="grid gap-3 text-sm sm:grid-cols-2">
-              <div><dt className="text-xs text-muted-foreground">Debt</dt><dd className="font-medium">{v.name} · {DEBT_TYPE_LABELS[v.type]}{v.lender ? ` · ${v.lender}` : ""}</dd></div>
-              <div><dt className="text-xs text-muted-foreground">Repayment</dt><dd className="font-medium">{REPAYMENT_TYPE_LABELS[v.repaymentType]}{v.knownTotalRepayment ? " · known total" : ""}{interestBearing && !v.knownTotalRepayment ? ` · ${v.annualInterestRate}%` : ""}</dd></div>
-              <div><dt className="text-xs text-muted-foreground">Original principal</dt><dd><Money amount={toMoneyString(plan.fee.contractPrincipal)} currency={cur} /></dd></div>
-              <div><dt className="text-xs text-muted-foreground">Remaining to schedule</dt><dd><Money amount={toMoneyString(plan.remainingPrincipal)} currency={cur} /></dd></div>
-              <div><dt className="text-xs text-muted-foreground">Payments</dt><dd>{plan.lines.length}, first {plan.lines[0] ? formatLocalDate(plan.lines[0].dueDate) : "—"}, last {plan.lines.at(-1) ? formatLocalDate(plan.lines.at(-1)!.dueDate) : "—"}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Долг</dt><dd className="font-medium">{v.name} · {DEBT_TYPE_LABELS[v.type]}{v.lender ? ` · ${v.lender}` : ""}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Погашение</dt><dd className="font-medium">{REPAYMENT_TYPE_LABELS[v.repaymentType]}{v.knownTotalRepayment ? " · известна общая сумма" : ""}{interestBearing && !v.knownTotalRepayment ? ` · ${v.annualInterestRate.replace(".", ",")}%` : ""}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Сумма долга</dt><dd><Money amount={toMoneyString(plan.fee.contractPrincipal)} currency={cur} /></dd></div>
+              <div><dt className="text-xs text-muted-foreground">Осталось распределить по графику</dt><dd><Money amount={toMoneyString(plan.remainingPrincipal)} currency={cur} /></dd></div>
+              <div><dt className="text-xs text-muted-foreground">Платежи</dt><dd>{plan.lines.length}, первый {plan.lines[0] ? formatLocalDate(plan.lines[0].dueDate) : "—"}, последний {plan.lines.at(-1) ? formatLocalDate(plan.lines.at(-1)!.dueDate) : "—"}</dd></div>
               <div>
-                <dt className="text-xs text-muted-foreground">Account</dt>
+                <dt className="text-xs text-muted-foreground">Счёт</dt>
                 <dd>
                   {v.disbursementAccountId ? (
                     <>
-                      <Money amount={toMoneyString(plan.fee.netReceived)} currency={cur} /> added to {receivingAccounts.find((a) => a.id === v.disbursementAccountId)?.name} as a loan disbursement
+                      <Money amount={toMoneyString(plan.fee.netReceived)} currency={cur} /> поступит на счёт {receivingAccounts.find((a) => a.id === v.disbursementAccountId)?.name} как получение займа
                     </>
                   ) : (
-                    "No account changes"
+                    "Счета не изменятся"
                   )}
                 </dd>
               </div>
@@ -565,15 +565,15 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
 
       <div className="flex items-center justify-between gap-3">
         <Button variant="ghost" onClick={step === 0 ? () => router.back() : back}>
-          <ArrowLeft /> {step === 0 ? "Cancel" : "Back"}
+          <ArrowLeft /> {step === 0 ? "Отмена" : "Назад"}
         </Button>
         {current === "review" ? (
           <Button size="lg" onClick={save} disabled={pending || !plan}>
-            {pending ? "Saving…" : "Save debt"}
+            {pending ? "Сохраняем…" : "Сохранить долг"}
           </Button>
         ) : (
           <Button size="lg" onClick={next}>
-            Next <ArrowRight />
+            Далее <ArrowRight />
           </Button>
         )}
       </div>
@@ -609,21 +609,21 @@ function LinesEditor<Row extends { dueDate: string }>({
         {columns.map((c) => (
           <span key={c}>{c}</span>
         ))}
-        <span className="sr-only">Remove</span>
+        <span className="sr-only">Удалить</span>
       </div>
       {rows.map((row, i) => (
         <div key={i} className="grid items-center gap-2" style={{ gridTemplateColumns: template }}>
-          <Input type="date" aria-label={`Payment ${i + 1} due date`} value={row.dueDate} onChange={(e) => update(i, "dueDate", e.target.value)} className="px-2" />
+          <Input type="date" aria-label={`Платёж ${i + 1}: срок`} value={row.dueDate} onChange={(e) => update(i, "dueDate", e.target.value)} className="px-2" />
           {fields.map((f) => (
-            <MoneyInput key={f} aria-label={`Payment ${i + 1} ${f}`} value={String(row[f] ?? "")} onChange={(x) => update(i, f, x)} className="px-2" />
+            <MoneyInput key={f} aria-label={`Платёж ${i + 1}: ${f}`} value={String(row[f] ?? "")} onChange={(x) => update(i, f, x)} className="px-2" />
           ))}
-          <Button type="button" variant="ghost" size="icon-sm" aria-label={`Remove payment ${i + 1}`} disabled={rows.length === 1} onClick={() => onChange(rows.filter((_, j) => j !== i))}>
+          <Button type="button" variant="ghost" size="icon-sm" aria-label={`Удалить платёж ${i + 1}`} disabled={rows.length === 1} onClick={() => onChange(rows.filter((_, j) => j !== i))}>
             <Trash2 />
           </Button>
         </div>
       ))}
       <Button type="button" variant="ghost" size="sm" className="w-fit" onClick={() => onChange([...rows, empty(rows.at(-1))])}>
-        <Plus /> Add payment
+        <Plus /> Добавить платёж
       </Button>
       {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
     </div>

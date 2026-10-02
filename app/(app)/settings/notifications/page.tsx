@@ -11,7 +11,7 @@ import { getNotificationPreferences, listNotificationLog } from "@/lib/services/
 import { getTelegramConnection } from "@/lib/services/telegram-connection";
 import { botUsername } from "@/lib/telegram/server";
 
-export const metadata: Metadata = { title: "Notifications" };
+export const metadata: Metadata = { title: "Уведомления" };
 
 export default async function NotificationsPage() {
   const user = await requireUser();
@@ -25,14 +25,14 @@ export default async function NotificationsPage() {
   return (
     <div className="mx-auto grid w-full max-w-2xl gap-6">
       <Link href="/settings" className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" /> Settings
+        <ArrowLeft className="size-4" /> Настройки
       </Link>
-      <PageHeader title="Notifications" description="Payment reminders in Telegram: before a due date, on the day, and while a payment is overdue." />
+      <PageHeader title="Уведомления" description="Напоминания о платежах в Telegram: заранее, в день платежа и пока платёж просрочен." />
 
       <Card>
         <CardHeader className="grid gap-1">
           <CardTitle>Telegram</CardTitle>
-          <p className="text-[13px] text-muted-foreground">Reminders contain debt names and amounts, never account numbers or links.</p>
+          <p className="text-[13px] text-muted-foreground">В напоминаниях только названия долгов и суммы — никаких номеров счетов и ссылок.</p>
         </CardHeader>
         <CardContent>
           <TelegramConnect connection={connection} bot={bot} />
@@ -41,7 +41,7 @@ export default async function NotificationsPage() {
 
       <Card>
         <CardHeader className="grid gap-1">
-          <CardTitle>Reminders</CardTitle>
+          <CardTitle>Напоминания</CardTitle>
           <p className="text-[13px] text-muted-foreground">Times are in your time zone ({user.timezone}).</p>
         </CardHeader>
         <CardContent>
@@ -51,7 +51,7 @@ export default async function NotificationsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent reminders</CardTitle>
+          <CardTitle>Последние напоминания</CardTitle>
         </CardHeader>
         <CardContent>
           <NotificationLog entries={log} timeZone={user.timezone} />
