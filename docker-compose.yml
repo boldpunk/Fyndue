@@ -39,6 +39,7 @@ services:
   migrate:
     build: .
     image: fyndue-app
+    pull_policy: build
     command: ["prisma", "migrate", "deploy"]
     environment: *app-env
     depends_on:
@@ -48,6 +49,8 @@ services:
 
   web:
     image: fyndue-app
+    # Built locally by `migrate`; never looked up on Docker Hub.
+    pull_policy: never
     restart: unless-stopped
     environment: *app-env
     ports:
