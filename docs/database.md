@@ -344,7 +344,7 @@ model RecurringTransaction {
   @@index([userId, nextOccurrence])
 }
 
-model ExchangeRate {        // manual only; never fetched
+model ExchangeRate {        // the user's own rates; win over CBU on the same date
   id, userId, fromCurrency, toCurrency, rate Decimal(20,8), effectiveDate @db.Date, createdAt
   @@unique([userId, fromCurrency, toCurrency, effectiveDate])
 }
@@ -439,3 +439,7 @@ model AuditLog {            // Phase 1
 ## 11. Seed data
 
 `prisma/seed.ts` refuses to run when `NODE_ENV === "production"`. It creates a demo user through Better Auth's API (so the password is hashed by the library), default categories, accounts **Uzcard / Visa / Cash UZS**, and a few Fuel / Taxi / Groceries expenses. It also seeds the SPEC debts: Debt A (85,800,000 differential; the 24% / 36 months terms are demo placeholders until the real contract is entered), Debt B (163,593,696 interest-free installment with 49,986,962.63 already paid, 3,500,000 a month), and a demo microloan (2,000,000 + 100,000 fee on top, repaid with a 15,000 card fee, so 2,115,000 is debited). Re-running the seed adds only what is missing. Real financial data is never hardcoded outside the dev seed.
+
+### CentralBankRate (global, not per user)
+
+Official CBU rates (UZS per 1 unit of USD/EUR/RUB) fetched from `https://cbu.uz/ru/arkhiv-kursov-valyut/json/`. Columns: `currency`, `rate NUMERIC(20,8)`, `rateDate DATE`, `fetchedAt`. `UNIQUE (currency, rateDate)`, `CHECK (rate > 0 AND currency <> 'UZS')`. Shared reference data, so it is the one table not scoped by `userId`; `ratesForUser(userId)` merges it with the user's manual rates.

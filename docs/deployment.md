@@ -9,7 +9,7 @@ Internet ──443──► nginx / Caddy (already on the server, also serves th
                         │  fyndue.uz → 127.0.0.1:3100
                         ▼
         ┌──────────── docker compose project "fyndue" ────────────┐
-        │ web (Next.js)  ◄── scheduler (every 15 min: reminders)  │
+        │ web (Next.js)  ◄── scheduler (15 min: CBU rates, alerts) │
         │   │  documents volume                                   │
         │   ▼                                                     │
         │ db (PostgreSQL 16, volume db-data, not published)       │
@@ -164,7 +164,7 @@ docker compose run --rm web tsx --conditions=react-server scripts/telegram-webho
 # → @YourBot now delivers messages to https://fyndue.uz/api/telegram/webhook
 ```
 
-Then Settings → Notifications → Connect Telegram. The `scheduler` container sends due reminders every 15 minutes.
+Then Settings → Notifications → Connect Telegram. The `scheduler` container fetches the Central Bank rate and sends due reminders every 15 minutes.
 
 ## 8. Backups
 

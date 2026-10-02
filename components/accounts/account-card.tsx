@@ -27,7 +27,8 @@ export function AccountIcon({ account, className }: { account: Pick<AccountDTO, 
   );
 }
 
-export function AccountCard({ account }: { account: AccountDTO }) {
+/** `equivalent`: the balance in the primary currency at the Central Bank (or own) rate, for foreign-currency accounts. */
+export function AccountCard({ account, equivalent }: { account: AccountDTO; equivalent?: { amount: string; currency: string } | null }) {
   return (
     <Link href={`/accounts/${account.id}`} className="group rounded-xl focus-visible:outline-2">
       <Card className={cn("grid gap-5 p-5 transition-shadow group-hover:shadow-md", account.isArchived && "opacity-70")}>
@@ -49,6 +50,11 @@ export function AccountCard({ account }: { account: AccountDTO }) {
             tone={account.currentBalance.startsWith("-") ? "negative" : "neutral"}
             className="text-xl font-semibold tracking-tight"
           />
+          {equivalent ? (
+            <p className="text-[13px] text-muted-foreground">
+              ≈ <Money amount={equivalent.amount} currency={equivalent.currency} />
+            </p>
+          ) : null}
           <p className="text-xs text-muted-foreground">{ACCOUNT_TYPE_LABELS[account.type]}</p>
         </div>
       </Card>

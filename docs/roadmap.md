@@ -130,6 +130,13 @@ Phase 6 notes:
 - The dashboard leads with the four SPEC §2 answers (how much money I have, how much I owe, the next payment, safe to spend) and shows a "С чего начать" checklist until the account is set up.
 - Adding another language later means extracting these strings into dictionaries; the formatting layer already takes a locale.
 
+## Central Bank exchange rates ✅
+
+- `CentralBankRate`: official CBU rates (USD, EUR, RUB) fetched from cbu.uz once a day — on page load via `after()` and by the scheduler (`/api/cron/exchange-rates`). Throttled to one attempt per 30 minutes while today's rate is missing; a failure keeps the last stored rate and never breaks a page.
+- Balances stay in their own currency (a USD Visa card holds dollars). The combined total on the dashboard and accounts page, per-account "≈ UZS" equivalents and the cross-currency transfer suggestion use the CBU rate. A manual rate on the same date wins; a newer CBU rate replaces an older manual one.
+- Settings → Exchange rates shows the current CBU rates with a refresh button above the manual rates.
+- Tests: CBU parsing (nominal, malformed rows), rate priority, combined total, cross-currency suggestion, fetch failures, throttle.
+
 ## Phase 7 — PWA & polish (next)
 
 Manifest, icons, standalone mode, safe areas, command palette (⌘K), onboarding flow, skeletons/empty/error states audit, accessibility audit, performance (lazy charts, pagination review), rate limiting on actions, email verification & password reset, Playwright E2E for critical flows.

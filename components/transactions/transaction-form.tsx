@@ -25,6 +25,8 @@ import {
 import type { ZodType } from "zod";
 import { CategoryPicker } from "./category-picker";
 import type { AccountOption, CategoryOption } from "./types";
+import { formatMoney, parseMoneyInput, toMoneyString } from "@/lib/finance/money";
+import { convertViaUzs } from "@/lib/finance/fx";
 
 export type TransactionKind = "EXPENSE" | "INCOME" | "TRANSFER";
 
@@ -58,6 +60,7 @@ export function TransactionForm({
   defaultAccountId,
   initial,
   onDone,
+  fxRates = {},
 }: {
   accounts: AccountOption[];
   categories: CategoryOption[];
@@ -66,6 +69,8 @@ export function TransactionForm({
   defaultAccountId?: string;
   initial?: TransactionDTO;
   onDone?: () => void;
+  /** Latest Central Bank rates, UZS per 1 unit, to suggest the amount received in a transfer. */
+  fxRates?: Record<string, string>;
 }) {
   const router = useRouter();
   const editing = Boolean(initial);
@@ -100,7 +105,7 @@ export function TransactionForm({
           expected: false,
         },
   });
-  const { register, control, handleSubmit, setError, clearErrors, reset, formState } = form;
+  const { register, control, handleSubmit, setError, clearErrors, reset, formState, setValue } = form;
   const errors = formState.errors;
 
   const accountId = useWatch({ control, name: "accountId" });
@@ -108,6 +113,10 @@ export function TransactionForm({
   const fromAccount = accounts.find((a) => a.id === accountId);
   const toAccount = accounts.find((a) => a.id === toAccountId);
   const crossCurrency = kind === "TRANSFER" && fromAccount && toAccount && fromAccount.currency !== toAccount.currency;
+  const sentAmount = useWatch({ control, name: "amount" });
+  const parsedSent = crossCurrency ? parseMoneyInput(sentAmount ?? "") : null;
+  const suggestion =
+    crossCurrency && parsedSent && parsedSent.gt(0) ? convertViaUzs(parsedSent, fromAccount.currency, toAccount.currency, fxRates) : null;
   const kindCategories = useMemo(
     () => categories.filter((c) => c.type === (kind === "INCOME" ? "INCOME" : "EXPENSE")),
     [categories, kind],
@@ -290,7 +299,23 @@ export function TransactionForm({
           label={`Зачислено в ${toAccount?.currency}`}
           htmlFor="toAmount"
           error={errors.toAmount?.message}
-          hint="Валюты разные: укажите, сколько пришло на самом деле. Fyndue никогда не угадывает курс."
+          hint={
+            suggestion ? (
+              <>
+                По курсу ЦБ ≈ <Money amount={toMoneyString(suggestion)} currency={toAccount.currency} />.{" "}
+                <button
+                  type="button"
+                  className="font-medium text-primary hover:underline"
+                  onClick={() => setValue("toAmount", formatMoney(suggestion, toAccount.currency, { hideCurrency: true }), { shouldValidate: true })}
+                >
+                  Подставить
+                </button>{" "}
+                Банк может пересчитать по своему курсу — укажите, сколько пришло на самом деле.
+              </>
+            ) : (
+              "Валюты разные: укажите, сколько пришло на самом деле."
+            )
+          }
         >
           <Controller
             control={control}
@@ -332,7 +357,7 @@ export function TransactionForm({
 
       {fromAccount && !editing ? (
         <p className="text-[13px] text-muted-foreground">
-          {fromAccount.name} balance: <Money amount={fromAccount.currentBalance} currency={fromAccount.currency} />
+          Баланс {fromAccount.name}: <Money amount={fromAccount.currentBalance} currency={fromAccount.currency} />
         </p>
       ) : null}
 

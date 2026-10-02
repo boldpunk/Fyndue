@@ -714,3 +714,18 @@ model Document {
   @@index([userId, debtId])
   @@index([debtPaymentId])
 }
+
+// ─── Central Bank rates (official, shared by all users) ──────────────────────
+
+/// Official daily rate of the Central Bank of Uzbekistan: UZS per 1 unit of
+/// `currency` on `rateDate` (lib/finance/cbu.ts). Public data, so no userId.
+model CentralBankRate {
+  id        String   @id @default(cuid())
+  currency  Currency
+  rate      Decimal  @db.Decimal(20, 8)
+  rateDate  DateTime @db.Date
+  fetchedAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([currency, rateDate])
+  @@index([currency, rateDate(sort: Desc)])
+}

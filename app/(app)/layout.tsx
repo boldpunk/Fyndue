@@ -5,19 +5,25 @@ import { requireUser } from "@/lib/auth/session";
 import { todayIn } from "@/lib/finance/dates";
 import { listAccounts } from "@/lib/services/accounts";
 import { listCategories } from "@/lib/services/categories";
+import { latestCentralBankRates, refreshCentralBankRates } from "@/lib/services/central-bank-rates";
+import { after } from "next/server";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
-  const [accounts, categories] = await Promise.all([
+  const [accounts, categories, cbuRates] = await Promise.all([
     listAccounts(user.id),
     listCategories(user.id, { includeSystem: false }),
+    latestCentralBankRates(),
   ]);
+  // Today's official rates are fetched after the page is sent; a no-op once stored.
+  after(() => refreshCentralBankRates());
 
   return (
     <QuickAddProvider
       accounts={accounts.map(({ id, name, currency, currentBalance }) => ({ id, name, currency, currentBalance }))}
       categories={categories.map(({ id, name, type, icon, color }) => ({ id, name, type, icon, color }))}
       today={todayIn(user.timezone)}
+      fxRates={Object.fromEntries(cbuRates.map((r) => [r.currency, r.rate]))}
     >
       <div className="flex min-h-dvh">
         <AppSidebar user={user} />

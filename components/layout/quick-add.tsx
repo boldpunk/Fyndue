@@ -20,11 +20,13 @@ export function QuickAddProvider({
   accounts,
   categories,
   today,
+  fxRates,
   children,
 }: {
   accounts: AccountOption[];
   categories: CategoryOption[];
   today: string;
+  fxRates: Record<string, string>;
   children: ReactNode;
 }) {
   const [state, setState] = useState<{ open: boolean; kind: TransactionKind; key: number }>({
@@ -48,6 +50,7 @@ export function QuickAddProvider({
           accounts={accounts}
           categories={categories}
           today={today}
+          fxRates={fxRates}
           defaultKind={state.kind}
           onDone={() => setState((s) => ({ ...s, open: false }))}
         />

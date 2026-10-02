@@ -159,20 +159,34 @@ export default async function DashboardPage() {
           tone="primary"
           href="/accounts"
           footer={
-            d.accountCount === 0 ? (
-              "Добавьте первый счёт"
-            ) : d.combinedBalance && others.length ? (
-              <>
-                ≈ <Money amount={d.combinedBalance.amount} currency={d.primaryCurrency} className="font-medium text-foreground" /> вместе по вашим курсам
-              </>
-            ) : (
-              `На ${d.accountCount} ${pluralRu(d.accountCount, ["счёте", "счетах", "счетах"])}`
-            )
+            d.accountCount === 0
+              ? "Добавьте первый счёт"
+              : d.combinedBalance && others.length
+                ? `Все счета вместе в ${d.primaryCurrency}${d.combinedBalance.rateDate ? `, примерно — по курсу ЦБ на ${shortDate(d.combinedBalance.rateDate)}` : ""}`
+                : `На ${d.accountCount} ${pluralRu(d.accountCount, ["счёте", "счетах", "счетах"])}`
           }
         >
-          <div className="grid gap-0.5 text-2xl font-semibold tracking-tight">
-            <PerCurrency rows={d.currencies.filter(nonZero((c) => c.balance))} pick={(c) => c.balance} />
-          </div>
+          {d.combinedBalance && others.length ? (
+            <>
+              <span className="text-2xl font-semibold tracking-tight">
+                <Money amount={d.combinedBalance.amount} currency={d.primaryCurrency} />
+              </span>
+              <span className="flex flex-wrap gap-x-2 text-sm text-muted-foreground">
+                {d.currencies
+                  .filter((c) => !money(c.balance).isZero())
+                  .map((c, i) => (
+                    <span key={c.currency}>
+                      {i > 0 ? "+ " : ""}
+                      <Money amount={c.balance} currency={c.currency} />
+                    </span>
+                  ))}
+              </span>
+            </>
+          ) : (
+            <div className="grid gap-0.5 text-2xl font-semibold tracking-tight">
+              <PerCurrency rows={d.currencies.filter(nonZero((c) => c.balance))} pick={(c) => c.balance} />
+            </div>
+          )}
         </KeyFigure>
 
         <KeyFigure

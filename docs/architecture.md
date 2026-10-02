@@ -69,6 +69,7 @@ app/
   api/
     auth/[...all]/        Better Auth handler
     cron/notifications/   (Phase 5)
+    cron/exchange-rates/  (CBU rates)
     telegram/webhook/     (Phase 5)
     documents/[id]/       (Phase 6, private download; session + ownership checked)
   layout.tsx              fonts, ThemeProvider, <Toaster/>
@@ -133,6 +134,7 @@ The SPEC's `app/(dashboard)/` group is named `(app)/` here so that the group nam
 | `/analytics` | page | 4 | Range via `?range=` |
 | `/api/auth/[...all]` | route handler | 1 | Better Auth |
 | `/api/cron/notifications` | route handler | 5 | Protected by `CRON_SECRET` bearer |
+| `/api/cron/exchange-rates` | route handler | — | Fetches today's CBU rates; `CRON_SECRET` bearer |
 | `/api/telegram/webhook` | route handler | 5 | Protected by Telegram secret-token header |
 | `/api/documents/[id]` | route handler | 6 | Session + `{ id, userId }` lookup; `?download=1` for attachment |
 
@@ -158,7 +160,7 @@ The interface is Russian. Strings live in the components and services that show 
 
 - **Storage:** `NUMERIC(20,2)` for amounts (UZS, USD, EUR, RUB all use 2 minor digits), `NUMERIC(9,6)` for annual rates in percent, `NUMERIC(20,8)` for manual FX rates.
 - **Computation:** `lib/finance/money.ts` wraps `decimal.js` (precision 40, `ROUND_HALF_UP`). Rounding happens only at defined boundaries (a schedule line, a stored value), never in the middle of a formula.
-- **Currency:** every amount-bearing row stores its `currency`. Totals are grouped by currency. Conversion only happens with an explicit, user-entered rate (e.g. a cross-currency transfer stores both legs' amounts). We never fetch or invent FX rates.
+- **Currency:** every amount-bearing row stores its `currency`. Totals are grouped by currency. Account balances are never converted: a USD account holds dollars. Converted figures (combined total, per-account equivalents, the transfer-form suggestion) use the official Central Bank of Uzbekistan rate, fetched once a day from cbu.uz into `CentralBankRate` (`lib/services/central-bank-rates.ts`; triggered by `after()` in the app layout and the `/api/cron/exchange-rates` scheduler call, throttled, never throws). A user's manual `ExchangeRate` on the same or a later date wins over the CBU rate. A cross-currency transfer still stores both legs exactly as entered.
 - **Calendar dates vs instants:** business dates (transaction date, due date, payment date, budget month) are stored as Postgres `DATE` and handled in code as `YYYY-MM-DD` strings (`lib/finance/dates.ts`). They have no timezone and therefore can't drift by a day. Instants (`createdAt`, `sentAt`, sessions) are `timestamptz` in UTC. "Today" is computed in the user's timezone (default `Asia/Tashkent`) and passed into pure functions.
 
 ## 7. Telegram and background work

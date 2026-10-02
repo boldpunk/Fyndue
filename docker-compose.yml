@@ -73,7 +73,8 @@ services:
       start_period: 30s
       retries: 3
 
-  # Payment reminders: calls the cron route every 15 minutes (docs/telegram.md §4).
+  # Every 15 minutes: payment reminders (docs/telegram.md §4) and today's
+  # Central Bank of Uzbekistan exchange rates (a no-op once stored).
   scheduler:
     image: alpine:3.22
     restart: unless-stopped
@@ -85,6 +86,8 @@ services:
       - |
         while true; do
           sleep 900
+          wget -q -O - --header "Authorization: Bearer $$CRON_SECRET" http://web:3000/api/cron/exchange-rates || echo "rate refresh failed"
+          echo
           wget -q -O - --header "Authorization: Bearer $$CRON_SECRET" http://web:3000/api/cron/notifications || echo "reminder run failed"
           echo
         done

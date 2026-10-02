@@ -16,7 +16,7 @@ import {
 import { money, toMoneyString, type FinDecimal } from "@/lib/finance/money";
 import { listAccounts, type AccountDTO } from "./accounts";
 import { debtTotalsByCurrency, listDebts, listUpcomingPayments, type DebtTotalsDTO, type UpcomingPaymentDTO } from "./debts";
-import { listExchangeRates } from "./exchange-rates";
+import { ratesForUser } from "./central-bank-rates";
 import { listOccurrences } from "./recurring";
 import { recentTransactions, type TransactionDTO } from "./transactions";
 
@@ -114,7 +114,7 @@ export type DashboardDTO = {
   debtTotals: DebtTotalsDTO[];
   recent: TransactionDTO[];
   accounts: AccountDTO[];
-  /** All balances in the primary currency using the user's manual rates; null when a rate is missing. */
+  /** All balances in the primary currency at the Central Bank (or the user's own) rate; null when a rate is missing. */
   combinedBalance: { amount: string; rateDate: string | null } | null;
 };
 
@@ -157,7 +157,7 @@ export async function getDashboard(userId: string): Promise<DashboardDTO> {
     listDebts(userId, "active"),
     recentTransactions(userId, 6),
     listOccurrences(userId, today, addDays(today, LOOKAHEAD_DAYS)),
-    listExchangeRates(userId),
+    ratesForUser(userId),
   ]);
   // Planned recurring items that have not been recorded yet (from today on).
   const planned = occurrences.filter((o) => o.transactionId === null && o.includeInTotal);

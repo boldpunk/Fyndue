@@ -3,7 +3,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/session";
 import { copyBudgetsFromPreviousMonth, deleteBudget, setBudget } from "@/lib/services/budgets";
+import { refreshCentralBankRates } from "@/lib/services/central-bank-rates";
 import { addExchangeRate, deleteExchangeRate } from "@/lib/services/exchange-rates";
+import { DomainError } from "@/lib/errors";
 import { createRecurring, deleteRecurring, recordOccurrence, setRecurringActive, updateRecurring } from "@/lib/services/recurring";
 import { runAction } from "@/lib/utils/action";
 import { archiveSchema } from "@/lib/validations/accounts";
@@ -106,5 +108,15 @@ export async function deleteExchangeRateAction(id: unknown) {
     await deleteExchangeRate(user.id, idSchema.parse(id));
     refresh();
     return null;
+  });
+}
+
+export async function refreshCentralBankRatesAction() {
+  return runAction(async () => {
+    await requireUser();
+    const result = await refreshCentralBankRates({ force: true });
+    if (result.error && !result.stored) throw new DomainError("Не удалось получить курс с cbu.uz. Попробуйте позже — пока используется последний сохранённый курс.");
+    revalidatePath("/", "layout");
+    return { latestDate: result.latestDate };
   });
 }
