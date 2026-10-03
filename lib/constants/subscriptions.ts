@@ -1,3 +1,5 @@
+import { ESIM_CATEGORY_NAME } from "./categories";
+
 /**
  * Quick-start templates for the Subscriptions page. They fill the name,
  * billing period and the page where the subscription is managed; the price
@@ -14,6 +16,8 @@ export type SubscriptionPreset = {
   match: string[];
   /** Usually billed in dollars: the form suggests a foreign-currency card first. */
   foreign: boolean;
+  /** Category to preselect instead of «Подписки». */
+  category?: string;
 };
 
 export const SUBSCRIPTION_PRESETS: SubscriptionPreset[] = [
@@ -27,6 +31,7 @@ export const SUBSCRIPTION_PRESETS: SubscriptionPreset[] = [
   { key: "netflix", name: "Netflix", frequency: "MONTHLY", url: "https://www.netflix.com/account", color: "#e50914", match: ["netflix"], foreign: true },
   { key: "google-one", name: "Google One", frequency: "MONTHLY", url: "https://one.google.com/storage", color: "#4285f4", match: ["google one", "google"], foreign: true },
   { key: "github", name: "GitHub", frequency: "MONTHLY", url: "https://github.com/settings/billing", color: "#24292f", match: ["github", "copilot"], foreign: true },
+  { key: "esim", name: "eSIM", frequency: "MONTHLY", color: "#0ea5e9", match: ["esim", "airalo", "holafly", "nomad", "roaming", "роуминг"], foreign: true, category: ESIM_CATEGORY_NAME },
   { key: "server", name: "Сервер", frequency: "MONTHLY", color: "#475569", match: ["сервер", "server", "vps", "hetzner", "oracle", "digitalocean"], foreign: true },
   { key: "domain", name: "Домен", frequency: "YEARLY", color: "#6366f1", match: ["домен", "domain", ".uz", ".com"], foreign: false },
 ];

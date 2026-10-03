@@ -4,7 +4,8 @@ import { addDays, daysBetween, dbToLocalDate, localDateToDb, todayIn, type Local
 import { convert, findRate } from "@/lib/finance/fx";
 import { toMoneyString } from "@/lib/finance/money";
 import { nextOccurrence } from "@/lib/finance/recurrence";
-import { sortSubscriptions, summarizeSubscriptions, type SubscriptionSummary } from "@/lib/finance/subscriptions";
+import { ESIM_CATEGORY_NAME } from "@/lib/constants/categories";
+import { sortSubscriptions, summarizePurchases, summarizeSubscriptions, type PurchaseSummary, type SubscriptionSummary } from "@/lib/finance/subscriptions";
 import { ratesForUser } from "./central-bank-rates";
 import { listOccurrences, listRecurring, type Occurrence, type RecurringDTO } from "./recurring";
 
@@ -23,7 +24,23 @@ export type SubscriptionsPage = {
   /** Charges on or before today that have no transaction yet, oldest first. */
   pending: Occurrence[];
   summary: SubscriptionSummary;
+  /** Travel eSIMs bought in the last 12 months (the «eSIM и роуминг» category); null if the category was removed. */
+  esim: (PurchaseSummary & { categoryId: string }) | null;
 };
+
+/** The window the eSIM card sums over. */
+export const ESIM_WINDOW_DAYS = 365;
+
+async function esimPurchases(userId: string, today: LocalDate, base: string, rates: Awaited<ReturnType<typeof ratesForUser>>) {
+  const category = await prisma.category.findFirst({ where: { userId, type: "EXPENSE", name: ESIM_CATEGORY_NAME, isArchived: false }, select: { id: true } });
+  if (!category) return null;
+  const rows = await prisma.transaction.findMany({
+    where: { userId, categoryId: category.id, type: "EXPENSE", voidedAt: null, status: "ACTUAL", transactionDate: { gte: localDateToDb(addDays(today, -ESIM_WINDOW_DAYS)), lte: localDateToDb(today) } },
+    select: { transactionDate: true, amount: true, currency: true, merchant: true, accountId: true },
+  });
+  const purchases = rows.map((r) => ({ date: dbToLocalDate(r.transactionDate), amount: toMoneyString(r.amount), currency: r.currency, merchant: r.merchant, accountId: r.accountId }));
+  return { categoryId: category.id, ...summarizePurchases(purchases, base, rates, today) };
+}
 
 export async function getSubscriptions(userId: string): Promise<SubscriptionsPage> {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { timezone: true, baseCurrency: true } });
@@ -66,5 +83,5 @@ export async function getSubscriptions(userId: string): Promise<SubscriptionsPag
       return { ...s, amountInBase: rate ? toMoneyString(convert(s.amount, rate.rate)) : null };
     }),
   );
-  return { today, baseCurrency: base, items, pending, summary: summarizeSubscriptions(items, base, rates, today) };
+  return { today, baseCurrency: base, items, pending, summary: summarizeSubscriptions(items, base, rates, today), esim: await esimPurchases(userId, today, base, rates) };
 }

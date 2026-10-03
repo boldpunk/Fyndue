@@ -6,7 +6,9 @@ import type { AccountOption, CategoryOption } from "@/components/transactions/ty
 import { Button } from "@/components/ui/button";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 
-type QuickAddContextValue = { open: (kind?: TransactionKind) => void };
+/** Optional prefill, e.g. «record an eSIM purchase» opens with that category and the usual card. */
+export type QuickAddPreset = { categoryId?: string; accountId?: string };
+type QuickAddContextValue = { open: (kind?: TransactionKind, preset?: QuickAddPreset) => void };
 const QuickAddContext = createContext<QuickAddContextValue | null>(null);
 
 export function useQuickAdd() {
@@ -29,12 +31,15 @@ export function QuickAddProvider({
   fxRates: Record<string, string>;
   children: ReactNode;
 }) {
-  const [state, setState] = useState<{ open: boolean; kind: TransactionKind; key: number }>({
+  const [state, setState] = useState<{ open: boolean; kind: TransactionKind; key: number; preset?: QuickAddPreset }>({
     open: false,
     kind: "EXPENSE",
     key: 0,
   });
-  const open = useCallback((kind: TransactionKind = "EXPENSE") => setState((s) => ({ open: true, kind, key: s.key + 1 })), []);
+  const open = useCallback(
+    (kind: TransactionKind = "EXPENSE", preset?: QuickAddPreset) => setState((s) => ({ open: true, kind, preset, key: s.key + 1 })),
+    [],
+  );
   const value = useMemo(() => ({ open }), [open]);
 
   return (
@@ -52,6 +57,8 @@ export function QuickAddProvider({
           today={today}
           fxRates={fxRates}
           defaultKind={state.kind}
+          defaultAccountId={state.preset?.accountId}
+          defaultCategoryId={state.preset?.categoryId}
           onDone={() => setState((s) => ({ ...s, open: false }))}
         />
       </ResponsiveDialog>

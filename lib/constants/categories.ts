@@ -14,6 +14,7 @@ export const CATEGORY_ICONS = [
   "zap",
   "wifi",
   "smartphone",
+  "sim-card",
   "clapperboard",
   "plane",
   "heart-pulse",
@@ -60,6 +61,9 @@ export type DefaultCategory = {
   isSystem?: boolean;
 };
 
+/** Travel eSIM purchases; the Subscriptions page sums this category. */
+export const ESIM_CATEGORY_NAME = "eSIM и роуминг";
+
 /** SPEC §27. «Платежи по долгам» is a system category used by the debt engine (found by isSystem, not by name). */
 export const DEFAULT_EXPENSE_CATEGORIES: readonly DefaultCategory[] = [
   { name: "Топливо", icon: "fuel", color: "orange" },
@@ -72,6 +76,7 @@ export const DEFAULT_EXPENSE_CATEGORIES: readonly DefaultCategory[] = [
   { name: "Коммунальные услуги", icon: "zap", color: "amber" },
   { name: "Интернет", icon: "wifi", color: "sky" },
   { name: "Мобильная связь", icon: "smartphone", color: "blue" },
+  { name: ESIM_CATEGORY_NAME, icon: "sim-card", color: "sky" },
   { name: "Развлечения", icon: "clapperboard", color: "violet" },
   { name: "Путешествия", icon: "plane", color: "sky" },
   { name: "Здоровье", icon: "heart-pulse", color: "red" },

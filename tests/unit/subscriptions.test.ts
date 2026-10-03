@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { subscriptionAvatar } from "@/lib/constants/subscriptions";
 import type { RateRow } from "@/lib/finance/fx";
 import { formatDaysFromToday } from "@/lib/finance/recurrence";
-import { annualEquivalent, sortSubscriptions, summarizeSubscriptions, type SubscriptionLike } from "@/lib/finance/subscriptions";
+import { annualEquivalent, sortSubscriptions, summarizePurchases, summarizeSubscriptions, type SubscriptionLike } from "@/lib/finance/subscriptions";
 import { webUrlSchema } from "@/lib/validations/planning";
 
 const sub = (over: Partial<SubscriptionLike> & Pick<SubscriptionLike, "name" | "amount" | "currency">): SubscriptionLike => ({
@@ -111,5 +111,35 @@ describe("days from today", () => {
       "3 дня назад",
       "11 дней назад",
     ]);
+  });
+});
+
+describe("one-off purchases (travel eSIMs)", () => {
+  const rows = [
+    { date: "2026-03-10", amount: "9.00", currency: "USD", merchant: "Airalo · Турция", accountId: "visa" },
+    { date: "2026-09-02", amount: "15.00", currency: "USD", merchant: "Holafly · ОАЭ", accountId: "visa" },
+    { date: "2026-06-20", amount: "60000.00", currency: "UZS", merchant: null, accountId: "uzcard" },
+  ];
+
+  it("counts, totals per currency and in sums, and finds the latest", () => {
+    expect(summarizePurchases(rows, "UZS", cbu, "2026-10-03")).toEqual({
+      count: 3,
+      byCurrency: [
+        { currency: "UZS", total: "60000.00" },
+        { currency: "USD", total: "24.00" },
+      ],
+      // 24 × 11 808.76 + 60 000
+      combined: { total: "343410.24", rateDate: "2026-10-01" },
+      last: rows[1],
+      usualAccountId: "visa",
+    });
+  });
+
+  it("is empty without purchases", () => {
+    expect(summarizePurchases([], "UZS", cbu, "2026-10-03")).toEqual({ count: 0, byCurrency: [], combined: null, last: null, usualAccountId: null });
+  });
+
+  it("a monthly eSIM plan has its own template in the eSIM category", () => {
+    expect(subscriptionAvatar("Airalo eSIM").color).toBe("#0ea5e9");
   });
 });

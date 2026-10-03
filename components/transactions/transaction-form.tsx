@@ -58,6 +58,7 @@ export function TransactionForm({
   today,
   defaultKind = "EXPENSE",
   defaultAccountId,
+  defaultCategoryId,
   initial,
   onDone,
   fxRates = {},
@@ -67,6 +68,7 @@ export function TransactionForm({
   today: string;
   defaultKind?: TransactionKind;
   defaultAccountId?: string;
+  defaultCategoryId?: string;
   initial?: TransactionDTO;
   onDone?: () => void;
   /** Latest Central Bank rates, UZS per 1 unit, to suggest the amount received in a transfer. */
@@ -79,7 +81,7 @@ export function TransactionForm({
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const firstAccount = defaultAccountId ?? accounts[0]?.id ?? "";
+  const firstAccount = (defaultAccountId && accounts.some((a) => a.id === defaultAccountId) ? defaultAccountId : accounts[0]?.id) ?? "";
   const form = useForm<FormValues>({
     defaultValues: initial
       ? {
@@ -96,7 +98,7 @@ export function TransactionForm({
       : {
           accountId: firstAccount,
           toAccountId: accounts.find((a) => a.id !== firstAccount)?.id ?? "",
-          categoryId: "",
+          categoryId: defaultCategoryId ?? "",
           amount: "",
           toAmount: "",
           date: today,

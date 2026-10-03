@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { addDays, addMonthsClamped, localDateToDb, todayIn } from "@/lib/finance/dates";
 import { createRecurring, recordOccurrence } from "@/lib/services/recurring";
+import { createTransaction, voidTransaction } from "@/lib/services/transactions";
+import { ESIM_CATEGORY_NAME } from "@/lib/constants/categories";
 import { getSubscriptions } from "@/lib/services/subscriptions";
 import { recurringSchema } from "@/lib/validations/planning";
 import { balanceOf, categoryId, createTestAccount, createUser, resetDatabase } from "../support/factories";
@@ -88,6 +90,36 @@ describe("subscriptions", () => {
     expect((await prisma.recurringTransaction.findUniqueOrThrow({ where: { id } })).url).toBeNull();
     await expect(prisma.recurringTransaction.update({ where: { id }, data: { url: "javascript:alert(1)" } })).rejects.toThrow();
     expect((await getSubscriptions(user.id)).items).toEqual([]);
+  });
+
+  it("sums travel eSIM purchases of the last 12 months, ignoring voided and older ones", async () => {
+    const { user, today, visa, uzcard } = await setup();
+    const esim = await categoryId(user.id, ESIM_CATEGORY_NAME);
+    const buy = (accountId: string, amount: string, date: string, merchant?: string) =>
+      createTransaction(user.id, { kind: "EXPENSE", clientRequestId: randomUUID(), accountId, categoryId: esim, amount, date, merchant, note: undefined } as never);
+
+    expect((await getSubscriptions(user.id)).esim).toMatchObject({ categoryId: esim, count: 0, last: null });
+    await buy(visa.id, "9", addDays(today, -200), "Airalo · Турция");
+    await buy(visa.id, "15", addDays(today, -20), "Holafly · ОАЭ");
+    await buy(uzcard.id, "60000", addDays(today, -60));
+    await buy(visa.id, "30", addDays(today, -400), "too old");
+    const voided = await buy(visa.id, "99", addDays(today, -5), "mistake");
+    await voidTransaction(user.id, voided.id, "test");
+
+    const { esim: summary } = await getSubscriptions(user.id);
+    expect(summary).toMatchObject({
+      count: 3,
+      byCurrency: [
+        { currency: "UZS", total: "60000.00" },
+        { currency: "USD", total: "24.00" },
+      ],
+      combined: { total: "343410.24" },
+      last: { merchant: "Holafly · ОАЭ", amount: "15.00", currency: "USD", date: addDays(today, -20) },
+      usualAccountId: visa.id,
+    });
+
+    const other = await createUser("Other");
+    expect((await getSubscriptions(other.id)).esim).toMatchObject({ count: 0 });
   });
 
   it("never shows another user's subscriptions", async () => {

@@ -88,7 +88,7 @@ export function SubscriptionForm({
     name: item?.name ?? preset?.name ?? "",
     amount: item ? formatMoney(item.amount, "", { hideCurrency: true }) : "",
     accountId: item?.account.id ?? (preset?.foreign && foreignAccount ? foreignAccount.id : accounts[0]?.id) ?? "",
-    categoryId: item?.category?.id ?? defaultCategoryId,
+    categoryId: item?.category?.id ?? categories.find((c) => c.type === "EXPENSE" && c.name === preset?.category)?.id ?? defaultCategoryId,
     period: periodKey(item ?? { frequency: preset?.frequency ?? "MONTHLY", interval: 1 }),
     startDate: item?.startDate ?? today,
     url: item?.url ?? preset?.url ?? "",

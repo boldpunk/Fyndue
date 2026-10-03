@@ -15,8 +15,8 @@ describe("categories", () => {
     const user = await createUser();
     const expense = await listCategories(user.id, { type: "EXPENSE" });
     const income = await listCategories(user.id, { type: "INCOME" });
-    expect(expense.map((c) => c.name)).toContain("Топливо");
-    expect(expense).toHaveLength(18);
+    expect(expense.map((c) => c.name)).toEqual(expect.arrayContaining(["Топливо", "eSIM и роуминг"]));
+    expect(expense).toHaveLength(19);
     expect(income.map((c) => c.name)).toEqual(["Зарплата", "Фриланс", "Премия", "Наличные", "Возврат", "Другое"]);
     expect(expense.find((c) => c.name === "Платежи по долгам")?.isSystem).toBe(true);
   });
@@ -24,7 +24,7 @@ describe("categories", () => {
   it("creates, renames, reorders and archives", async () => {
     const user = await createUser();
     const pets = await createCategory(user.id, { name: "Pets", type: "EXPENSE", icon: "paw-print", color: "amber" });
-    expect(pets.sortOrder).toBe(18);
+    expect(pets.sortOrder).toBe(19);
 
     await expect(createCategory(user.id, { name: "Pets", type: "EXPENSE", icon: "paw-print" })).rejects.toThrow(/уже есть/);
     await expect(updateCategory(user.id, { id: pets.id, name: "Топливо", icon: "fuel" })).rejects.toThrow(/уже есть/);

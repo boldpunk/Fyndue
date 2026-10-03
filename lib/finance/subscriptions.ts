@@ -70,3 +70,42 @@ export function sortSubscriptions<T extends SubscriptionLike>(items: readonly T[
     return a.name.localeCompare(b.name, "ru");
   });
 }
+
+export type PurchaseRow = { date: LocalDate; amount: string; currency: string; merchant: string | null; accountId: string };
+
+export type PurchaseSummary = {
+  count: number;
+  /** Per currency, primary currency first. */
+  byCurrency: { currency: string; total: string }[];
+  combined: { total: string; rateDate: LocalDate | null } | null;
+  last: PurchaseRow | null;
+  /** Account used most often (latest wins a tie), to preselect for the next purchase. */
+  usualAccountId: string | null;
+};
+
+/** One-off purchases of a kind (e.g. travel eSIMs): how many, how much, the latest one. */
+export function summarizePurchases(rows: readonly PurchaseRow[], base: string, rates: readonly RateRow[], today: LocalDate): PurchaseSummary {
+  const sums = new Map<string, FinDecimal[]>();
+  for (const r of rows) sums.set(r.currency, [...(sums.get(r.currency) ?? []), money(r.amount)]);
+  const currencies = [...sums.keys()].sort((a, b) => (a === base ? -1 : b === base ? 1 : a.localeCompare(b)));
+  const totals = currencies.map((currency) => ({ currency, amount: sumMoney(sums.get(currency)!) }));
+
+  let combined: PurchaseSummary["combined"] = null;
+  if (totals.length) {
+    const c = combineInBase(totals, base, rates, today);
+    if (c.total) combined = { total: toMoneyString(c.total), rateDate: c.oldestRateDate };
+  }
+  const latestFirst = [...rows].sort((a, b) => b.date.localeCompare(a.date));
+  const uses = new Map<string, number>();
+  for (const r of latestFirst) uses.set(r.accountId, (uses.get(r.accountId) ?? 0) + 1);
+  let usualAccountId: string | null = null;
+  for (const [id, n] of uses) if (usualAccountId === null || n > uses.get(usualAccountId)!) usualAccountId = id;
+
+  return {
+    count: rows.length,
+    byCurrency: totals.map((t) => ({ currency: t.currency, total: toMoneyString(t.amount) })),
+    combined,
+    last: latestFirst[0] ?? null,
+    usualAccountId,
+  };
+}

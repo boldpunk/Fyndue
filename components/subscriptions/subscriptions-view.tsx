@@ -1,11 +1,13 @@
 "use client";
-import { CalendarClock, CircleAlert, ExternalLink, MoreHorizontal, Pause, Pencil, Play, Plus, Receipt, Repeat, Trash2 } from "lucide-react";
+import { CalendarClock, CardSim, CircleAlert, ExternalLink, MoreHorizontal, Pause, Pencil, Play, Plus, Receipt, Repeat, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { deleteRecurringAction, setRecurringActiveAction } from "@/app/(app)/planning-actions";
 import { Money } from "@/components/finance/money";
 import { PageHeader } from "@/components/layout/page-header";
+import { useQuickAdd } from "@/components/layout/quick-add";
 import { RecordOccurrenceDialog, type OccurrenceTarget } from "@/components/planning/record-occurrence-dialog";
 import type { AccountOption, CategoryOption } from "@/components/transactions/types";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +18,7 @@ import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import type { SubscriptionPreset } from "@/lib/constants/subscriptions";
 import { daysBetween, formatLocalDate } from "@/lib/finance/dates";
 import { toMoneyString } from "@/lib/finance/money";
-import { describeRule, formatDaysFromToday, monthlyEquivalent } from "@/lib/finance/recurrence";
+import { describeRule, formatDaysFromToday, monthlyEquivalent, pluralRu } from "@/lib/finance/recurrence";
 import type { Occurrence } from "@/lib/services/recurring";
 import type { SubscriptionDTO, SubscriptionsPage } from "@/lib/services/subscriptions";
 import { cn } from "@/lib/utils/cn";
@@ -41,7 +43,7 @@ export function SubscriptionsView({
   fxRates: Record<string, string>;
 }) {
   const router = useRouter();
-  const { today, baseCurrency, items, pending, summary } = data;
+  const { today, baseCurrency, items, pending, summary, esim } = data;
   const [editing, setEditing] = useState<Editing | null>(null);
   const [deleting, setDeleting] = useState<SubscriptionDTO | null>(null);
   const [recording, setRecording] = useState<OccurrenceTarget | null>(null);
@@ -170,6 +172,8 @@ export function SubscriptionsView({
           </Card>
         </section>
       ) : null}
+
+      {esim ? <EsimCard esim={esim} today={today} baseCurrency={baseCurrency} fallbackAccountId={accounts.find((a) => a.currency !== baseCurrency)?.id} /> : null}
 
       <ResponsiveDialog
         open={editing !== null}
@@ -363,3 +367,73 @@ function SubscriptionRow({
   );
 }
 
+
+function EsimCard({
+  esim,
+  today,
+  baseCurrency,
+  fallbackAccountId,
+}: {
+  esim: NonNullable<SubscriptionsPage["esim"]>;
+  today: string;
+  baseCurrency: string;
+  fallbackAccountId?: string;
+}) {
+  const { open } = useQuickAdd();
+  const multi = esim.byCurrency.length > 1;
+  return (
+    <Card className="grid gap-4 p-4">
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-info-subtle text-info">
+          <CardSim className="size-5" aria-hidden />
+        </span>
+        <div className="grid gap-0.5">
+          <h2 className="text-sm font-semibold">eSIM в поездках</h2>
+          <p className="text-[13px] text-muted-foreground">
+            Разовые покупки, а не подписка: в план и прогноз не попадают. Здесь видно, сколько уходит на связь за границей.
+          </p>
+        </div>
+      </div>
+      {esim.count ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-0.5">
+            <p className="text-[13px] text-muted-foreground">
+              За 12 месяцев · {esim.count} {pluralRu(esim.count, ["покупка", "покупки", "покупок"])}
+            </p>
+            {multi && esim.combined ? (
+              <>
+                <Money amount={esim.combined.total} currency={baseCurrency} className="text-xl font-semibold tracking-tight" />
+                <CurrencyLines lines={esim.byCurrency.map((c) => ({ currency: c.currency, amount: c.total }))} />
+              </>
+            ) : (
+              esim.byCurrency.map((c) => <Money key={c.currency} amount={c.total} currency={c.currency} className="text-xl font-semibold tracking-tight" />)
+            )}
+          </div>
+          {esim.last ? (
+            <div className="grid gap-0.5">
+              <p className="text-[13px] text-muted-foreground">Последняя покупка</p>
+              <p className="text-sm font-medium">
+                {esim.last.merchant || "eSIM"} · <Money amount={esim.last.amount} currency={esim.last.currency} />
+              </p>
+              <p className="text-[13px] text-muted-foreground">
+                {shortDate(esim.last.date)} · {formatDaysFromToday(daysBetween(today, esim.last.date))}
+              </p>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">Пока ни одной покупки. Купили eSIM — запишите её, а в поле «Где / у кого» укажите сервис или страну (Airalo, Holafly, Турция…).</p>
+      )}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" onClick={() => open("EXPENSE", { categoryId: esim.categoryId, accountId: esim.usualAccountId ?? fallbackAccountId })}>
+          <Plus /> Записать покупку eSIM
+        </Button>
+        {esim.count ? (
+          <Button asChild variant="ghost">
+            <Link href={`/transactions?category=${esim.categoryId}`}>Все покупки</Link>
+          </Button>
+        ) : null}
+      </div>
+    </Card>
+  );
+}
