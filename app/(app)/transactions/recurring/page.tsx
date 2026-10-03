@@ -32,7 +32,7 @@ export default async function RecurringPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           {totals.map((t) => (
             <Card key={t.currency} className="grid gap-2 p-4 text-sm">
-              <p className="text-xs text-muted-foreground">Average per month · {t.currency}</p>
+              <p className="text-xs text-muted-foreground">В среднем за месяц · {t.currency}</p>
               <div className="flex justify-between gap-3">
                 <span className="text-muted-foreground">Регулярные расходы</span>
                 <Money amount={t.expenses} currency={t.currency} className="font-medium" />

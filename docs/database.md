@@ -443,3 +443,7 @@ model AuditLog {            // Phase 1
 ### CentralBankRate (global, not per user)
 
 Official CBU rates (UZS per 1 unit of USD/EUR/RUB) fetched from `https://cbu.uz/ru/arkhiv-kursov-valyut/json/`. Columns: `currency`, `rate NUMERIC(20,8)`, `rateDate DATE`, `fetchedAt`. `UNIQUE (currency, rateDate)`, `CHECK (rate > 0 AND currency <> 'UZS')`. Shared reference data, so it is the one table not scoped by `userId`; `ratesForUser(userId)` merges it with the user's manual rates.
+
+### RecurringTransaction.url
+
+Optional link to the page where a subscription is managed or cancelled. Saved only when `isSubscription` is true. `CHECK ("url" IS NULL OR ("url" ~* '^https?://' AND length("url") <= 300))`, because it is rendered as a link.

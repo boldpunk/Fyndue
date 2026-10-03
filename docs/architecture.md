@@ -63,6 +63,7 @@ app/
     calendar/             (Phase 4)
     accounts/
     budgets/              (Phase 4)
+    subscriptions/        (subscriptions tab)
     analytics/            (Phase 4)
     settings/
       categories/
@@ -131,6 +132,7 @@ The SPEC's `app/(dashboard)/` group is named `(app)/` here so that the group nam
 | `/payments` | page | 2 | Upcoming / overdue / history |
 | `/calendar` | page | 4 | Month + timeline views |
 | `/budgets` | page | 4 | |
+| `/subscriptions` | page | — | Recurring expenses with `isSubscription`; totals at the CBU rate |
 | `/analytics` | page | 4 | Range via `?range=` |
 | `/api/auth/[...all]` | route handler | 1 | Better Auth |
 | `/api/cron/notifications` | route handler | 5 | Protected by `CRON_SECRET` bearer |

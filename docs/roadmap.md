@@ -137,6 +137,17 @@ Phase 6 notes:
 - Settings → Exchange rates shows the current CBU rates with a refresh button above the manual rates.
 - Tests: CBU parsing (nominal, malformed rows), rate priority, combined total, cross-currency suggestion, fetch failures, throttle.
 
+## Subscriptions ✅
+
+- **Подписки** tab (`/subscriptions`, in the sidebar and the mobile "Ещё" menu). Subscriptions are recurring expenses with `isSubscription = true`, so they already feed the calendar, the projected balance and "safe to spend".
+- Monthly and yearly cost per currency and combined in sums at the CBU rate; the soonest charge; each row shows price, ≈ UZS, period, card and the next charge date. A charge recorded early moves "next" to the following period.
+- "Пора записать": charges since the subscription was added (up to 31 days back) that have no transaction yet, recorded in one click.
+- Templates (ChatGPT, Claude, Spotify, iCloud+, Instagram, YouTube, Telegram, Netflix, Google One, GitHub, server, domain) fill the name, period, the manage/cancel link and suggest the dollar card; the price is always typed by the user.
+- `RecurringTransaction.url`: optional manage/cancel link, http(s) only (zod + DB CHECK), stored for subscriptions only.
+- Pause keeps a subscription listed but out of totals and plans; delete keeps recorded payments.
+- Tests: totals, per-year cost, sorting, link validation, avatars, pending charges, user isolation.
+- Next: Telegram reminders before a subscription charge (the reminder planner currently covers debts only).
+
 ## Phase 7 — PWA & polish (next)
 
 Manifest, icons, standalone mode, safe areas, command palette (⌘K), onboarding flow, skeletons/empty/error states audit, accessibility audit, performance (lazy charts, pagination review), rate limiting on actions, email verification & password reset, Playwright E2E for critical flows.

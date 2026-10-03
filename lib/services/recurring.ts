@@ -23,6 +23,7 @@ export type RecurringDTO = {
   isSubscription: boolean;
   isActive: boolean;
   note: string | null;
+  url: string | null;
   account: { id: string; name: string };
   category: { id: string; name: string; icon: string; color: string | null } | null;
   nextOccurrence: string | null;
@@ -61,6 +62,7 @@ function toDTO(r: RuleWithRelations, today: LocalDate): RecurringDTO {
     isSubscription: r.isSubscription,
     isActive: r.isActive,
     note: r.note,
+    url: r.url,
     account: r.account,
     category: r.category,
     nextOccurrence: r.isActive ? nextOccurrence(ruleOf(r), today) : null,
@@ -109,6 +111,7 @@ function ruleData(input: RecurringInput, currency: RecurringTransaction["currenc
     endDate: input.endDate ? localDateToDb(input.endDate) : null,
     isSubscription: input.kind === "EXPENSE" && input.isSubscription,
     note: input.note ?? null,
+    url: input.isSubscription && input.kind === "EXPENSE" ? (input.url ?? null) : null,
   };
 }
 

@@ -558,6 +558,8 @@ model RecurringTransaction {
   isSubscription Boolean             @default(false)
   isActive       Boolean             @default(true)
   note           String?
+  /// Where to manage or cancel a subscription; http(s) only.
+  url            String?
   createdAt      DateTime            @default(now()) @db.Timestamptz(3)
   updatedAt      DateTime            @updatedAt @db.Timestamptz(3)
 

@@ -2,6 +2,30 @@ import { z } from "zod";
 import { CURRENCIES } from "@/lib/constants/finance";
 import { clientRequestIdSchema, idSchema, localDateSchema, moneySchema, optionalText } from "./common";
 
+/** Optional web link; "spotify.com/account" becomes "https://spotify.com/account". Only http(s), so it is safe as an href. */
+export const webUrlSchema = z
+  .string()
+  .optional()
+  .transform((v) => {
+    const t = v?.trim();
+    if (!t) return undefined;
+    return /^[a-z][a-z0-9+.-]*:/i.test(t) ? t : `https://${t}`;
+  })
+  .pipe(
+    z
+      .string()
+      .max(300, "Слишком длинная ссылка")
+      .refine((v) => {
+        try {
+          const u = new URL(v);
+          return (u.protocol === "https:" || u.protocol === "http:") && u.hostname.includes(".");
+        } catch {
+          return false;
+        }
+      }, "Введите адрес сайта, например chatgpt.com")
+      .optional(),
+  );
+
 export const recurringSchema = z
   .object({
     name: z.string().trim().min(1, "Введите название").max(60),
@@ -19,6 +43,7 @@ export const recurringSchema = z
       .pipe(localDateSchema.optional()),
     isSubscription: z.boolean().default(false),
     note: optionalText(200),
+    url: webUrlSchema,
   })
   .refine((v) => !v.endDate || v.endDate >= v.startDate, { message: "Окончание раньше начала", path: ["endDate"] });
 export type RecurringInput = z.output<typeof recurringSchema>;

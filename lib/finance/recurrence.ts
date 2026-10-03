@@ -65,6 +65,16 @@ export function pluralRu(n: number, forms: [string, string, string]): string {
   return forms[2];
 }
 
+/** "сегодня", "завтра", "через 5 дней", "вчера", "3 дня назад" for a day offset from today. */
+export function formatDaysFromToday(days: number): string {
+  if (days === 0) return "сегодня";
+  if (days === 1) return "завтра";
+  if (days === -1) return "вчера";
+  const n = Math.abs(days);
+  const word = `${n} ${pluralRu(n, ["день", "дня", "дней"])}`;
+  return days > 0 ? `через ${word}` : `${word} назад`;
+}
+
 const EVERY: Record<RecurrenceFrequency, { one: string; forms: [string, string, string]; prefix: [string, string] }> = {
   WEEKLY: { one: "Каждую неделю", forms: ["неделю", "недели", "недель"], prefix: ["Каждую", "Каждые"] },
   MONTHLY: { one: "Каждый месяц", forms: ["месяц", "месяца", "месяцев"], prefix: ["Каждый", "Каждые"] },
