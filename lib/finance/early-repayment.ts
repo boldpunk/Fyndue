@@ -7,7 +7,7 @@ import type { LocalDate } from "./dates";
 import { generateAnnuitySchedule } from "./annuity";
 import { generateDifferentialSchedule } from "./differential";
 import { money, roundMoney, ZERO, type FinDecimal, type MoneyLike } from "./money";
-import { rechain, scheduleTotals, type DayCountConvention, type RepaymentType, type ScheduleLine } from "./schedule";
+import { accrualEnd, rechain, scheduleTotals, type DayCountConvention, type RepaymentType, type ScheduleLine } from "./schedule";
 
 export type EarlyRepaymentStrategy = "REDUCE_TERM" | "REDUCE_PAYMENT";
 
@@ -25,6 +25,8 @@ export type EarlyRepaymentInput = {
   paymentDay?: number;
   dayCount?: DayCountConvention;
   roundingScale?: number;
+  shiftWeekends?: boolean;
+  carryOver?: { principal: MoneyLike; until: LocalDate };
 };
 
 export type EarlyRepaymentPlan = {
@@ -78,8 +80,11 @@ export function planEarlyRepayment(input: EarlyRepaymentInput): EarlyRepaymentPl
     const common = {
       principal,
       annualRatePercent: input.annualRatePercent ?? 0,
-      periodStart: input.periodStart ?? first.dueDate,
-      firstDueDate: input.firstDueDate ?? first.dueDate,
+      periodStart: input.periodStart ?? accrualEnd(first),
+      // Regenerate from the first line's contract date, not the date it was moved to.
+      firstDueDate: input.firstDueDate ?? accrualEnd(first),
+      shiftWeekends: input.shiftWeekends,
+      carryOver: input.carryOver,
       paymentDay: input.paymentDay,
       dayCount: input.dayCount,
       roundingScale: scale,

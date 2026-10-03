@@ -447,3 +447,7 @@ Official CBU rates (UZS per 1 unit of USD/EUR/RUB) fetched from `https://cbu.uz/
 ### RecurringTransaction.url
 
 Optional link to the page where a subscription is managed or cancelled. Saved only when `isSubscription` is true. `CHECK ("url" IS NULL OR ("url" ~* '^https?://' AND length("url") <= 300))`, because it is rendered as a link.
+
+### Weekend shift
+
+`Debt.shiftWeekends` (default false) moves due dates off weekends and public holidays. `DebtScheduleItem.accrualDate` is the contract date interest is counted to when the payment was moved (null when equal to `dueDate`).

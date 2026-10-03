@@ -11,7 +11,8 @@ import type { Debt, DebtPayment, DebtScheduleItem } from "@/lib/generated/prisma
 import type { DebtCreateInput } from "@/lib/validations/debts";
 import { applyBalanceDelta, lockOwnedAccount } from "./accounts";
 import { writeAudit } from "./audit";
-import { lineToItemData } from "./debt-schedule";
+import { lockOwnedDebt } from "./debt-payments";
+import { lineToItemData, setWeekendShift } from "./debt-schedule";
 import { isUniqueViolation } from "./prisma-errors";
 
 // ─── DTOs ─────────────────────────────────────────────────────────────────────
@@ -20,6 +21,8 @@ export type ScheduleItemDTO = {
   id: string;
   installmentNumber: number;
   dueDate: string;
+  /** Contract date when the payment was moved off a weekend/holiday. */
+  accrualDate: string | null;
   openingPrincipal: string;
   plannedPrincipal: string;
   plannedInterest: string;
@@ -95,6 +98,7 @@ export type DebtDetailDTO = DebtSummaryDTO & {
   startDate: string;
   firstPaymentDate: string | null;
   paymentDay: number | null;
+  shiftWeekends: boolean;
   notes: string | null;
   disbursementAccountId: string | null;
   schedule: ScheduleItemDTO[];
@@ -133,6 +137,7 @@ export function toItemDTO(item: DebtScheduleItem, ctx: { today: LocalDate } & Th
     id: item.id,
     installmentNumber: item.installmentNumber,
     dueDate,
+    accrualDate: item.accrualDate ? dbToLocalDate(item.accrualDate) : null,
     openingPrincipal: toMoneyString(item.openingPrincipal),
     plannedPrincipal: toMoneyString(item.plannedPrincipal),
     plannedInterest: toMoneyString(item.plannedInterest),
@@ -277,6 +282,7 @@ export async function getDebtDetail(userId: string, id: string): Promise<DebtDet
     startDate: dbToLocalDate(debt.startDate),
     firstPaymentDate: debt.firstPaymentDate ? dbToLocalDate(debt.firstPaymentDate) : null,
     paymentDay: debt.paymentDay,
+    shiftWeekends: debt.shiftWeekends,
     notes: debt.notes,
     disbursementAccountId: debt.disbursementAccountId,
     schedule: debt.scheduleItems.map((i) => toItemDTO(i, ctx)),
@@ -412,6 +418,7 @@ export async function createDebt(userId: string, input: DebtCreateInput): Promis
           endDate: lastLine ? localDateToDb(lastLine.dueDate) : null,
           firstPaymentDate: localDateToDb(input.firstPaymentDate),
           paymentDay: input.paymentDay ?? null,
+          shiftWeekends: input.shiftWeekends,
           originalTermMonths: plan.lines.length,
           currentProjectedEndDate: lastLine ? localDateToDb(lastLine.dueDate) : null,
           disbursementAccountId,
@@ -487,6 +494,16 @@ export async function updateDebtDetails(userId: string, input: { id: string; nam
     });
     if (result.count !== 1) throw new NotFoundError("Debt");
     await writeAudit(tx, { userId, action: "DEBT_UPDATED", entityType: "Debt", entityId: input.id, metadata: { name: input.name } });
+  });
+}
+
+/** Moves the open payments of a debt off weekends and holidays (or back to the contract dates). */
+export async function setDebtWeekendShift(userId: string, input: { id: string; shiftWeekends: boolean }): Promise<{ moved: number }> {
+  return prisma.$transaction(async (tx) => {
+    const debt = await lockOwnedDebt(tx, userId, input.id);
+    const result = await setWeekendShift(tx, debt, input.shiftWeekends);
+    await writeAudit(tx, { userId, action: "DEBT_UPDATED", entityType: "Debt", entityId: debt.id, metadata: { shiftWeekends: input.shiftWeekends, moved: result.moved } });
+    return result;
   });
 }
 

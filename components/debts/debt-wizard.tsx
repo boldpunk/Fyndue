@@ -57,6 +57,7 @@ type Values = {
   startDate: string;
   firstPaymentDate: string;
   paymentDay: string;
+  shiftWeekends: boolean;
   termMonths: string;
   installmentMode: "count" | "amount";
   installmentAmount: string;
@@ -81,7 +82,7 @@ const STEP_FIELDS: Record<StepId, string[]> = {
   details: ["name", "lender", "currency"],
   amount: ["originalPrincipal", "paidBeforeTracking", "feeMode", "originationFee", "netAmountReceived", "disbursementAccountId"],
   model: ["repaymentType"],
-  terms: ["annualInterestRate", "termMonths", "startDate", "firstPaymentDate", "paymentDay", "installmentAmount", "dayCountConvention", "roundingScale", "manualLines", "knownTotalLines", "notes"],
+  terms: ["annualInterestRate", "termMonths", "startDate", "firstPaymentDate", "paymentDay", "shiftWeekends", "installmentAmount", "dayCountConvention", "roundingScale", "manualLines", "knownTotalLines", "notes"],
   schedule: [],
   review: [],
 };
@@ -119,6 +120,8 @@ function toPayload(v: Values, clientRequestId: string) {
     startDate: v.startDate,
     firstPaymentDate: v.knownTotalRepayment ? (v.knownTotalLines[0]?.dueDate ?? v.firstPaymentDate) : manual ? (v.manualLines[0]?.dueDate ?? v.firstPaymentDate) : v.firstPaymentDate,
     paymentDay: v.paymentDay,
+    // Typed-in schedules keep the dates the user entered (usually the bank's).
+    shiftWeekends: v.shiftWeekends && !manual && !v.knownTotalRepayment,
     termMonths: v.repaymentType === "INTEREST_FREE" && v.installmentMode === "amount" ? "" : v.termMonths,
     installmentAmount: v.repaymentType === "INTEREST_FREE" && v.installmentMode === "amount" ? v.installmentAmount : "",
     knownTotalRepayment: v.knownTotalRepayment,
@@ -177,6 +180,7 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
     startDate: today,
     firstPaymentDate: addMonthsClamped(today, 1),
     paymentDay: "",
+    shiftWeekends: true,
     termMonths: "12",
     installmentMode: "count",
     installmentAmount: "",
@@ -275,7 +279,7 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
                   <Choice
                     key={t}
                     selected={v.type === t}
-                    onClick={() => setValues((s) => ({ ...s, type: t, repaymentType: DEFAULT_MODEL[t], name: s.name || DEBT_TYPE_LABELS[t] }))}
+                    onClick={() => setValues((s) => ({ ...s, type: t, repaymentType: DEFAULT_MODEL[t], name: s.name || DEBT_TYPE_LABELS[t], shiftWeekends: t !== "PERSONAL" }))}
                     title={DEBT_TYPE_LABELS[t]}
                     icon={<Icon className="mt-0.5 size-5 text-primary" aria-hidden />}
                   />
@@ -480,6 +484,18 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
             ) : null}
 
             {errors.schedule && !manual && !v.knownTotalRepayment ? <p role="alert" className="text-sm text-danger">{errors.schedule}</p> : null}
+
+            {!manual && !v.knownTotalRepayment ? (
+              <label className="flex items-start justify-between gap-4 rounded-lg border p-3">
+                <span className="grid gap-0.5">
+                  <span className="text-sm font-medium">Переносить платёж с выходных и праздников</span>
+                  <span className="text-[13px] text-muted-foreground">
+                    Как в банке: если дата выпадает на субботу, воскресенье или праздник, платёж переносится на следующий рабочий день. Проценты за эти дни добавятся к следующему платежу.
+                  </span>
+                </span>
+                <Switch checked={v.shiftWeekends} onCheckedChange={(x) => set("shiftWeekends", x)} aria-label="Переносить платёж с выходных и праздников" />
+              </label>
+            ) : null}
 
             <Field label="Заметки" htmlFor="w-notes">
               <Textarea id="w-notes" rows={2} value={v.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Необязательно — номер договора, условия…" />

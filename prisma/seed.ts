@@ -94,6 +94,7 @@ async function main() {
       dayCountConvention: "MONTHLY_30_360" as const,
       roundingScale: 2 as const,
       paymentDay: undefined,
+      shiftWeekends: false,
       termMonths: undefined,
       installmentAmount: undefined,
       knownTotalRepayment: false,

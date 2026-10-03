@@ -2,6 +2,7 @@
  * Interest-free installments (SPEC §19), manual schedules and the microloan
  * "known total repayment" mode (SPEC §19A). No interest formula is invented.
  */
+import { adjustDueDate } from "./business-days";
 import { daysBetween, type LocalDate } from "./dates";
 import { money, roundMoney, sumMoney, ZERO, type MoneyLike } from "./money";
 import { makeLine, MAX_LINES, nthDueDate, rechain, type ScheduleLine } from "./schedule";
@@ -13,6 +14,8 @@ export type InstallmentTerms = {
   roundingScale?: number;
   firstInstallmentNumber?: number;
   lineFees?: MoneyLike[];
+  /** Move due dates off weekends and public holidays. */
+  shiftWeekends?: boolean;
 } & ({ count: number; fixedAmount?: undefined } | { fixedAmount: MoneyLike; count?: undefined });
 
 export function generateInstallmentSchedule(terms: InstallmentTerms): ScheduleLine[] {
@@ -31,7 +34,8 @@ export function generateInstallmentSchedule(terms: InstallmentTerms): ScheduleLi
     const fee = terms.lineFees?.[i];
     const line = makeLine({
       installmentNumber: (terms.firstInstallmentNumber ?? 1) + i,
-      dueDate: nthDueDate(terms.firstDueDate, i, terms.paymentDay),
+      dueDate: adjustDueDate(nthDueDate(terms.firstDueDate, i, terms.paymentDay), terms.shiftWeekends),
+      accrualDate: nthDueDate(terms.firstDueDate, i, terms.paymentDay),
       openingPrincipal: opening,
       principal: isLast ? opening : part,
       fees: fee === undefined ? ZERO : roundMoney(fee, scale),

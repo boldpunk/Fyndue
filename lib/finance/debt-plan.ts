@@ -24,6 +24,8 @@ export type DebtPlanInput = {
   startDate: LocalDate;
   firstPaymentDate: LocalDate;
   paymentDay?: number;
+  /** Move due dates off weekends and holidays to the next working day, like banks do. */
+  shiftWeekends?: boolean;
   termMonths?: number;
   installmentAmount?: MoneyLike;
   knownTotalRepayment?: boolean;
@@ -61,7 +63,7 @@ export function buildDebtPlan(input: DebtPlanInput): DebtPlanResult {
     // tracked line accrues from the month before it.
     const periodStart = paidBefore.gt(0) ? addMonthsClamped(input.firstPaymentDate, -1) : input.startDate;
     const lineFees = fee.scheduledFee.gt(0) ? [fee.scheduledFee] : undefined;
-    const common = { principal: remaining, firstDueDate: input.firstPaymentDate, paymentDay: input.paymentDay, roundingScale: scale, lineFees };
+    const common = { principal: remaining, firstDueDate: input.firstPaymentDate, paymentDay: input.paymentDay, roundingScale: scale, lineFees, shiftWeekends: input.shiftWeekends };
 
     let lines: ScheduleLine[];
     let isEstimate = false;

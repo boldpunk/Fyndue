@@ -2,8 +2,10 @@
  * Differential repayment (SPEC §17): equal principal parts, interest on the
  * remaining balance. Actual bank schedules always override these estimates.
  */
+import { adjustDueDate } from "./business-days";
+import type { LocalDate } from "./dates";
 import { money, roundMoney, type MoneyLike } from "./money";
-import { lineFee, makeLine, MAX_LINES, nthDueDate, periodRate, type GeneratedTerms, type ScheduleLine } from "./schedule";
+import { lineFee, makeLine, MAX_LINES, lineInterest, nthDueDate, type GeneratedTerms, type ScheduleLine } from "./schedule";
 
 export type DifferentialTerms = GeneratedTerms &
   (
@@ -26,14 +28,17 @@ export function generateDifferentialSchedule(terms: DifferentialTerms): Schedule
   const lines: ScheduleLine[] = [];
   let opening = principal;
   let previousDate = terms.periodStart;
+  let carried: { principal: MoneyLike; until: LocalDate } | null = terms.carryOver ?? null;
   for (let i = 0; i < count && opening.gt(0); i++) {
-    const dueDate = nthDueDate(terms.firstDueDate, i, terms.paymentDay);
+    const nominal = nthDueDate(terms.firstDueDate, i, terms.paymentDay);
+    const dueDate = adjustDueDate(nominal, terms.shiftWeekends);
     const isLast = i === count - 1 || opening.lessThanOrEqualTo(part);
     const principalPart = isLast ? opening : part;
-    const interest = roundMoney(opening.times(periodRate(terms.annualRatePercent, previousDate, dueDate, terms.dayCount)), scale);
+    const interest = roundMoney(lineInterest(terms, opening, previousDate, nominal, carried), scale);
     const line = makeLine({
       installmentNumber: (terms.firstInstallmentNumber ?? 1) + i,
       dueDate,
+      accrualDate: nominal,
       openingPrincipal: opening,
       principal: principalPart,
       interest,
@@ -41,7 +46,8 @@ export function generateDifferentialSchedule(terms: DifferentialTerms): Schedule
     });
     lines.push(line);
     opening = line.closingPrincipal;
-    previousDate = dueDate;
+    previousDate = nominal;
+    carried = dueDate !== nominal ? { principal: line.principal, until: dueDate } : null;
   }
   return lines;
 }

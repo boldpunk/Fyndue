@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { previewEarlyRepayment, recordDebtPayment, recordEarlyRepayment, reverseDebtPayment, lockOwnedDebt } from "@/lib/services/debt-payments";
 import { replaceOpenSchedule } from "@/lib/services/debt-schedule";
-import { createDebt, setDebtArchived, updateDebtDetails } from "@/lib/services/debts";
+import { createDebt, setDebtArchived, setDebtWeekendShift, updateDebtDetails } from "@/lib/services/debts";
 import { runAction } from "@/lib/utils/action";
 import { archiveSchema } from "@/lib/validations/accounts";
 import {
@@ -15,6 +15,7 @@ import {
   recordPaymentSchema,
   replaceScheduleSchema,
   reversePaymentSchema,
+  weekendShiftSchema,
 } from "@/lib/validations/debts";
 
 // Debt changes move balances and dashboard numbers everywhere.
@@ -92,5 +93,14 @@ export async function replaceScheduleAction(input: unknown) {
     });
     refresh();
     return null;
+  });
+}
+
+export async function setDebtWeekendShiftAction(input: unknown) {
+  return runAction(async () => {
+    const user = await requireUser();
+    const result = await setDebtWeekendShift(user.id, weekendShiftSchema.parse(input));
+    refresh();
+    return result;
   });
 }

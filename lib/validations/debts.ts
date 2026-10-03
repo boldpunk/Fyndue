@@ -49,6 +49,8 @@ export const debtCreateSchema = z
     startDate: localDateSchema,
     firstPaymentDate: localDateSchema,
     paymentDay: optionalInt(1, 31),
+    /** Move payments off weekends and public holidays, like banks do. */
+    shiftWeekends: z.boolean().default(false),
     termMonths: optionalInt(1, 600),
     installmentAmount: optionalAmount(),
     knownTotalRepayment: z.boolean().default(false),
@@ -130,3 +132,5 @@ export const replaceScheduleSchema = z.object({
   lines: z.array(manualLineSchema).min(1).max(600),
 });
 export type ReplaceScheduleInput = z.output<typeof replaceScheduleSchema>;
+
+export const weekendShiftSchema = z.object({ id: idSchema, shiftWeekends: z.boolean() });

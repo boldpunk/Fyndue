@@ -64,6 +64,14 @@ payment_i        = principal_part_i + interest_i + fees_i
 
 The first period runs from `startDate` to the first due date, so a non-standard first period is handled naturally.
 
+#### Payments moved off weekends (`Debt.shiftWeekends`)
+
+Banks in Uzbekistan move a payment that falls on a Saturday, Sunday or public holiday to the next working day (`lib/finance/business-days.ts`; fixed Labour Code holidays — the lunar Hayit days are announced yearly and are not included). Verified line by line against a real bank schedule (contract MKO-2026-32249, `tests/unit/business-days.test.ts`):
+
+- `dueDate` moves; interest periods still run between the contract dates (stored as `DebtScheduleItem.accrualDate` when different).
+- The moved line's principal stays unpaid for the extra days, so the **next** line adds `principal_prev × rate × extra days` (`lineInterest`, `carryOver` across regenerations). E.g. 23 Jan 2027 (Sat) → 25 Jan: line 6 gets +2 days on 2 383 333.33 = 4 962.55.
+- New debts: a wizard switch, on by default except for personal debts; typed-in schedules keep the user's dates. Existing debts: Settings → switch, which writes a new `CORRECTION` version of the open lines (estimates are recomputed, bank/manual amounts only move dates).
+
 ### 1.3 Annuity (SPEC §18)
 
 ```

@@ -69,6 +69,7 @@ export function ScheduleView({
                 <td className="px-3 py-2.5 whitespace-nowrap">
                   {formatLocalDate(item.dueDate)}
                   {item.versionNumber ? <span className="ml-1 text-xs text-muted-foreground">v{item.versionNumber}</span> : null}
+                  {item.accrualDate ? <MovedFrom date={item.accrualDate} /> : null}
                 </td>
                 <td className="px-3 py-2.5 text-right">{show(item.openingPrincipal)}</td>
                 <td className="px-3 py-2.5 text-right">{show(item.plannedPrincipal)}</td>
@@ -97,7 +98,10 @@ export function ScheduleView({
               <summary className="flex cursor-pointer list-none items-center gap-3 p-3">
                 <span className="tabular grid size-8 shrink-0 place-items-center rounded-full bg-muted text-xs font-medium">{item.installmentNumber}</span>
                 <span className="grid min-w-0 flex-1 gap-0.5">
-                  <span className="text-sm font-medium">{formatLocalDate(item.dueDate)}</span>
+                  <span className="text-sm font-medium">
+                    {formatLocalDate(item.dueDate)}
+                    {item.accrualDate ? <MovedFrom date={item.accrualDate} /> : null}
+                  </span>
                   <span className="text-xs text-muted-foreground">{item.isOpen ? daysLabel(item.days) : "Закрыт"}</span>
                 </span>
                 <span className="grid justify-items-end gap-1">
@@ -143,5 +147,14 @@ export function ScheduleView({
         today={today}
       />
     </>
+  );
+}
+
+/** "перенесён с 23 янв." for a payment moved off a weekend or holiday. */
+function MovedFrom({ date }: { date: string }) {
+  return (
+    <span className="block text-[11px] font-normal text-muted-foreground" title="Дата по договору выпала на выходной или праздник">
+      перенесён с {formatLocalDate(date, undefined, { day: "numeric", month: "short" })}
+    </span>
   );
 }

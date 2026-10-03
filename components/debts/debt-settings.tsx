@@ -3,7 +3,8 @@ import { Archive, ArchiveRestore } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { archiveDebtAction, updateDebtAction } from "@/app/(app)/debts/actions";
+import { archiveDebtAction, setDebtWeekendShiftAction, updateDebtAction } from "@/app/(app)/debts/actions";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input, Textarea } from "@/components/ui/input";
@@ -11,7 +12,7 @@ import { Input, Textarea } from "@/components/ui/input";
 export function DebtSettings({
   debt,
 }: {
-  debt: { id: string; name: string; lender: string | null; notes: string | null; status: "ACTIVE" | "PAID_OFF" | "ARCHIVED" };
+  debt: { id: string; name: string; lender: string | null; notes: string | null; status: "ACTIVE" | "PAID_OFF" | "ARCHIVED"; shiftWeekends: boolean };
 }) {
   const router = useRouter();
   const [name, setName] = useState(debt.name);
@@ -26,6 +27,23 @@ export function DebtSettings({
       const result = await updateDebtAction({ id: debt.id, name, lender, notes });
       if (!result.ok) return setErrors({ ...(result.fieldErrors ?? {}), form: result.error });
       toast.success("Долг обновлён");
+      router.refresh();
+    });
+
+  const toggleWeekendShift = (on: boolean) =>
+    startTransition(async () => {
+      const result = await setDebtWeekendShiftAction({ id: debt.id, shiftWeekends: on });
+      if (!result.ok) return void toast.error(result.error);
+      const moved = result.data.moved;
+      toast.success(
+        on
+          ? moved
+            ? `Перенесено платежей: ${moved}. График обновлён новой версией.`
+            : "Включено. Сейчас ни один платёж не выпадает на выходной."
+          : moved
+            ? "Платежи возвращены на даты по договору."
+            : "Выключено.",
+      );
       router.refresh();
     });
 
@@ -63,6 +81,16 @@ export function DebtSettings({
           </Button>
         </div>
       </form>
+
+      <label className="flex max-w-xl items-start justify-between gap-4 rounded-xl border p-4">
+        <span className="grid gap-1">
+          <span className="text-sm font-medium">Переносить платёж с выходных и праздников</span>
+          <span className="text-[13px] text-muted-foreground">
+            Как в банке: платёж на субботу, воскресенье или праздник переносится на следующий рабочий день, а проценты за эти дни добавляются к следующему платежу. Меняются только неоплаченные платежи; старый график сохранится в истории версий.
+          </span>
+        </span>
+        <Switch checked={debt.shiftWeekends} onCheckedChange={toggleWeekendShift} disabled={pending} aria-label="Переносить платёж с выходных и праздников" />
+      </label>
 
       <div className="grid max-w-xl gap-2 rounded-xl border p-4">
         <p className="text-sm font-medium">{debt.status === "ARCHIVED" ? "Восстановить долг" : "Перенести долг в архив"}</p>

@@ -10,7 +10,14 @@ export type RepaymentType = "DIFFERENTIAL" | "ANNUITY" | "INTEREST_FREE" | "MANU
 
 export type ScheduleLine = {
   installmentNumber: number;
+  /** When the payment is due (moved off weekends/holidays when the debt asks for it). */
   dueDate: LocalDate;
+  /**
+   * The contract date interest is counted to, when the payment was moved
+   * to a later working day (e.g. due Mon 25 Jan, interest to Sat 23 Jan).
+   * Absent when it equals `dueDate`.
+   */
+  accrualDate?: LocalDate;
   openingPrincipal: FinDecimal;
   principal: FinDecimal;
   interest: FinDecimal;
@@ -35,7 +42,20 @@ export type GeneratedTerms = {
   firstInstallmentNumber?: number;
   /** Extra fee per line by index (e.g. an origination fee on line 0). */
   lineFees?: MoneyLike[];
+  /** Move due dates off weekends and public holidays to the next working day (interest still to the contract date). */
+  shiftWeekends?: boolean;
+  /**
+   * Principal of the line just before these ones that was paid after its
+   * contract date (moved off a weekend): it kept accruing from `periodStart`
+   * until `until`, and the bank adds that to the first new line's interest.
+   */
+  carryOver?: { principal: MoneyLike; until: LocalDate };
 };
+
+/** The date interest for this line is counted to. */
+export function accrualEnd(line: Pick<ScheduleLine, "dueDate" | "accrualDate">): LocalDate {
+  return line.accrualDate ?? line.dueDate;
+}
 
 /** Upper bound on generated lines (50 years of monthly payments). */
 export const MAX_LINES = 600;
@@ -81,9 +101,36 @@ export function periodRate(
   }
 }
 
+/**
+ * Interest for a few extra days (a payment moved past its contract date).
+ * A 30/360 schedule has no day count of its own, so it uses days/360.
+ */
+export function extraDaysRate(annualPercent: MoneyLike, from: LocalDate, to: LocalDate, convention: DayCountConvention = "MONTHLY_30_360"): FinDecimal {
+  if (daysBetween(from, to) <= 0) return ZERO;
+  return periodRate(annualPercent, from, to, convention === "MONTHLY_30_360" ? "ACTUAL_360" : convention);
+}
+
+/**
+ * Interest on one generated line: the opening balance over the contract
+ * period, plus the previous line's principal for the days it stayed unpaid
+ * after its contract date (banks charge those days on the next payment).
+ */
+export function lineInterest(
+  terms: Pick<GeneratedTerms, "annualRatePercent" | "dayCount">,
+  opening: FinDecimal,
+  from: LocalDate,
+  to: LocalDate,
+  carried: { principal: MoneyLike; until: LocalDate } | null,
+): FinDecimal {
+  const base = opening.times(periodRate(terms.annualRatePercent, from, to, terms.dayCount));
+  if (!carried) return base;
+  return base.plus(money(carried.principal).times(extraDaysRate(terms.annualRatePercent, from, carried.until, terms.dayCount)));
+}
+
 export function makeLine(fields: {
   installmentNumber: number;
   dueDate: LocalDate;
+  accrualDate?: LocalDate | null;
   openingPrincipal: MoneyLike;
   principal: MoneyLike;
   interest?: MoneyLike;
@@ -96,6 +143,7 @@ export function makeLine(fields: {
   return {
     installmentNumber: fields.installmentNumber,
     dueDate: fields.dueDate,
+    ...(fields.accrualDate && fields.accrualDate !== fields.dueDate ? { accrualDate: fields.accrualDate } : {}),
     openingPrincipal,
     principal,
     interest,

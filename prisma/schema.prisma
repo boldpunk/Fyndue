@@ -416,6 +416,8 @@ model Debt {
   endDate                 DateTime?          @db.Date
   firstPaymentDate        DateTime?          @db.Date
   paymentDay              Int?
+  /// Payments due on a weekend or public holiday move to the next working day (interest still to the contract date).
+  shiftWeekends           Boolean            @default(false)
   originalTermMonths      Int?
   currentProjectedEndDate DateTime?          @db.Date
   activeScheduleVersionId String?            @unique
@@ -467,6 +469,8 @@ model DebtScheduleItem {
   scheduleVersionId     String
   installmentNumber     Int
   dueDate               DateTime           @db.Date
+  /// Contract date interest is counted to, when the payment was moved to a later working day; null when equal to dueDate.
+  accrualDate           DateTime?          @db.Date
   openingPrincipal      Decimal            @db.Decimal(20, 2)
   plannedPrincipal      Decimal            @db.Decimal(20, 2)
   plannedInterest       Decimal            @db.Decimal(20, 2)

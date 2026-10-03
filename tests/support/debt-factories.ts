@@ -19,6 +19,7 @@ const base: Omit<DebtCreateInput, "clientRequestId"> = {
   startDate: "2026-01-01",
   firstPaymentDate: "2026-02-01",
   paymentDay: undefined,
+  shiftWeekends: false,
   termMonths: 12,
   installmentAmount: undefined,
   knownTotalRepayment: false,

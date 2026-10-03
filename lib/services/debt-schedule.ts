@@ -5,7 +5,10 @@ import { addMonthsClamped, dbToLocalDate, localDateToDb } from "@/lib/finance/da
 import { planEarlyRepayment, type EarlyRepaymentPlan, type EarlyRepaymentStrategy } from "@/lib/finance/early-repayment";
 import { manualSchedule } from "@/lib/finance/installment";
 import { money, ZERO, type FinDecimal } from "@/lib/finance/money";
-import { makeLine, validateSchedule, type ScheduleLine } from "@/lib/finance/schedule";
+import { generateAnnuitySchedule } from "@/lib/finance/annuity";
+import { adjustDueDate } from "@/lib/finance/business-days";
+import { generateDifferentialSchedule } from "@/lib/finance/differential";
+import { accrualEnd, makeLine, validateSchedule, type ScheduleLine } from "@/lib/finance/schedule";
 import type { Debt, DebtScheduleItem, ScheduleVersionReason } from "@/lib/generated/prisma/client";
 import type { ReplaceScheduleInput } from "@/lib/validations/debts";
 import { writeAudit } from "./audit";
@@ -15,6 +18,7 @@ export function itemToLine(item: DebtScheduleItem): ScheduleLine {
   return makeLine({
     installmentNumber: item.installmentNumber,
     dueDate: dbToLocalDate(item.dueDate),
+    accrualDate: item.accrualDate ? dbToLocalDate(item.accrualDate) : null,
     openingPrincipal: item.openingPrincipal,
     principal: item.plannedPrincipal,
     interest: item.plannedInterest,
@@ -28,6 +32,7 @@ export function lineToItemData(line: ScheduleLine, base: { userId: string; debtI
     ...base,
     installmentNumber: line.installmentNumber,
     dueDate: localDateToDb(line.dueDate),
+    accrualDate: line.accrualDate ? localDateToDb(line.accrualDate) : null,
     openingPrincipal: line.openingPrincipal.toFixed(2),
     plannedPrincipal: line.principal.toFixed(2),
     plannedInterest: line.interest.toFixed(2),
@@ -72,13 +77,24 @@ export async function splitCurrentSchedule(tx: Tx, debt: Debt): Promise<Schedule
   return { current, frozen, open, reserved, principalToPlan: principalToPlan.gt(0) ? principalToPlan : ZERO };
 }
 
-/** Where interest for the first open line starts accruing. */
-function periodStartFor(debt: Debt, split: ScheduleSplit) {
+function lineBeforeOpen(split: ScheduleSplit) {
   const firstOpen = split.open[0];
-  const before = firstOpen ? split.current.filter((i) => i.dueDate < firstOpen.dueDate).at(-1) : split.current.at(-1);
-  if (before) return dbToLocalDate(before.dueDate);
+  return firstOpen ? split.current.filter((i) => i.dueDate < firstOpen.dueDate).at(-1) : split.current.at(-1);
+}
+
+/** Where interest for the first open line starts accruing: the previous line's contract date. */
+function periodStartFor(debt: Debt, split: ScheduleSplit) {
+  const before = lineBeforeOpen(split);
+  if (before) return dbToLocalDate(before.accrualDate ?? before.dueDate);
   if (money(debt.paidBeforeTracking).gt(0) && debt.firstPaymentDate) return addMonthsClamped(dbToLocalDate(debt.firstPaymentDate), -1);
   return dbToLocalDate(debt.startDate);
+}
+
+/** The previous line's principal, if it was due after its contract date (it accrued a few more days). */
+function carryOverFor(split: ScheduleSplit) {
+  const before = lineBeforeOpen(split);
+  if (!before?.accrualDate) return undefined;
+  return { principal: before.plannedPrincipal, until: dbToLocalDate(before.dueDate) };
 }
 
 /** Pure(ish) preview of an early repayment on the current schedule. */
@@ -93,7 +109,57 @@ export function planForSplit(debt: Debt, split: ScheduleSplit, principalAfter: F
     paymentDay: debt.paymentDay ?? undefined,
     dayCount: debt.dayCountConvention,
     roundingScale: debt.roundingScale,
+    shiftWeekends: debt.shiftWeekends,
+    carryOver: carryOverFor(split),
   });
+}
+
+/**
+ * Turns moving payments off weekends and holidays on or off for an existing
+ * debt. Only open lines change, as a new schedule version. Computed
+ * (estimate) interest is recalculated, so the days a moved payment stays
+ * unpaid are charged on the next line like the bank does; figures from the
+ * bank or typed by the user keep their amounts and only move their dates.
+ */
+export async function setWeekendShift(tx: Tx, debt: Debt, on: boolean): Promise<{ moved: number }> {
+  await tx.debt.update({ where: { id: debt.id }, data: { shiftWeekends: on } });
+  const split = await splitCurrentSchedule(tx, debt);
+  const open = split.open.map(itemToLine);
+  if (!open.length) return { moved: 0 };
+
+  const generated = (debt.repaymentType === "DIFFERENTIAL" || debt.repaymentType === "ANNUITY") && split.open.every((i) => i.isEstimate);
+  let lines: ScheduleLine[];
+  if (generated) {
+    const terms = {
+      principal: split.principalToPlan,
+      annualRatePercent: debt.annualInterestRate ?? 0,
+      periodStart: periodStartFor(debt, split),
+      firstDueDate: accrualEnd(open[0]!),
+      paymentDay: debt.paymentDay ?? undefined,
+      dayCount: debt.dayCountConvention,
+      roundingScale: debt.roundingScale,
+      firstInstallmentNumber: open[0]!.installmentNumber,
+      shiftWeekends: on,
+      carryOver: carryOverFor(split),
+      count: open.length,
+    };
+    lines = debt.repaymentType === "DIFFERENTIAL" ? generateDifferentialSchedule(terms) : generateAnnuitySchedule(terms);
+  } else {
+    lines = open.map((line) => {
+      const nominal = accrualEnd(line);
+      return makeLine({ ...line, dueDate: adjustDueDate(nominal, on), accrualDate: nominal });
+    });
+  }
+  const moved = lines.filter((l, i) => l.dueDate !== open[i]?.dueDate).length;
+  if (moved === 0 && lines.every((l, i) => l.total.equals(open[i]!.total))) return { moved: 0 };
+  const problems = validateSchedule(lines, split.principalToPlan);
+  if (problems.length) throw new DomainError(problems[0]!, "INVALID_SCHEDULE");
+  await writeNewScheduleVersion(tx, debt, split, lines, {
+    reason: "CORRECTION",
+    note: on ? "Платежи перенесены с выходных и праздников на рабочие дни" : "Платежи возвращены на даты по договору",
+    isEstimate: generated || split.open.some((i) => i.isEstimate),
+  });
+  return { moved };
 }
 
 /** Installment numbers for new lines, skipping numbers held by frozen lines. */
