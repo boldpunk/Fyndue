@@ -1,9 +1,10 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import { formatYearMonthLabel, todayIn, yearMonthOf } from "@/lib/finance/dates";
+import { addDays, daysBetween, formatYearMonthLabel, todayIn, yearMonthOf } from "@/lib/finance/dates";
 import { formatMoney, sumMoney, toMoneyString } from "@/lib/finance/money";
 import { getMonthOverview, type CurrencyTotals } from "@/lib/services/dashboard";
 import { debtTotalsByCurrency, listDebts, listUpcomingPayments, type UpcomingPaymentDTO } from "@/lib/services/debts";
+import { getSubscriptions } from "@/lib/services/subscriptions";
 import { disconnectChat, linkTelegramChat, userIdForChat } from "@/lib/services/telegram-connection";
 import type { TelegramSender, TelegramUpdate } from "./client";
 import { parseCommand } from "./commands-parse";
@@ -21,6 +22,7 @@ export const BOT_COMMANDS = [
   { command: "upcoming", description: "Платежи на ближайшие 14 дней" },
   { command: "debts", description: "Остаток долгов и прогресс" },
   { command: "month", description: "Доходы, расходы и платежи за месяц" },
+  { command: "subs", description: "Подписки: сколько в месяц и ближайшие списания" },
   { command: "help", description: "Что умеет бот" },
   { command: "stop", description: "Отключить этот чат от Fyndue" },
 ];
@@ -93,6 +95,35 @@ async function monthReply(userId: string): Promise<string> {
   ].join("\n");
 }
 
+/** Upcoming charges show this far ahead. */
+const SUBS_WINDOW_DAYS = 30;
+
+async function subscriptionsReply(userId: string): Promise<string> {
+  const { items, summary, baseCurrency, today } = await getSubscriptions(userId);
+  const active = items.filter((i) => i.isActive);
+  if (active.length === 0) return "Подписок пока нет.\n\nДобавьте их в Fyndue → Подписки — я буду напоминать о списаниях.";
+  const perMonth = summary.byCurrency.map((c) => m(c.monthly, c.currency)).join(" + ");
+  const head =
+    summary.byCurrency.length > 1 && summary.combined
+      ? `В месяц ≈ <b>${m(summary.combined.monthly, baseCurrency)}</b>\n(${perMonth})`
+      : `В месяц: <b>${perMonth}</b>`;
+  const horizon = addDays(today, SUBS_WINDOW_DAYS);
+  const upcoming = active.filter((i) => i.nextOccurrence && daysBetween(i.nextOccurrence, horizon) >= 0);
+  const lines = upcoming.map((i) => {
+    const d = daysBetween(today, i.nextOccurrence!);
+    const when = d === 0 ? "сегодня" : d === 1 ? "завтра" : `${formatDueDate(i.nextOccurrence!, today)} · через ${days(d)}`;
+    return `• <b>${escapeHtml(i.name)}</b> — ${m(i.amount, i.currency)}\n${when}`;
+  });
+  return [
+    `🔁 <b>Подписки</b> · ${active.length}`,
+    "",
+    head,
+    "",
+    lines.length ? `<b>Ближайшие ${SUBS_WINDOW_DAYS} дней</b>` : `В ближайшие ${SUBS_WINDOW_DAYS} дней списаний нет. ✅`,
+    ...lines.flatMap((l) => ["", l]),
+  ].join("\n");
+}
+
 async function reply(command: string, args: string[], chat: { chatId: string; username?: string }): Promise<string | null> {
   if (command === "start") {
     const code = args[0];
@@ -115,6 +146,8 @@ async function reply(command: string, args: string[], chat: { chatId: string; us
       return debtsReply(userId);
     case "month":
       return monthReply(userId);
+    case "subs":
+      return subscriptionsReply(userId);
     case "stop":
       await disconnectChat(chat.chatId);
       return "Отключено. Напоминания сюда больше не придут.\n\nПодключить снова можно в Fyndue → Настройки → Уведомления.";

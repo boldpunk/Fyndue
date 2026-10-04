@@ -152,6 +152,8 @@ enum NotificationType {
   DUE_TODAY
   OVERDUE
   TEST
+  /// A subscription will be charged soon.
+  SUBSCRIPTION_CHARGE
 }
 
 enum NotificationChannel {
@@ -626,6 +628,10 @@ model NotificationPreference {
   /// "HH:MM" in the user's time zone; the window may wrap midnight.
   quietHoursStart   String?  @default("22:00")
   quietHoursEnd     String?  @default("09:00")
+  /// Remind before subscription charges; yearly ones are also announced 7 days ahead.
+  subscriptionReminders  Boolean @default(true)
+  /// 0 = on the day of the charge.
+  subscriptionDaysBefore Int     @default(1)
   createdAt         DateTime @default(now()) @db.Timestamptz(3)
   updatedAt         DateTime @updatedAt @db.Timestamptz(3)
 
@@ -655,6 +661,8 @@ model NotificationLog {
   userId            String
   debtId            String?
   scheduleItemId    String?
+  /// The subscription a SUBSCRIPTION_CHARGE reminder is about.
+  recurringId       String?
   type              NotificationType
   channel           NotificationChannel
   deduplicationKey  String              @unique
@@ -672,6 +680,7 @@ model NotificationLog {
   @@index([userId, createdAt])
   @@index([status, scheduledAt])
   @@index([scheduleItemId])
+  @@index([recurringId])
 }
 
 // ─── Audit ────────────────────────────────────────────────────────────────────

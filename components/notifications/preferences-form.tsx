@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils/cn";
 import { pluralRu } from "@/lib/finance/recurrence";
 
 const DAY_CHOICES = [14, 7, 5, 3, 2, 1];
+const SUB_DAY_CHOICES = [0, 1, 2, 3];
 
 function ToggleRow({ id, label, hint, checked, onChange }: { id: string; label: string; hint?: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -59,7 +60,7 @@ export function NotificationPreferencesForm({ defaults }: { defaults: Notificati
       <fieldset className={cn("grid gap-5", !v.telegramEnabled && "opacity-60")} disabled={!v.telegramEnabled}>
         <div className="grid gap-2">
           <span id="pref-days-label" className="text-sm font-medium">
-            Напомнить до срока
+            Платежи по долгам: напомнить до срока
           </span>
           <div role="group" aria-labelledby="pref-days-label" className="flex flex-wrap gap-2">
             {[...DAY_CHOICES, ...customDays].map((day) => {
@@ -98,6 +99,42 @@ export function NotificationPreferencesForm({ defaults }: { defaults: Notificati
             <Input id="pref-repeat" inputMode="numeric" value={v.overdueRepeatDays} onChange={(e) => set("overdueRepeatDays", e.target.value)} />
           </Field>
         ) : null}
+
+        <div className="grid gap-3 rounded-lg border p-3">
+          <ToggleRow
+            id="pref-subs"
+            label="Списания подписок"
+            hint="Claude, Spotify, сервер, домен… Напомним заранее и предупредим, если на карте не хватает денег. Годовые — ещё и за 7 дней, чтобы успеть отменить продление."
+            checked={v.subscriptionReminders}
+            onChange={(x) => set("subscriptionReminders", x)}
+          />
+          {v.subscriptionReminders ? (
+            <div role="group" aria-label="Когда напоминать о подписках" className="flex flex-wrap gap-2">
+              {SUB_DAY_CHOICES.map((day) => {
+                const on = v.subscriptionDaysBefore === day;
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => set("subscriptionDaysBefore", day)}
+                    className={cn(
+                      "h-8 rounded-full border px-3 text-[13px] font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                      on ? "border-primary bg-primary-subtle text-primary" : "bg-card text-muted-foreground hover:bg-muted",
+                    )}
+                  >
+                    {day === 0 ? "в день списания" : `за ${day} ${pluralRu(day, ["день", "дня", "дней"])}`}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+          {errors.subscriptionDaysBefore ? (
+            <p role="alert" className="text-[13px] text-danger">
+              {errors.subscriptionDaysBefore}
+            </p>
+          ) : null}
+        </div>
 
         <ToggleRow
           id="pref-quiet"

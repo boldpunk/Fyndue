@@ -6,7 +6,13 @@
 import { formatLocalDate, parseLocalDate, type LocalDate } from "@/lib/finance/dates";
 import { formatMoney } from "@/lib/finance/money";
 import { pluralRu } from "@/lib/finance/recurrence";
+import { money as dec } from "@/lib/finance/money";
 import type { ReminderIntent } from "@/lib/notifications/planner";
+import type { SubscriptionIntent } from "@/lib/notifications/subscription-planner";
+
+export type AnyReminderIntent = ReminderIntent | SubscriptionIntent;
+
+export const isSubscriptionIntent = (intent: AnyReminderIntent): intent is SubscriptionIntent => "kind" in intent && intent.kind === "SUBSCRIPTION";
 
 export function escapeHtml(value: string): string {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
@@ -75,9 +81,29 @@ export function formatReminder(intent: ReminderIntent, today: LocalDate): string
   ].join("\n");
 }
 
+/** A subscription about to be charged: amount, card, and a warning when the card's balance is short. */
+export function formatSubscriptionReminder(intent: SubscriptionIntent, today: LocalDate): string {
+  const { item } = intent;
+  const when = intent.days === 0 ? "Спишется сегодня" : intent.days === 1 ? "Спишется завтра" : `Спишется через ${days(intent.days)}`;
+  const short = dec(item.accountBalance).lt(dec(item.amount));
+  const lines = [
+    `🔁 <b>${escapeHtml(item.name)}</b>`,
+    "",
+    `${when}, ${formatDueDate(item.chargeDate, today)}`,
+    `<b>${money(item.amount, item.currency)}</b>`,
+    "",
+    `С карты: ${escapeHtml(item.accountName)}`,
+    `На ней сейчас: ${money(item.accountBalance, item.currency)}`,
+  ];
+  if (short) lines.push("", "⚠️ Денег на карте не хватает — пополните её до списания.");
+  if (item.frequency === "YEARLY" && intent.days > 1) lines.push("", "Это продление на год. Если подписка больше не нужна, отмените её до списания.");
+  if (item.url) lines.push("", `Управлять: ${escapeHtml(item.url)}`);
+  return lines.join("\n");
+}
+
 export const DIGEST_SEPARATOR = "━━━━━━━━";
 
 /** Several reminders for one user go out as one message (rate limiting). */
-export function formatDigest(intents: ReminderIntent[], today: LocalDate): string {
-  return intents.map((i) => formatReminder(i, today)).join(`\n\n${DIGEST_SEPARATOR}\n\n`);
+export function formatDigest(intents: AnyReminderIntent[], today: LocalDate): string {
+  return intents.map((i) => (isSubscriptionIntent(i) ? formatSubscriptionReminder(i, today) : formatReminder(i, today))).join(`\n\n${DIGEST_SEPARATOR}\n\n`);
 }

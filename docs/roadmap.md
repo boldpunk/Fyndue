@@ -147,7 +147,7 @@ Phase 6 notes:
 - Pause keeps a subscription listed but out of totals and plans; delete keeps recorded payments.
 - Tests: totals, per-year cost, sorting, link validation, avatars, pending charges, user isolation.
 - Travel eSIMs: a new default expense category «eSIM и роуминг» (added to existing users by a data migration). They are one-off purchases, not plans, so the Subscriptions tab shows them in their own card: spent in the last 12 months (per currency and in sums), number of purchases, the latest one, and «Записать покупку eSIM», which opens Quick Add with that category and the usual card. An «eSIM» template exists for monthly eSIM plans.
-- Next: Telegram reminders before a subscription charge (the reminder planner currently covers debts only).
+- ✅ Telegram reminders before a subscription charge (day before by default, yearly also 7 days ahead, low-balance warning) and the `/subs` bot command — see telegram.md §3.
 
 ## Bank working days ✅
 

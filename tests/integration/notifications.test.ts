@@ -224,6 +224,8 @@ describe("reminder dispatch (SPEC §35)", () => {
       quietHoursEnabled: false,
       quietHoursStart: "22:00",
       quietHoursEnd: "09:00",
+      subscriptionReminders: true,
+      subscriptionDaysBefore: 1,
     });
     const sender = fakeSender();
     await runReminders({ sender, now: at(0), sleep: noSleep });
@@ -371,5 +373,93 @@ describe("bot commands", () => {
     const sender = fakeSender();
     await handleUpdate({ update_id: 2, message: { message_id: 1, text: "/today", chat: { id: -5, type: "group" } } }, sender);
     expect(sender.sent).toHaveLength(0);
+  });
+});
+
+describe("subscription charge reminders", () => {
+  beforeEach(resetDatabase);
+
+  async function subscription(userId: string, name: string, chargeOffset: number, over: Record<string, unknown> = {}) {
+    const visa = (await prisma.account.findFirst({ where: { userId, currency: "USD" } })) ?? (await createTestAccount(userId, { name: "Visa USD", currency: "USD", openingBalance: "50" }));
+    const category = await prisma.category.findFirstOrThrow({ where: { userId, name: "Подписки", type: "EXPENSE" } });
+    const { createRecurring } = await import("@/lib/services/recurring");
+    const { recurringSchema } = await import("@/lib/validations/planning");
+    const rule = await createRecurring(
+      userId,
+      recurringSchema.parse({ name, kind: "EXPENSE", accountId: visa.id, categoryId: category.id, amount: "20", frequency: "MONTHLY", interval: 1, startDate: addDays(T, chargeOffset), isSubscription: true, url: "claude.ai/settings/billing", ...over }),
+    );
+    return { ...rule, visa };
+  }
+
+  it("reminds the day before a charge, once, in the same digest as debt reminders", async () => {
+    const user = await createUser();
+    await connect(user.id, "2001");
+    await debtDueIn(user.id, 1);
+    await subscription(user.id, "Claude Pro", 1);
+    await subscription(user.id, "Spotify", 5);
+    const sender = fakeSender();
+
+    expect((await runReminders({ sender, now: at(0), sleep: noSleep })).sent).toBe(2);
+    expect(sender.sent).toHaveLength(1);
+    const html = sender.sent[0]!.html;
+    expect(html.indexOf("Car Installment")).toBeLessThan(html.indexOf("Claude Pro"));
+    expect(html).toContain("Спишется завтра");
+    expect(html).toContain("С карты: Visa USD");
+    expect(html).not.toContain("Spotify");
+
+    // Charge day: the day-before reminder already went out.
+    await runReminders({ sender, now: at(1), sleep: noSleep });
+    expect(sender.sent.filter((s) => s.html.includes("Claude Pro"))).toHaveLength(1);
+
+    const { listNotificationLog } = await import("@/lib/services/notifications");
+    const log = await listNotificationLog(user.id);
+    expect(log.find((l) => l.type === "SUBSCRIPTION_CHARGE")).toMatchObject({ debtName: "Claude Pro", dueDate: addDays(T, 1), status: "SENT" });
+  });
+
+  it("warns when the card is short; skips paused, recorded and switched-off reminders", async () => {
+    const user = await createUser();
+    await connect(user.id, "2002");
+    const { visa } = await subscription(user.id, "Claude Pro", 1, { amount: "75" });
+    const sender = fakeSender();
+    await runReminders({ sender, now: at(0), sleep: noSleep });
+    expect(sender.sent[0]!.html).toContain("Денег на карте не хватает");
+
+    // Paid early (recorded) or paused: no reminder.
+    const { recordOccurrence, setRecurringActive } = await import("@/lib/services/recurring");
+    const other = await subscription(user.id, "Netflix", 1);
+    await recordOccurrence(user.id, { clientRequestId: randomUUID(), recurringId: other.id, occurrenceDate: addDays(T, 1), amount: "20", date: T, accountId: visa.id });
+    const paused = await subscription(user.id, "YouTube", 1);
+    await setRecurringActive(user.id, paused.id, false);
+    await runReminders({ sender, now: at(0, "07:00"), sleep: noSleep });
+    expect(sender.sent).toHaveLength(1);
+
+    await updateNotificationPreferences(user.id, {
+      telegramEnabled: true, notifyDaysBefore: [3], notifyOnDueDate: true, notifyWhenOverdue: true, overdueRepeatDays: 3,
+      quietHoursEnabled: false, quietHoursStart: "22:00", quietHoursEnd: "09:00", subscriptionReminders: false, subscriptionDaysBefore: 1,
+    });
+    await subscription(user.id, "Сервер", 1);
+    await runReminders({ sender, now: at(0, "08:00"), sleep: noSleep });
+    expect(sender.sent).toHaveLength(1);
+  });
+
+  it("announces a yearly renewal a week ahead", async () => {
+    const user = await createUser();
+    await connect(user.id, "2003");
+    await subscription(user.id, "Домен fyndue.uz", 7, { frequency: "YEARLY" });
+    const sender = fakeSender();
+    await runReminders({ sender, now: at(0), sleep: noSleep });
+    expect(sender.sent[0]!.html).toContain("Спишется через 7 дней");
+    expect(sender.sent[0]!.html).toContain("продление на год");
+  });
+
+  it("/subs lists subscriptions and the monthly total", async () => {
+    const user = await createUser();
+    await connect(user.id, "2004");
+    await subscription(user.id, "Claude Pro", 3);
+    const sender = fakeSender();
+    await handleUpdate({ update_id: 1, message: { message_id: 1, chat: { id: 2004, type: "private" }, from: { id: 2004, is_bot: false }, text: "/subs" } } as TelegramUpdate, sender);
+    expect(sender.sent[0]!.html).toContain("🔁 <b>Подписки</b> · 1");
+    expect(sender.sent[0]!.html).toContain("Claude Pro");
+    expect(sender.sent[0]!.html).toContain("через 3 дня");
   });
 });

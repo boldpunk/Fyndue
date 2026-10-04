@@ -11,10 +11,16 @@ import {
   MAX_DAYS_BEFORE,
   planReminders,
   type PlannerItem,
-  type ReminderIntent,
 } from "@/lib/notifications/planner";
+import {
+  DEFAULT_SUBSCRIPTION_PREFERENCES,
+  planSubscriptionReminders,
+  YEARLY_NOTICE_DAYS,
+  type SubscriptionReminderItem,
+} from "@/lib/notifications/subscription-planner";
+import { occurrencesBetween } from "@/lib/finance/recurrence";
 import { TelegramApiError, type TelegramSender } from "@/lib/telegram/client";
-import { formatDigest } from "@/lib/telegram/messages";
+import { formatDigest, isSubscriptionIntent, type AnyReminderIntent } from "@/lib/telegram/messages";
 import type { NotificationPreferencesInput } from "@/lib/validations/notifications";
 import { writeAudit } from "./audit";
 import { disconnectChat } from "./telegram-connection";
@@ -30,6 +36,8 @@ export type NotificationPreferencesDTO = {
   quietHoursEnabled: boolean;
   quietHoursStart: string;
   quietHoursEnd: string;
+  subscriptionReminders: boolean;
+  subscriptionDaysBefore: number;
 };
 
 const DEFAULT_QUIET = { start: "22:00", end: "09:00" };
@@ -44,6 +52,8 @@ function toPrefsDTO(row: NotificationPreference | null): NotificationPreferences
     quietHoursEnabled: row ? Boolean(row.quietHoursStart && row.quietHoursEnd) : true,
     quietHoursStart: row?.quietHoursStart ?? DEFAULT_QUIET.start,
     quietHoursEnd: row?.quietHoursEnd ?? DEFAULT_QUIET.end,
+    subscriptionReminders: row?.subscriptionReminders ?? DEFAULT_SUBSCRIPTION_PREFERENCES.subscriptionReminders,
+    subscriptionDaysBefore: row?.subscriptionDaysBefore ?? DEFAULT_SUBSCRIPTION_PREFERENCES.subscriptionDaysBefore,
   };
 }
 
@@ -60,6 +70,8 @@ export async function updateNotificationPreferences(userId: string, input: Notif
     overdueRepeatDays: input.overdueRepeatDays,
     quietHoursStart: input.quietHoursEnabled ? input.quietHoursStart : null,
     quietHoursEnd: input.quietHoursEnabled ? input.quietHoursEnd : null,
+    subscriptionReminders: input.subscriptionReminders,
+    subscriptionDaysBefore: input.subscriptionDaysBefore,
   };
   await prisma.$transaction(async (tx) => {
     const row = await tx.notificationPreference.upsert({ where: { userId }, create: { userId, ...data }, update: data });
@@ -90,14 +102,13 @@ type Clock = { now: Date };
  * again, or was left PENDING by a crashed run; each re-claim is a
  * compare-and-set on updatedAt so it too has a single winner.
  */
-async function claim(userId: string, intent: ReminderIntent, { now }: Clock): Promise<boolean> {
+async function claim(userId: string, intent: AnyReminderIntent, { now }: Clock): Promise<boolean> {
   const key = intent.deduplicationKey;
   const { count } = await prisma.notificationLog.createMany({
     data: [
       {
         userId,
-        debtId: intent.item.debtId,
-        scheduleItemId: intent.item.itemId,
+        ...(isSubscriptionIntent(intent) ? { recurringId: intent.item.recurringId } : { debtId: intent.item.debtId, scheduleItemId: intent.item.itemId }),
         type: intent.type,
         channel: "TELEGRAM",
         deduplicationKey: key,
@@ -150,6 +161,39 @@ async function openItemsFor(userId: string, today: string): Promise<PlannerItem[
     .filter((i) => money(i.amountDue).gt(0));
 }
 
+/** Each active subscription's next charge in the reminder window that has not been recorded yet. */
+async function subscriptionItemsFor(userId: string, today: string): Promise<SubscriptionReminderItem[]> {
+  const horizon = addDays(today, YEARLY_NOTICE_DAYS);
+  const rules = await prisma.recurringTransaction.findMany({
+    where: { userId, isSubscription: true, isActive: true, kind: "EXPENSE", startDate: { lte: localDateToDb(horizon) } },
+    include: { account: { select: { name: true, currentBalance: true } } },
+  });
+  if (rules.length === 0) return [];
+  const recorded = await prisma.transaction.findMany({
+    where: { userId, voidedAt: null, recurringId: { in: rules.map((r) => r.id) }, occurrenceDate: { gte: localDateToDb(today), lte: localDateToDb(horizon) } },
+    select: { recurringId: true, occurrenceDate: true },
+  });
+  const done = new Set(recorded.map((t) => `${t.recurringId}|${dbToLocalDate(t.occurrenceDate!)}`));
+  return rules.flatMap((r) => {
+    const rule = { frequency: r.frequency, interval: r.interval, startDate: dbToLocalDate(r.startDate), endDate: r.endDate ? dbToLocalDate(r.endDate) : null };
+    const next = occurrencesBetween(rule, today, horizon).find((d) => !done.has(`${r.id}|${d}`));
+    if (!next) return [];
+    return [
+      {
+        recurringId: r.id,
+        name: r.name,
+        amount: toMoneyString(r.amount),
+        currency: r.currency,
+        chargeDate: next,
+        frequency: r.frequency,
+        accountName: r.account.name,
+        accountBalance: toMoneyString(r.account.currentBalance),
+        url: r.url,
+      },
+    ];
+  });
+}
+
 function failureReason(error: unknown): string {
   // TelegramApiError messages never contain the token; anything else is reduced to its type.
   if (error instanceof TelegramApiError) return error.message.slice(0, 300);
@@ -185,7 +229,10 @@ export async function runReminders({ sender, now = new Date(), sleep = realSleep
     const chatId = connection.telegramChatId!;
     const prefs = toPrefsDTO(connection.user.notificationPreference);
     const today = todayIn(connection.user.timezone, now);
-    const intents = prefs.telegramEnabled ? planReminders(await openItemsFor(userId, today), prefs, today) : [];
+    // Debts first (they can be overdue), then subscriptions; one digest message for both.
+    const intents: AnyReminderIntent[] = prefs.telegramEnabled
+      ? [...planReminders(await openItemsFor(userId, today), prefs, today), ...planSubscriptionReminders(await subscriptionItemsFor(userId, today), prefs, today)]
+      : [];
 
     // Anything not planned any more (paid, rescheduled, superseded, archived,
     // or reminders switched off) is cancelled rather than retried.
@@ -207,7 +254,7 @@ export async function runReminders({ sender, now = new Date(), sleep = realSleep
       continue;
     }
 
-    const owned: ReminderIntent[] = [];
+    const owned: AnyReminderIntent[] = [];
     for (const intent of intents) {
       if (owned.length >= MAX_REMINDERS_PER_MESSAGE) break;
       if (await claim(userId, intent, { now })) owned.push(intent);
@@ -276,10 +323,11 @@ export async function sendTestNotification(userId: string, sender: TelegramSende
 
 export type NotificationLogDTO = {
   id: string;
-  type: "DUE_IN_DAYS" | "DUE_TODAY" | "OVERDUE" | "TEST";
+  type: "DUE_IN_DAYS" | "DUE_TODAY" | "OVERDUE" | "TEST" | "SUBSCRIPTION_CHARGE";
   status: "PENDING" | "SENT" | "FAILED" | "CANCELLED";
   createdAt: string;
   sentAt: string | null;
+  /** The debt or subscription the reminder was about. */
   debtName: string | null;
   dueDate: string | null;
   attempts: number;
@@ -296,7 +344,25 @@ export async function listNotificationLog(userId: string, limit = 20): Promise<N
       })
     : [];
   const byId = new Map(items.map((i) => [i.id, i]));
+  const ruleIds = rows.flatMap((r) => (r.recurringId ? [r.recurringId] : []));
+  const rules = ruleIds.length ? await prisma.recurringTransaction.findMany({ where: { userId, id: { in: ruleIds } }, select: { id: true, name: true } }) : [];
+  const ruleName = new Map(rules.map((r) => [r.id, r.name]));
   return rows.map((r) => {
+    if (r.recurringId) {
+      // Key: sub:<recurringId>:<chargeDate>:d<n>:tg
+      const chargeDate = r.deduplicationKey.split(":")[2] ?? null;
+      return {
+        id: r.id,
+        type: r.type,
+        status: r.status,
+        createdAt: r.createdAt.toISOString(),
+        sentAt: r.sentAt?.toISOString() ?? null,
+        debtName: ruleName.get(r.recurringId) ?? null,
+        dueDate: chargeDate && /^\d{4}-\d{2}-\d{2}$/.test(chargeDate) ? chargeDate : null,
+        attempts: r.attempts,
+        failed: r.status === "FAILED",
+      };
+    }
     const item = r.scheduleItemId ? byId.get(r.scheduleItemId) : undefined;
     return {
       id: r.id,

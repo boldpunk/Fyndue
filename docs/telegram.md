@@ -41,6 +41,8 @@ Keys identify a *window*, not a day. If the job doesn't run on the exact day (a 
 
 The due date is part of the key, so a rescheduled item gets fresh reminders. Items that are paid, skipped, superseded (`isCurrent = false`) or belong to a paid-off/archived debt are never planned — paying cancels future reminders naturally, and any `PENDING` log rows for them are set `CANCELLED`.
 
+**Subscription charges** (`lib/notifications/subscription-planner.ts`): for each active subscription (`RecurringTransaction.isSubscription`), its next charge in the next 7 days that has no recorded transaction. One threshold, `subscriptionDaysBefore` (0–3, default 1; 0 = on the day), plus 7 days for yearly ones; same window logic, key `sub:{recurringId}:{chargeDate}:d{n}:tg`, type `SUBSCRIPTION_CHARGE`, `NotificationLog.recurringId` set. No overdue reminders — the card is charged automatically. The message names the card, its current balance and warns when it is short; yearly renewals add "cancel before the charge". Switch: `subscriptionReminders`. Debt reminders come first in the digest.
+
 **Quiet hours:** if "now" in the user's timezone falls inside quiet hours (default 22:00–09:00, may wrap midnight, can be switched off), nothing is claimed on this run. The first run after quiet hours sends it (the key still dedups).
 
 ## 4. Idempotent dispatch (SPEC §35)
@@ -70,7 +72,7 @@ Formatting follows SPEC §34, amounts via `formatMoney` (`3,500,000 UZS`), dates
 
 ## 6. Commands
 
-`/start CODE`, `/today` (due today + overdue), `/upcoming` (next 14 days), `/debts` (remaining principal + progress), `/month` (income, expenses, debt payments this month), `/help`, `/stop` (disconnect). Every command resolves the user by `chatId → TelegramConnection(CONNECTED) → userId` and calls the same `lib/services` queries as the web app. Future `/expense`, `/income`, `/paid` reuse the same server actions' services and validation.
+`/start CODE`, `/today` (due today + overdue), `/upcoming` (next 14 days), `/debts` (remaining principal + progress), `/month` (income, expenses, debt payments this month), `/subs` (subscriptions: monthly total and charges in the next 30 days), `/help`, `/stop` (disconnect). Every command resolves the user by `chatId → TelegramConnection(CONNECTED) → userId` and calls the same `lib/services` queries as the web app. Future `/expense`, `/income`, `/paid` reuse the same server actions' services and validation.
 
 ## 7. Tests (SPEC §59)
 

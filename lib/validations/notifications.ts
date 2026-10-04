@@ -16,6 +16,8 @@ export const notificationPreferencesSchema = z
     quietHoursEnabled: z.boolean(),
     quietHoursStart: time,
     quietHoursEnd: time,
+    subscriptionReminders: z.boolean().default(true),
+    subscriptionDaysBefore: z.coerce.number().int().min(0, "От 0 до 7 дней").max(7, "От 0 до 7 дней").default(1),
   })
   .refine((v) => !v.quietHoursEnabled || v.quietHoursStart !== v.quietHoursEnd, {
     message: "Начало и конец должны отличаться",
