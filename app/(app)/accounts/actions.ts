@@ -7,13 +7,14 @@ import {
   setAccountArchived,
   updateAccount,
 } from "@/lib/services/accounts";
-import { adjustBalanceByTransfer } from "@/lib/services/transactions";
+import { adjustBalanceByTransfer, restartAccountTracking } from "@/lib/services/transactions";
 import { runAction } from "@/lib/utils/action";
 import {
   accountCreateSchema,
   accountUpdateSchema,
   archiveSchema,
   balanceAdjustmentSchema,
+  restartTrackingSchema,
 } from "@/lib/validations/accounts";
 
 const refresh = () => revalidatePath("/", "layout");
@@ -55,5 +56,14 @@ export async function adjustBalanceAction(input: unknown) {
       : await adjustAccountBalance(user.id, parsed);
     refresh();
     return { transactionId: id };
+  });
+}
+
+export async function restartTrackingAction(input: unknown) {
+  return runAction(async () => {
+    const user = await requireUser();
+    const result = await restartAccountTracking(user.id, restartTrackingSchema.parse(input));
+    refresh();
+    return result;
   });
 }

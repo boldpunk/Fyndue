@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth/session";
 import { ACCOUNT_TYPE_LABELS } from "@/lib/constants/finance";
 import { NotFoundError } from "@/lib/errors";
-import { todayIn } from "@/lib/finance/dates";
+import { formatLocalDate, todayIn } from "@/lib/finance/dates";
 import { getAccount, listAccounts } from "@/lib/services/accounts";
 import { latestCentralBankRates } from "@/lib/services/central-bank-rates";
 import { listTransactions } from "@/lib/services/transactions";
@@ -55,7 +55,9 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
             <div className="flex flex-wrap gap-1.5">
               <Badge>
                 Начальный баланс <Money amount={account.openingBalance} currency={account.currency} />
+                {account.trackingStartDate ? ` на ${formatLocalDate(account.trackingStartDate, undefined, { day: "numeric", month: "long" })}` : null}
               </Badge>
+              {account.trackingStartDate ? <Badge tone="primary">Учёт с {formatLocalDate(account.trackingStartDate, undefined, { day: "numeric", month: "long" })}</Badge> : null}
               {!account.includeInTotal ? <Badge>Не входит в общий баланс</Badge> : null}
               {account.isArchived ? <Badge tone="warning">В архиве</Badge> : null}
             </div>

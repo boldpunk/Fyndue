@@ -6,7 +6,7 @@ import { money, toMoneyString, ZERO } from "@/lib/finance/money";
 import { itemRemaining, paymentTotals, validatePaymentBreakdown, type PaymentBreakdown } from "@/lib/finance/payment-allocation";
 import type { Debt, DebtScheduleItem } from "@/lib/generated/prisma/client";
 import type { EarlyRepaymentInput, RecordPaymentInput } from "@/lib/validations/debts";
-import { applyBalanceDelta, lockOwnedAccount } from "./accounts";
+import { applyBalanceDelta, assertTrackedDate, lockOwnedAccount } from "./accounts";
 import { writeAudit } from "./audit";
 import { itemToLine, planForSplit, refreshDebtState, splitCurrentSchedule, writeNewScheduleVersion } from "./debt-schedule";
 import { isUniqueViolation } from "./prisma-errors";
@@ -24,8 +24,9 @@ async function debtPaymentsCategoryId(tx: Tx, userId: string): Promise<string | 
   return category?.id ?? null;
 }
 
-async function payingAccount(tx: Tx, userId: string, accountId: string, debt: Debt) {
+async function payingAccount(tx: Tx, userId: string, accountId: string, debt: Debt, date: LocalDate) {
   const account = await lockOwnedAccount(tx, userId, accountId);
+  assertTrackedDate(account, date);
   if (account.isArchived) throw new DomainError("Этот счёт в архиве.", "ACCOUNT_ARCHIVED", { accountId: "Счёт в архиве" });
   if (account.currency !== debt.currency) {
     throw new DomainError(`Долг в ${debt.currency} оплачивается со счёта в ${debt.currency}.`, "CURRENCY_MISMATCH", {
@@ -153,7 +154,7 @@ export async function recordDebtPayment(userId: string, input: RecordPaymentInpu
       async (tx) => {
         const debt = await lockOwnedDebt(tx, userId, input.debtId);
         assertPayable(debt);
-        const account = await payingAccount(tx, userId, input.accountId, debt);
+        const account = await payingAccount(tx, userId, input.accountId, debt, input.paymentDate);
 
         let item: DebtScheduleItem | null = null;
         if (input.scheduleItemId) {
@@ -270,7 +271,7 @@ export async function recordEarlyRepayment(userId: string, input: EarlyRepayment
       async (tx) => {
         const debt = await lockOwnedDebt(tx, userId, input.debtId);
         assertPayable(debt);
-        const account = await payingAccount(tx, userId, input.accountId, debt);
+        const account = await payingAccount(tx, userId, input.accountId, debt, input.paymentDate);
         const amount = money(input.amount);
         const splitBefore = await splitCurrentSchedule(tx, debt);
         if (amount.gt(money(debt.currentPrincipal))) {

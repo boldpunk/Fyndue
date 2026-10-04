@@ -15,7 +15,7 @@ import type {
   TransferInput,
   TransferUpdateInput,
 } from "@/lib/validations/transactions";
-import { applyBalanceDelta, lockOwnedAccount } from "./accounts";
+import { applyBalanceDelta, assertTrackedDate, lockOwnedAccount } from "./accounts";
 import { writeAudit } from "./audit";
 import { isUniqueViolation } from "./prisma-errors";
 
@@ -231,6 +231,7 @@ async function createCashFlow(
 ): Promise<{ id: string }> {
   return prisma.$transaction(async (tx) => {
     const account = await ownedUsableAccount(tx, userId, input.accountId);
+    assertTrackedDate(account, input.date);
     await ownedCategory(tx, userId, input.categoryId, input.kind);
     const direction = input.kind === "INCOME" ? "INFLOW" : "OUTFLOW";
     const status = input.kind === "INCOME" ? input.status : "ACTUAL";
@@ -279,6 +280,8 @@ async function insertTransfer(tx: Tx, userId: string, input: TransferLegsInput, 
   const second = await ownedUsableAccount(tx, userId, secondId!);
   const from = first.id === input.fromAccountId ? first : second;
   const to = first.id === input.fromAccountId ? second : first;
+  assertTrackedDate(from, input.date);
+  assertTrackedDate(to, input.date);
 
   const toAmount = resolveTransferToAmount(from.currency, to.currency, input.amount, input.toAmount);
   const transferGroupId = randomUUID();
@@ -321,6 +324,62 @@ async function insertTransfer(tx: Tx, userId: string, input: TransferLegsInput, 
     metadata: { transferGroupId, fromAccountId: from.id, toAccountId: to.id, amount: input.amount, toAmount },
   });
   return { id: outLeg.id };
+}
+
+/** Types a restart may void: plain money in/out and corrections. Transfers and debt operations stay (they touch other records). */
+const RESTART_VOIDABLE = ["EXPENSE", "INCOME", "BALANCE_ADJUSTMENT"] as const;
+
+/**
+ * Starts an account's tracking afresh (reconciliation): voids its balance
+ * adjustments and the plain income/expenses dated before `startDate`, then
+ * sets the opening balance so that the current balance equals
+ * `actualBalance` — without writing a new adjustment. Later operations
+ * dated before `startDate` are refused. Real operations on or after the
+ * start, transfers and debt payments are kept.
+ */
+export async function restartAccountTracking(
+  userId: string,
+  input: { accountId: string; actualBalance: string; startDate: LocalDate; removeAdjustments: boolean },
+): Promise<{ voided: number; openingBalance: string }> {
+  return prisma.$transaction(async (tx) => {
+    const account = await lockOwnedAccount(tx, userId, input.accountId);
+    if (account.isArchived) throw new DomainError("Этот счёт в архиве.", "ACCOUNT_ARCHIVED");
+    const live = await tx.transaction.findMany({ where: { userId, accountId: account.id, voidedAt: null } });
+    const toVoid = live.filter(
+      (t) =>
+        (RESTART_VOIDABLE as readonly string[]).includes(t.type) &&
+        ((input.removeAdjustments && t.type === "BALANCE_ADJUSTMENT") || dbToLocalDate(t.transactionDate) < input.startDate),
+    );
+    const voidedAt = new Date();
+    if (toVoid.length) {
+      await tx.transaction.updateMany({
+        where: { id: { in: toVoid.map((t) => t.id) }, userId },
+        data: { voidedAt, voidReason: "Учёт начат заново" },
+      });
+    }
+    const voidedIds = new Set(toVoid.map((t) => t.id));
+    const kept = live.filter((t) => !voidedIds.has(t.id));
+    const effect = kept.reduce((sum, t) => sum.plus(balanceEffect({ direction: t.direction, amount: t.amount, status: t.status })), money(0));
+    const opening = money(input.actualBalance).minus(effect);
+    await tx.account.update({
+      where: { id: account.id },
+      data: { openingBalance: opening.toFixed(2), currentBalance: money(input.actualBalance).toFixed(2), trackingStartDate: localDateToDb(input.startDate) },
+    });
+    await writeAudit(tx, {
+      userId,
+      action: "ACCOUNT_RESTARTED",
+      entityType: "Account",
+      entityId: account.id,
+      metadata: {
+        startDate: input.startDate,
+        actualBalance: input.actualBalance,
+        before: { opening: toMoneyString(account.openingBalance), current: toMoneyString(account.currentBalance) },
+        openingBalance: opening.toFixed(2),
+        voided: toVoid.map((t) => t.id),
+      },
+    });
+    return { voided: toVoid.length, openingBalance: opening.toFixed(2) };
+  });
 }
 
 /**
@@ -454,6 +513,7 @@ export async function updateCashFlowTransaction(userId: string, input: CashFlowU
     const oldAccount = await lockOwnedAccount(tx, userId, before.accountId);
     const newAccount =
       input.accountId === before.accountId ? oldAccount : await ownedUsableAccount(tx, userId, input.accountId);
+    assertTrackedDate(newAccount, input.date);
     await ownedCategory(tx, userId, input.categoryId, type);
 
     await applyBalanceDelta(tx, oldAccount.id, balanceEffect({ direction: before.direction, amount: before.amount, status: before.status }).negated());
@@ -494,6 +554,7 @@ export async function updateTransfer(userId: string, input: TransferUpdateInput)
     const inLeg = legs.find((l) => l.direction === "INFLOW");
     if (!outLeg || !inLeg) throw new DomainError("Этот перевод неполный.", "BROKEN_TRANSFER");
 
+    for (const leg of [outLeg, inLeg]) assertTrackedDate(await lockOwnedAccount(tx, userId, leg.accountId), input.date);
     const toAmount = resolveTransferToAmount(outLeg.currency, inLeg.currency, input.amount, input.toAmount);
     const data = { transactionDate: localDateToDb(input.date), note: input.note ?? null };
     await tx.transaction.update({ where: { id: outLeg.id }, data: { ...data, amount: input.amount } });

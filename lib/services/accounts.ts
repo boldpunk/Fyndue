@@ -1,8 +1,8 @@
 import "server-only";
 import { prisma, type Tx } from "@/lib/db";
-import { NotFoundError } from "@/lib/errors";
+import { DomainError, NotFoundError } from "@/lib/errors";
 import { adjustmentFor, computeBalance } from "@/lib/finance/balance";
-import { localDateToDb, type LocalDate } from "@/lib/finance/dates";
+import { dbToLocalDate, formatLocalDate, localDateToDb, type LocalDate } from "@/lib/finance/dates";
 import { money, toMoneyString, type FinDecimal } from "@/lib/finance/money";
 import type { Account } from "@/lib/generated/prisma/client";
 import type {
@@ -23,6 +23,8 @@ export type AccountDTO = {
   bank: string | null;
   color: string | null;
   isArchived: boolean;
+  /** First day tracked; earlier money is in the opening balance. */
+  trackingStartDate: string | null;
 };
 
 export function toAccountDTO(account: Account): AccountDTO {
@@ -37,7 +39,25 @@ export function toAccountDTO(account: Account): AccountDTO {
     bank: account.bank,
     color: account.color,
     isArchived: account.isArchived,
+    trackingStartDate: account.trackingStartDate ? dbToLocalDate(account.trackingStartDate) : null,
   };
+}
+
+/**
+ * Money before an account's tracking start is already in its opening
+ * balance; an operation dated earlier would count it twice.
+ */
+export function assertTrackedDate(account: Pick<Account, "name" | "trackingStartDate">, date: LocalDate): void {
+  if (!account.trackingStartDate) return;
+  const start = dbToLocalDate(account.trackingStartDate);
+  if (date < start) {
+    const day = formatLocalDate(start, undefined, { day: "numeric", month: "long" });
+    throw new DomainError(
+      `Учёт по счёту «${account.name}» начат ${day}: всё, что было раньше, уже входит в начальный баланс. Укажите дату не раньше ${day}.`,
+      "BEFORE_TRACKING_START",
+      { date: `Не раньше ${day}` },
+    );
+  }
 }
 
 export async function listAccounts(userId: string, options: { includeArchived?: boolean } = {}): Promise<AccountDTO[]> {
@@ -153,6 +173,7 @@ export async function setAccountArchived(userId: string, id: string, archived: b
 export async function adjustAccountBalance(userId: string, input: BalanceAdjustmentInput): Promise<string | null> {
   return prisma.$transaction(async (tx) => {
     const account = await lockOwnedAccount(tx, userId, input.accountId);
+    assertTrackedDate(account, input.date as LocalDate);
     const adjustment = adjustmentFor(account.currentBalance, input.targetBalance);
     if (!adjustment) return null;
     const transaction = await tx.transaction.create({

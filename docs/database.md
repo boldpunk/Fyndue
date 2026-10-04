@@ -451,3 +451,7 @@ Optional link to the page where a subscription is managed or cancelled. Saved on
 ### Weekend shift
 
 `Debt.shiftWeekends` (default false) moves due dates off weekends and public holidays. `DebtScheduleItem.accrualDate` is the contract date interest is counted to when the payment was moved (null when equal to `dueDate`).
+
+### Account.trackingStartDate
+
+First day an account is tracked in Fyndue (set by «Начать учёт заново»). Money before it is in `openingBalance`, so operations dated earlier are refused by the services.

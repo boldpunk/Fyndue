@@ -1,7 +1,7 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/register"];
+const PUBLIC_PATHS = ["/login", "/register", "/about"];
 
 /**
  * Optimistic redirect only — checks that a session cookie exists. The real

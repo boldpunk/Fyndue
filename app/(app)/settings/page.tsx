@@ -1,6 +1,7 @@
-import { ArrowRightLeft, Bell, ChevronRight, Repeat, Shapes } from "lucide-react";
+import { ArrowRightLeft, Bell, ChevronRight, Repeat, Shapes, Info } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SiteFooter } from "@/components/marketing/site-footer";
 import { PageHeader } from "@/components/layout/page-header";
 import { SignOutButton } from "@/components/layout/sign-out-button";
 import { AppearancePicker } from "@/components/settings/appearance-picker";
@@ -62,7 +63,14 @@ export default async function SettingsPage() {
           {connection.status === "CONNECTED" ? <Badge tone="success">Подключён</Badge> : null}
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
+        <Link href="/about" className="flex items-center gap-3 p-4 hover:bg-muted/60">
+          <Info className="size-5 text-muted-foreground" aria-hidden />
+          <span className="flex-1 text-sm font-medium">О разработчике</span>
+          <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+        </Link>
       </Card>
+
+      <SiteFooter />
 
       <div className="lg:hidden">
         <SignOutButton className="justify-center border" />

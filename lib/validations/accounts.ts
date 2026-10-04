@@ -36,3 +36,11 @@ export type BalanceAdjustmentInput = z.output<typeof balanceAdjustmentSchema>;
 export type BalanceAdjustmentFormValues = z.input<typeof balanceAdjustmentSchema>;
 
 export const archiveSchema = z.object({ id: idSchema, archived: z.boolean() });
+
+/** Start tracking an account afresh from a date, at the balance the bank shows now. */
+export const restartTrackingSchema = z.object({
+  accountId: idSchema,
+  actualBalance: moneySchema({ allowZero: true, allowNegative: true }),
+  startDate: localDateSchema,
+  removeAdjustments: z.boolean().default(true),
+});

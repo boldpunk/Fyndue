@@ -160,6 +160,12 @@ Phase 6 notes:
 - "Скорректировать баланс" has a switch to record the difference as a conversion directly.
 - Cross-currency transfers are labelled «Конвертация» and show the exchange rate. The amount on the other account is required when currencies differ (no invented rate).
 
+## Clean restart, about page ✅
+
+- **Начать учёт заново** (account page): the user enters the bank balance and the date tracking starts. Balance adjustments and plain income/expenses dated before the start are voided, real operations after it are kept, and the opening balance is recomputed so the current balance equals the bank's — no new adjustment. Transfers and debt operations are kept. `Account.trackingStartDate`.
+- Operations dated before an account's tracking start are refused everywhere (create, edit, transfers, conversions, corrections, debt payments): that money is already in the opening balance.
+- © line with the Bold Studio credit on the sign-in pages and in Settings; public `/about` page (О разработчике) in brand colours.
+
 ## Phase 7 — PWA & polish (next)
 
 Manifest, icons, standalone mode, safe areas, command palette (⌘K), onboarding flow, skeletons/empty/error states audit, accessibility audit, performance (lazy charts, pagination review), rate limiting on actions, email verification & password reset, Playwright E2E for critical flows.

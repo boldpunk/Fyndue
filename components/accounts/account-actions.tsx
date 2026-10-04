@@ -1,11 +1,11 @@
 "use client";
-import { Archive, ArchiveRestore, Pencil, Scale } from "lucide-react";
+import { Archive, ArchiveRestore, Pencil, RotateCcw, Scale } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
-import { adjustBalanceAction, archiveAccountAction } from "@/app/(app)/accounts/actions";
+import { adjustBalanceAction, archiveAccountAction, restartTrackingAction } from "@/app/(app)/accounts/actions";
 import { Money } from "@/components/finance/money";
 import { MoneyInput } from "@/components/finance/money-input";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,60 @@ import { Switch } from "@/components/ui/switch";
 import { money, parseMoneyInput, toMoneyString } from "@/lib/finance/money";
 import type { AccountDTO } from "@/lib/services/accounts";
 import { balanceAdjustmentSchema } from "@/lib/validations/accounts";
+
+function RestartTrackingForm({ account, today, onDone }: { account: AccountDTO; today: string; onDone: () => void }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [actual, setActual] = useState(account.currentBalance.replace(/\.00$/, ""));
+  const [startDate, setStartDate] = useState(account.trackingStartDate ?? today);
+  const [removeAdjustments, setRemoveAdjustments] = useState(true);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const save = () =>
+    startTransition(async () => {
+      setErrors({});
+      const result = await restartTrackingAction({ accountId: account.id, actualBalance: actual, startDate, removeAdjustments });
+      if (!result.ok) return setErrors({ ...(result.fieldErrors ?? {}), form: result.error });
+      toast.success(result.data.voided ? `Готово: убрано операций — ${result.data.voided}, баланс совпадает с банком` : "Готово: баланс совпадает с банком");
+      router.refresh();
+      onDone();
+    });
+  return (
+    <form
+      noValidate
+      className="grid gap-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save();
+      }}
+    >
+      <p className="text-sm text-muted-foreground">
+        Для чистого старта: укажите, сколько на счёте сейчас по данным банка и с какого дня вы ведёте учёт. Корректировки и операции до этого дня уберутся,
+        настоящие расходы и доходы после него останутся, а начальный баланс пересчитается так, чтобы итог совпал с банком.
+      </p>
+      <Field label="Сколько на счёте сейчас" htmlFor="restart-actual" error={errors.actualBalance}>
+        <MoneyInput id="restart-actual" currency={account.currency} allowNegative autoFocus value={actual} onChange={setActual} />
+      </Field>
+      <Field label="Веду учёт с" htmlFor="restart-start" error={errors.startDate} hint="Операции раньше этой даты больше нельзя будет добавить: те деньги уже в начальном балансе.">
+        <Input id="restart-start" type="date" value={startDate} max={today} onChange={(e) => setStartDate(e.target.value)} />
+      </Field>
+      <label className="flex items-start justify-between gap-4 rounded-lg border p-3">
+        <span className="grid gap-0.5">
+          <span className="text-sm font-medium">Убрать все корректировки</span>
+          <span className="text-[13px] text-muted-foreground">Ручные подгонки баланса больше не нужны — итог задаётся суммой выше.</span>
+        </span>
+        <Switch checked={removeAdjustments} onCheckedChange={setRemoveAdjustments} aria-label="Убрать все корректировки" />
+      </label>
+      {errors.form ? (
+        <p role="alert" className="text-sm text-danger">
+          {errors.form}
+        </p>
+      ) : null}
+      <Button type="submit" disabled={pending}>
+        {pending ? "Сохраняем…" : "Начать учёт заново"}
+      </Button>
+    </form>
+  );
+}
 
 type AdjustExtras = { otherAccounts: AccountOption[]; fxRates: Record<string, string> };
 
@@ -99,6 +153,7 @@ function AdjustBalanceForm({ account, today, onDone, otherAccounts, fxRates }: {
 export function AccountActions({ account, today, otherAccounts = [], fxRates = {} }: { account: AccountDTO; today: string } & Partial<AdjustExtras>) {
   const router = useRouter();
   const [adjustOpen, setAdjustOpen] = useState(false);
+  const [restartOpen, setRestartOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const toggleArchive = () =>
@@ -116,6 +171,9 @@ export function AccountActions({ account, today, otherAccounts = [], fxRates = {
           <Button variant="outline" onClick={() => setAdjustOpen(true)}>
             <Scale /> Скорректировать баланс
           </Button>
+          <Button variant="outline" onClick={() => setRestartOpen(true)}>
+            <RotateCcw /> Начать учёт заново
+          </Button>
           <Button variant="outline" asChild>
             <Link href={`/accounts/${account.id}/edit`}>
               <Pencil /> Изменить
@@ -127,6 +185,9 @@ export function AccountActions({ account, today, otherAccounts = [], fxRates = {
         {account.isArchived ? <ArchiveRestore /> : <Archive />}
         {account.isArchived ? "Восстановить" : "В архив"}
       </Button>
+      <ResponsiveDialog open={restartOpen} onOpenChange={setRestartOpen} title="Начать учёт заново">
+        <RestartTrackingForm account={account} today={today} onDone={() => setRestartOpen(false)} />
+      </ResponsiveDialog>
       <ResponsiveDialog open={adjustOpen} onOpenChange={setAdjustOpen} title="Корректировка баланса">
         <AdjustBalanceForm account={account} today={today} otherAccounts={otherAccounts} fxRates={fxRates} onDone={() => setAdjustOpen(false)} />
       </ResponsiveDialog>

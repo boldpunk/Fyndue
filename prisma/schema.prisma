@@ -291,6 +291,9 @@ model Account {
   /// non-voided transactions. Only changed inside the same DB transaction
   /// as the transaction that moves it.
   currentBalance Decimal     @db.Decimal(20, 2)
+  /// First day tracked in Fyndue; earlier money is in openingBalance, so
+  /// operations dated before it are refused.
+  trackingStartDate DateTime? @db.Date
   includeInTotal Boolean     @default(true)
   bank           String?
   icon           String?
