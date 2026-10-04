@@ -168,19 +168,22 @@ Then Settings → Notifications → Connect Telegram. The `scheduler` container 
 
 ## 8. Backups
 
+Run as the `ubuntu` user (it is in the `docker` group), so the files can be downloaded with `scp` without sudo. Ubuntu Minimal may lack cron:
+
 ```bash
-sudo crontab -e
-# 30 3 * * * /opt/fyndue/deploy/backup.sh >> /var/log/fyndue-backup.log 2>&1
-sudo /opt/fyndue/deploy/backup.sh      # try it once now
+systemctl is-active cron || (sudo apt-get update && sudo apt-get install -y cron)
+mkdir -p ~/backups
+BACKUP_DIR=$HOME/backups /opt/fyndue/deploy/backup.sh      # try it once now
+(crontab -l 2>/dev/null | grep -v deploy/backup.sh; echo '30 22 * * * BACKUP_DIR=$HOME/backups /opt/fyndue/deploy/backup.sh >> $HOME/backups/backup.log 2>&1') | crontab -
 ```
 
-Backups go to `/var/backups/fyndue` (14 days kept). That is the same disk, so also copy them off the server: download them now and then, or use Oracle's free Object Storage (20 GB in the Always Free tier) or boot-volume backups.
+22:30 UTC is 03:30 in Tashkent. Backups are kept 14 days. That is the same disk, so also copy them off the server, e.g. from Windows: `scp "fyndue:backups/*" %USERPROFILE%\FyndueBackups\` (with the `fyndue` SSH alias), or use Oracle's free Object Storage / boot-volume backups.
 
 Restore (into an empty stack):
 
 ```bash
-docker compose exec -T db pg_restore -U fyndue -d fyndue --clean --if-exists --no-owner < /var/backups/fyndue/db_<date>.dump
-docker run --rm -v fyndue_documents:/data -v /var/backups/fyndue:/backup alpine:3.22 tar -xzf /backup/documents_<date>.tar.gz -C /data
+docker compose exec -T db pg_restore -U fyndue -d fyndue --clean --if-exists --no-owner < ~/backups/db_<date>.dump
+docker run --rm -v fyndue_documents:/data -v $HOME/backups:/backup alpine:3.22 tar -xzf /backup/documents_<date>.tar.gz -C /data
 ```
 
 ## 9. Updating

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Nightly backup of the Fyndue database and documents (docs/deployment.md, step 8).
-#   crontab -e  →  30 3 * * * /opt/fyndue/deploy/backup.sh >> /var/log/fyndue-backup.log 2>&1
+#   crontab (as ubuntu): 30 22 * * * BACKUP_DIR=$HOME/backups /opt/fyndue/deploy/backup.sh >> $HOME/backups/backup.log 2>&1
 set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
