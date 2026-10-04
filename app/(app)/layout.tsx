@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { SiteFooter } from "@/components/marketing/site-footer";
 import { QuickAddProvider } from "@/components/layout/quick-add";
 import { requireUser } from "@/lib/auth/session";
 import { todayIn } from "@/lib/finance/dates";
@@ -28,9 +29,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="flex min-h-dvh">
         <AppSidebar user={user} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-28 sm:px-6 lg:px-10 lg:pt-10 lg:pb-12">
-            {children}
-          </main>
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 sm:px-6 lg:px-10 lg:pt-10">{children}</main>
+          <SiteFooter className="mx-auto mt-12 w-full max-w-6xl px-4 pb-28 sm:px-6 lg:px-10 lg:pb-8" />
         </div>
       </div>
       <MobileNav user={user} />

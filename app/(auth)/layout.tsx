@@ -14,7 +14,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
         </div>
         {children}
       </div>
-      <SiteFooter className="mt-10" />
+      <SiteFooter className="mt-10 w-full max-w-5xl" />
     </main>
   );
 }
