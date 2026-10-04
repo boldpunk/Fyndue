@@ -1,5 +1,4 @@
 import { ArrowUpRight } from "lucide-react";
-import { cn } from "@/lib/utils/cn";
 
 const STUDIO_URL = "https://boldstudio.uz";
 
