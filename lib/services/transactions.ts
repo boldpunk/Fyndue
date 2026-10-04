@@ -266,55 +266,139 @@ async function createCashFlow(
 }
 
 async function createTransfer(userId: string, input: TransferInput, clientRequestId: string): Promise<{ id: string }> {
+  return prisma.$transaction((tx) => insertTransfer(tx, userId, input, clientRequestId));
+}
+
+type TransferLegsInput = { fromAccountId: string; toAccountId: string; amount: string; toAmount?: string; date: LocalDate; note?: string };
+
+/** Writes both legs of a transfer and moves both balances. Runs inside the caller's DB transaction. */
+async function insertTransfer(tx: Tx, userId: string, input: TransferLegsInput, clientRequestId: string | null): Promise<{ id: string }> {
+  // Lock in a stable order so two opposite transfers can't deadlock.
+  const [firstId, secondId] = [input.fromAccountId, input.toAccountId].sort();
+  const first = await ownedUsableAccount(tx, userId, firstId!);
+  const second = await ownedUsableAccount(tx, userId, secondId!);
+  const from = first.id === input.fromAccountId ? first : second;
+  const to = first.id === input.fromAccountId ? second : first;
+
+  const toAmount = resolveTransferToAmount(from.currency, to.currency, input.amount, input.toAmount);
+  const transferGroupId = randomUUID();
+  const date = localDateToDb(input.date);
+
+  const outLeg = await tx.transaction.create({
+    data: {
+      userId,
+      accountId: from.id,
+      type: "TRANSFER",
+      direction: "OUTFLOW",
+      amount: input.amount,
+      currency: from.currency,
+      transactionDate: date,
+      note: input.note ?? null,
+      transferGroupId,
+      clientRequestId,
+    },
+  });
+  await tx.transaction.create({
+    data: {
+      userId,
+      accountId: to.id,
+      type: "TRANSFER",
+      direction: "INFLOW",
+      amount: toAmount,
+      currency: to.currency,
+      transactionDate: date,
+      note: input.note ?? null,
+      transferGroupId,
+    },
+  });
+  await applyBalanceDelta(tx, from.id, money(input.amount).negated());
+  await applyBalanceDelta(tx, to.id, money(toAmount));
+  await writeAudit(tx, {
+    userId,
+    action: "TRANSFER_CREATED",
+    entityType: "Transaction",
+    entityId: outLeg.id,
+    metadata: { transferGroupId, fromAccountId: from.id, toAccountId: to.id, amount: input.amount, toAmount },
+  });
+  return { id: outLeg.id };
+}
+
+/**
+ * The amount on the other account of a conversion: required when the
+ * currencies differ (no invented rate), the same amount otherwise.
+ */
+async function counterpartSide(tx: Tx, userId: string, counterpartAccountId: string, ownCurrency: string, amount: string, counterpartAmount: string | undefined) {
+  // Currency never changes after creation, so a plain read is enough; insertTransfer locks both accounts.
+  const other = await tx.account.findFirst({ where: { id: counterpartAccountId, userId }, select: { currency: true } });
+  if (!other) throw new NotFoundError("Account");
+  if (other.currency === ownCurrency) return counterpartAmount ?? amount;
+  if (counterpartAmount === undefined) {
+    throw new DomainError(`Укажите, сколько это было в ${other.currency}.`, "TRANSFER_CONVERSION", { counterpartAmount: `Укажите сумму в ${other.currency}` });
+  }
+  return counterpartAmount;
+}
+
+/**
+ * Brings `accountId` to `targetBalance` with a transfer from/to another
+ * account (e.g. dollars bought with sums) instead of a balance adjustment.
+ * `counterpartAmount` is what left or reached the other account; it may be
+ * omitted only when both accounts share a currency. Null when nothing changes.
+ */
+export async function adjustBalanceByTransfer(
+  userId: string,
+  input: { accountId: string; targetBalance: string; date: LocalDate; note?: string; counterpartAccountId: string; counterpartAmount?: string },
+): Promise<string | null> {
   return prisma.$transaction(async (tx) => {
-    // Lock in a stable order so two opposite transfers can't deadlock.
-    const [firstId, secondId] = [input.fromAccountId, input.toAccountId].sort();
-    const first = await ownedUsableAccount(tx, userId, firstId!);
-    const second = await ownedUsableAccount(tx, userId, secondId!);
-    const from = first.id === input.fromAccountId ? first : second;
-    const to = first.id === input.fromAccountId ? second : first;
+    const account = await lockOwnedAccount(tx, userId, input.accountId);
+    const delta = money(input.targetBalance).minus(money(account.currentBalance));
+    if (delta.isZero()) return null;
+    const amount = delta.abs().toFixed(2);
+    if (input.counterpartAccountId === account.id) throw new DomainError("Выберите другой счёт.", "SAME_ACCOUNT", { counterpartAccountId: "Выберите другой счёт" });
+    const theirs = await counterpartSide(tx, userId, input.counterpartAccountId, account.currency, amount, input.counterpartAmount);
+    const legs: TransferLegsInput = delta.gt(0)
+      ? { fromAccountId: input.counterpartAccountId, toAccountId: account.id, amount: theirs, toAmount: amount, date: input.date, note: input.note }
+      : { fromAccountId: account.id, toAccountId: input.counterpartAccountId, amount, toAmount: theirs, date: input.date, note: input.note };
+    return (await insertTransfer(tx, userId, legs, null)).id;
+  });
+}
 
-    const toAmount = resolveTransferToAmount(from.currency, to.currency, input.amount, input.toAmount);
-    const transferGroupId = randomUUID();
-    const date = localDateToDb(input.date);
+/**
+ * Replaces a balance adjustment with the conversion it really was: the
+ * adjustment is voided and a transfer with the other account is recorded on
+ * the same date. The adjusted account's balance stays the same; the other
+ * account moves by `counterpartAmount`.
+ */
+export async function convertAdjustmentToTransfer(
+  userId: string,
+  input: { id: string; counterpartAccountId: string; counterpartAmount?: string },
+): Promise<{ id: string }> {
+  return prisma.$transaction(async (tx) => {
+    const adj = await lockOwnedTransaction(tx, userId, input.id);
+    if (adj.type !== "BALANCE_ADJUSTMENT") throw new DomainError("Конвертацией можно сделать только корректировку.", "NOT_ADJUSTMENT");
+    if (adj.voidedAt) throw new DomainError("Эта корректировка уже аннулирована.", "VOIDED");
+    if (adj.accountId === input.counterpartAccountId) {
+      throw new DomainError("Выберите другой счёт.", "SAME_ACCOUNT", { counterpartAccountId: "Выберите другой счёт" });
+    }
+    const amount = toMoneyString(adj.amount);
+    const date = dbToLocalDate(adj.transactionDate);
+    const note = adj.note && adj.note !== "Корректировка баланса" ? adj.note : undefined;
+    const theirs = await counterpartSide(tx, userId, input.counterpartAccountId, adj.currency, amount, input.counterpartAmount);
+    const legs: TransferLegsInput =
+      adj.direction === "INFLOW"
+        ? { fromAccountId: input.counterpartAccountId, toAccountId: adj.accountId, amount: theirs, toAmount: amount, date, note }
+        : { fromAccountId: adj.accountId, toAccountId: input.counterpartAccountId, amount, toAmount: theirs, date, note };
 
-    const outLeg = await tx.transaction.create({
-      data: {
-        userId,
-        accountId: from.id,
-        type: "TRANSFER",
-        direction: "OUTFLOW",
-        amount: input.amount,
-        currency: from.currency,
-        transactionDate: date,
-        note: input.note ?? null,
-        transferGroupId,
-        clientRequestId,
-      },
-    });
-    await tx.transaction.create({
-      data: {
-        userId,
-        accountId: to.id,
-        type: "TRANSFER",
-        direction: "INFLOW",
-        amount: toAmount,
-        currency: to.currency,
-        transactionDate: date,
-        note: input.note ?? null,
-        transferGroupId,
-      },
-    });
-    await applyBalanceDelta(tx, from.id, money(input.amount).negated());
-    await applyBalanceDelta(tx, to.id, money(toAmount));
+    await tx.transaction.update({ where: { id: adj.id }, data: { voidedAt: new Date(), voidReason: "Заменена конвертацией" } });
+    await applyBalanceDelta(tx, adj.accountId, balanceEffect({ direction: adj.direction, amount: adj.amount, status: adj.status }).negated());
+    const transfer = await insertTransfer(tx, userId, legs, null);
     await writeAudit(tx, {
       userId,
-      action: "TRANSFER_CREATED",
+      action: "ADJUSTMENT_CONVERTED",
       entityType: "Transaction",
-      entityId: outLeg.id,
-      metadata: { transferGroupId, fromAccountId: from.id, toAccountId: to.id, amount: input.amount, toAmount },
+      entityId: adj.id,
+      metadata: { transferId: transfer.id, counterpartAccountId: input.counterpartAccountId, counterpartAmount: input.counterpartAmount ?? amount },
     });
-    return { id: outLeg.id };
+    return transfer;
   });
 }
 

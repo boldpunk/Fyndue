@@ -7,6 +7,7 @@ import {
   setAccountArchived,
   updateAccount,
 } from "@/lib/services/accounts";
+import { adjustBalanceByTransfer } from "@/lib/services/transactions";
 import { runAction } from "@/lib/utils/action";
 import {
   accountCreateSchema,
@@ -48,7 +49,10 @@ export async function archiveAccountAction(input: unknown) {
 export async function adjustBalanceAction(input: unknown) {
   return runAction(async () => {
     const user = await requireUser();
-    const id = await adjustAccountBalance(user.id, balanceAdjustmentSchema.parse(input));
+    const parsed = balanceAdjustmentSchema.parse(input);
+    const id = parsed.counterpartAccountId
+      ? await adjustBalanceByTransfer(user.id, { ...parsed, counterpartAccountId: parsed.counterpartAccountId })
+      : await adjustAccountBalance(user.id, parsed);
     refresh();
     return { transactionId: id };
   });

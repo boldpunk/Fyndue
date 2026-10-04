@@ -69,6 +69,13 @@ export const transferUpdateSchema = z.object({
 });
 export type TransferUpdateInput = z.output<typeof transferUpdateSchema>;
 
+/** A balance adjustment that was really a conversion with another account. */
+export const convertAdjustmentSchema = z.object({
+  id: idSchema,
+  counterpartAccountId: idSchema,
+  counterpartAmount: z.preprocess((v) => (typeof v === "string" && !v.trim() ? undefined : v), moneySchema().optional()),
+});
+
 export const voidTransactionSchema = z.object({ id: idSchema, reason: optionalText(200) });
 
 export const transactionFiltersSchema = z.object({

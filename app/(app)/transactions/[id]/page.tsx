@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CategoryIcon } from "@/components/finance/category-icon";
 import { Money } from "@/components/finance/money";
+import { ConvertAdjustment } from "@/components/transactions/convert-adjustment";
 import { TransactionDetailActions } from "@/components/transactions/transaction-detail-actions";
 import { TransactionForm } from "@/components/transactions/transaction-form";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +15,9 @@ import { NotFoundError } from "@/lib/errors";
 import { formatLocalDate, todayIn } from "@/lib/finance/dates";
 import { listAccounts } from "@/lib/services/accounts";
 import { listCategories } from "@/lib/services/categories";
+import { latestCentralBankRates } from "@/lib/services/central-bank-rates";
 import { getTransaction } from "@/lib/services/transactions";
+import { money, toMoneyString } from "@/lib/finance/money";
 
 export const metadata: Metadata = { title: "Операция" };
 
@@ -38,6 +41,17 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
     ? await Promise.all([listAccounts(user.id), listCategories(user.id, { includeSystem: false })])
     : [[], []];
   const signed = t.type !== "TRANSFER";
+  const convertible = t.type === "BALANCE_ADJUSTMENT" && !t.isVoided;
+  const [allAccounts, cbuRates] = convertible ? await Promise.all([listAccounts(user.id), latestCentralBankRates()]) : [[], []];
+  // Exchange rate of a conversion, as "1 USD = 12 650 UZS".
+  const conversionRate =
+    t.type === "TRANSFER" && t.counterpart && t.counterpart.currency !== t.currency
+      ? t.currency === "UZS"
+        ? { unit: t.counterpart.currency, uzs: toMoneyString(money(t.amount).div(t.counterpart.amount)) }
+        : t.counterpart.currency === "UZS"
+          ? { unit: t.currency, uzs: toMoneyString(money(t.counterpart.amount).div(t.amount)) }
+          : null
+      : null;
 
   return (
     <div className="mx-auto grid w-full max-w-2xl gap-6">
@@ -51,7 +65,9 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
             <div className="flex items-center gap-3">
               {t.category ? <CategoryIcon icon={t.category.icon} color={t.category.color} size="lg" /> : null}
               <div className="grid gap-1">
-                <p className="text-sm text-muted-foreground">{TRANSACTION_TYPE_LABELS[t.type]}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t.type === "TRANSFER" && t.counterpart && t.counterpart.currency !== t.currency ? "Конвертация" : TRANSACTION_TYPE_LABELS[t.type]}
+                </p>
                 <Money
                   amount={signed && t.direction === "OUTFLOW" ? `-${t.amount}` : t.amount}
                   currency={t.currency}
@@ -81,6 +97,11 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
                 ) : null}
               </Row>
             ) : null}
+            {conversionRate ? (
+              <Row label="Курс обмена">
+                1 {conversionRate.unit} = <Money amount={conversionRate.uzs} currency="UZS" />
+              </Row>
+            ) : null}
             {t.debt ? (
               <Row label="Долг">
                 <Link href={`/debts/${t.debt.id}?tab=payments`} className="hover:underline">{t.debt.name}</Link>
@@ -94,6 +115,21 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
           <TransactionDetailActions transaction={t} />
         </CardContent>
       </Card>
+
+      {convertible ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Это была конвертация?</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ConvertAdjustment
+              transaction={{ id: t.id, amount: t.amount, currency: t.currency, direction: t.direction as "INFLOW" | "OUTFLOW", accountId: t.account.id }}
+              accounts={allAccounts.map(({ id, name, currency, currentBalance }) => ({ id, name, currency, currentBalance }))}
+              fxRates={Object.fromEntries(cbuRates.map((r) => [r.currency, r.rate]))}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
 
       {t.editable ? (
         <Card>

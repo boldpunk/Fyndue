@@ -12,7 +12,8 @@ import { requireUser } from "@/lib/auth/session";
 import { ACCOUNT_TYPE_LABELS } from "@/lib/constants/finance";
 import { NotFoundError } from "@/lib/errors";
 import { todayIn } from "@/lib/finance/dates";
-import { getAccount } from "@/lib/services/accounts";
+import { getAccount, listAccounts } from "@/lib/services/accounts";
+import { latestCentralBankRates } from "@/lib/services/central-bank-rates";
 import { listTransactions } from "@/lib/services/transactions";
 
 export const metadata: Metadata = { title: "Счёт" };
@@ -24,7 +25,12 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
     if (e instanceof NotFoundError) notFound();
     throw e;
   });
-  const transactions = await listTransactions(user.id, { page: 1, account: account.id });
+  const [transactions, allAccounts, cbuRates] = await Promise.all([
+    listTransactions(user.id, { page: 1, account: account.id }),
+    listAccounts(user.id),
+    latestCentralBankRates(),
+  ]);
+  const otherAccounts = allAccounts.filter((a) => a.id !== account.id).map(({ id, name, currency, currentBalance }) => ({ id, name, currency, currentBalance }));
 
   return (
     <div className="grid gap-6">
@@ -55,7 +61,12 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
         </div>
-        <AccountActions account={account} today={todayIn(user.timezone)} />
+        <AccountActions
+          account={account}
+          today={todayIn(user.timezone)}
+          otherAccounts={otherAccounts}
+          fxRates={Object.fromEntries(cbuRates.map((r) => [r.currency, r.rate]))}
+        />
       </header>
 
       <Card>

@@ -154,6 +154,12 @@ Phase 6 notes:
 - Payments due on a weekend or public holiday move to the next working day, like the bank; interest is still counted to the contract date plus the extra days on the moved line's principal (see debt-engine.md §1). Matches the bank's schedule for the 38% loan to the tiyin.
 - `Debt.shiftWeekends`, `DebtScheduleItem.accrualDate`; wizard switch (on by default, off for personal debts); per-debt switch in Settings that writes a new schedule version; "перенесён с …" shown in the schedule.
 
+## Conversions instead of adjustments ✅
+
+- A balance adjustment that was really a currency exchange (e.g. dollars bought with sums) can be turned into a conversion from the transaction page: the adjustment is voided and a cross-currency transfer with the chosen account is recorded on the same date; the adjusted balance is unchanged, the other account moves by the amount from the bank statement (CBU estimate one click away).
+- "Скорректировать баланс" has a switch to record the difference as a conversion directly.
+- Cross-currency transfers are labelled «Конвертация» and show the exchange rate. The amount on the other account is required when currencies differ (no invented rate).
+
 ## Phase 7 — PWA & polish (next)
 
 Manifest, icons, standalone mode, safe areas, command palette (⌘K), onboarding flow, skeletons/empty/error states audit, accessibility audit, performance (lazy charts, pagination review), rate limiting on actions, email verification & password reset, Playwright E2E for critical flows.

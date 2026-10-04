@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/session";
 import {
   confirmExpectedIncome,
+  convertAdjustmentToTransfer,
   createTransaction,
   updateCashFlowTransaction,
   updateTransfer,
@@ -12,6 +13,7 @@ import { runAction } from "@/lib/utils/action";
 import { idSchema } from "@/lib/validations/common";
 import {
   cashFlowUpdateSchema,
+  convertAdjustmentSchema,
   transactionCreateSchema,
   transferUpdateSchema,
   voidTransactionSchema,
@@ -63,5 +65,14 @@ export async function confirmIncomeAction(id: unknown) {
     await confirmExpectedIncome(user.id, idSchema.parse(id));
     refresh();
     return null;
+  });
+}
+
+export async function convertAdjustmentAction(input: unknown) {
+  return runAction(async () => {
+    const user = await requireUser();
+    const result = await convertAdjustmentToTransfer(user.id, convertAdjustmentSchema.parse(input));
+    refresh();
+    return result;
   });
 }
