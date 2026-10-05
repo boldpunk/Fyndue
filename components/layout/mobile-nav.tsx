@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils/cn";
-import { MOBILE_NAV, MORE_NAV, isActive, type NavItem } from "./nav-items";
+import { ADMIN_NAV, MOBILE_NAV, MORE_NAV, isActive, type NavItem } from "./nav-items";
 import { useQuickAdd } from "./quick-add";
 import { SignOutButton } from "./sign-out-button";
 import { ThemeToggle } from "./theme-toggle";
@@ -26,11 +26,12 @@ function Tab({ item, pathname }: { item: NavItem; pathname: string }) {
   );
 }
 
-export function MobileNav({ user }: { user: { name: string; contact: string } }) {
+export function MobileNav({ user }: { user: { name: string; contact: string; isAdmin: boolean } }) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
   const quickAdd = useQuickAdd();
-  const moreActive = MORE_NAV.some((item) => isActive(pathname, item.href));
+  const more = user.isAdmin ? [...MORE_NAV, ADMIN_NAV] : MORE_NAV;
+  const moreActive = more.some((item) => isActive(pathname, item.href));
 
   return (
     <>
@@ -70,7 +71,7 @@ export function MobileNav({ user }: { user: { name: string; contact: string } })
             <SheetDescription className="sr-only">Другие разделы Fyndue</SheetDescription>
           </SheetHeader>
           <div className="grid grid-cols-3 gap-2">
-            {MORE_NAV.map(({ href, label, icon: Icon }) => (
+            {more.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
                 href={href}

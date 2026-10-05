@@ -33,6 +33,10 @@ How it's enforced:
 5. **Tests** (`tests/integration/authorization.test.ts`): user A cannot read, update, archive or post transactions to user B's account; cannot use B's category; cannot void B's transaction; a transfer into B's account is rejected. Phase 2/6 add debts, payments and documents.
 6. **Future defence in depth:** Postgres Row-Level Security with `SET app.user_id` per transaction can be layered on without changing service signatures.
 
+### 2a. Admin tab
+
+`/admin` lists every user (name, phone or email, sign-up method, sign-up and last sign-in time, Telegram, and counts of accounts, debts and operations). It is the one cross-user read: `lib/services/admin.ts` re-checks that the caller's email is in `ADMIN_EMAILS` and returns counts only, never amounts, account names or debt details. Everyone else gets a 404, and the menu item is hidden. Phone accounts have placeholder emails, so they can never match.
+
 ## 3. Input validation
 
 - Zod schemas (`lib/validations/*`) validate every action input on the server, even when the client already validated.

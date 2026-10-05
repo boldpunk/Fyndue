@@ -1,9 +1,10 @@
 import "server-only";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 import { prisma } from "@/lib/db";
 import { auth } from "./auth";
+import { isAdminEmail } from "./admin";
 import { formatPhone, isPhoneAccountEmail } from "./phone";
 
 export type CurrentUser = {
@@ -16,6 +17,8 @@ export type CurrentUser = {
   image: string | null;
   baseCurrency: "UZS" | "USD" | "EUR" | "RUB";
   timezone: string;
+  /** Sees the admin tab (ADMIN_EMAILS). */
+  isAdmin: boolean;
 };
 
 /** Session for this request (deduplicated across the render tree). */
@@ -30,7 +33,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   });
   if (!user) return null;
   const contact = isPhoneAccountEmail(user.email) && user.phoneNumber ? formatPhone(user.phoneNumber) : user.email;
-  return { ...user, contact };
+  return { ...user, contact, isAdmin: isAdminEmail(user.email) };
 });
 
 /**
@@ -40,5 +43,12 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 export async function requireUser(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  return user;
+}
+
+/** Admin pages: everyone else gets a plain 404, so the page's existence is not revealed. */
+export async function requireAdmin(): Promise<CurrentUser> {
+  const user = await requireUser();
+  if (!user.isAdmin) notFound();
   return user;
 }

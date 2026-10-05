@@ -9,6 +9,7 @@ import {
   Receipt,
   Repeat,
   Settings,
+  ShieldCheck,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -41,6 +42,9 @@ export const MOBILE_NAV: { left: NavItem[]; right: NavItem[] } = {
 export const MORE_NAV: NavItem[] = MAIN_NAV.filter(
   (item) => !["/dashboard", "/transactions", "/debts"].includes(item.href),
 );
+
+/** Shown only to admins (ADMIN_EMAILS), after the main items. */
+export const ADMIN_NAV: NavItem = { href: "/admin", label: "Админ", icon: ShieldCheck };
 
 export const ACCOUNT_ICON = CreditCard;
 

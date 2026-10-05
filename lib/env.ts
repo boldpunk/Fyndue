@@ -20,6 +20,11 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("true")
     .transform((value) => value === "true"),
+  /** Comma-separated emails that see the admin tab (/admin). */
+  ADMIN_EMAILS: z.preprocess(
+    (v) => (typeof v === "string" ? v : ""),
+    z.string().transform((v) => v.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)),
+  ),
   // Telegram (Phase 5). All optional: without a token the feature is off.
   TELEGRAM_BOT_TOKEN: optional(z.string()),
   TELEGRAM_BOT_USERNAME: optional(z.string().regex(/^[A-Za-z0-9_]{5,32}$/, "TELEGRAM_BOT_USERNAME is the bot's @username without the @")),
