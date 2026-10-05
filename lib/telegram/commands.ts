@@ -5,8 +5,9 @@ import { formatMoney, sumMoney, toMoneyString } from "@/lib/finance/money";
 import { getMonthOverview, type CurrencyTotals } from "@/lib/services/dashboard";
 import { debtTotalsByCurrency, listDebts, listUpcomingPayments, type UpcomingPaymentDTO } from "@/lib/services/debts";
 import { getSubscriptions } from "@/lib/services/subscriptions";
+import { confirmPhoneFromContact, contactReply } from "@/lib/services/phone-auth";
 import { disconnectChat, linkTelegramChat, userIdForChat } from "@/lib/services/telegram-connection";
-import type { TelegramSender, TelegramUpdate } from "./client";
+import type { ReplyMarkup, TelegramSender, TelegramUpdate } from "./client";
 import { parseCommand } from "./commands-parse";
 import { days, debtEmoji, escapeHtml, formatDueDate } from "./messages";
 
@@ -23,6 +24,7 @@ export const BOT_COMMANDS = [
   { command: "debts", description: "Остаток долгов и прогресс" },
   { command: "month", description: "Доходы, расходы и платежи за месяц" },
   { command: "subs", description: "Подписки: сколько в месяц и ближайшие списания" },
+  { command: "phone", description: "Привязать номер, чтобы входить по нему" },
   { command: "help", description: "Что умеет бот" },
   { command: "stop", description: "Отключить этот чат от Fyndue" },
 ];
@@ -156,12 +158,37 @@ async function reply(command: string, args: string[], chat: { chatId: string; us
   }
 }
 
+/** "Share my number" button: Telegram sends the user's own verified contact. */
+export const SHARE_PHONE_KEYBOARD: ReplyMarkup = {
+  keyboard: [[{ text: "📱 Поделиться номером", request_contact: true }]],
+  resize_keyboard: true,
+  one_time_keyboard: true,
+};
+
+const SHARE_PHONE_PROMPT =
+  "Чтобы входить в Fyndue по номеру телефона, нажмите кнопку <b>«📱 Поделиться номером»</b> ниже.\n\nTelegram передаст только ваш номер — так мы убедимся, что он ваш, и пришлём сюда код для входа.";
+
 /** Handles one update from the webhook or long polling. Only private chats are served. */
 export async function handleUpdate(update: TelegramUpdate, sender: TelegramSender): Promise<void> {
   const message = update.message;
   if (!message || message.chat.type !== "private" || message.from?.is_bot) return;
-  const parsed = parseCommand(message.text);
   const chat = { chatId: String(message.chat.id), username: message.from?.username };
+
+  if (message.contact) {
+    const result = await confirmPhoneFromContact(
+      { chatId: chat.chatId, fromUserId: message.from?.id ?? -1, contactUserId: message.contact.user_id, phoneNumber: message.contact.phone_number },
+      sender,
+    );
+    await sender.sendMessage(chat.chatId, contactReply(result), { replyMarkup: result.phoneNumber ? { remove_keyboard: true } : SHARE_PHONE_KEYBOARD });
+    return;
+  }
+
+  const parsed = parseCommand(message.text);
+  // Deep link from the sign-in page: t.me/<bot>?start=login
+  if (parsed?.command === "phone" || (parsed?.command === "start" && (parsed.args[0] === "login" || (!parsed.args[0] && !(await userIdForChat(chat.chatId)))))) {
+    await sender.sendMessage(chat.chatId, SHARE_PHONE_PROMPT, { replyMarkup: SHARE_PHONE_KEYBOARD });
+    return;
+  }
   const text = parsed ? await reply(parsed.command, parsed.args, chat) : `Отправьте команду, например /today.\n\n${HELP}`;
   if (text) await sender.sendMessage(chat.chatId, text);
 }

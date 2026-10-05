@@ -14,6 +14,8 @@ import { NotFoundError } from "@/lib/errors";
 import { formatLocalDate, todayIn } from "@/lib/finance/dates";
 import { getAccount, listAccounts } from "@/lib/services/accounts";
 import { latestCentralBankRates } from "@/lib/services/central-bank-rates";
+import { listCategories } from "@/lib/services/categories";
+import { TRANSFERS_IN_CATEGORY_NAME } from "@/lib/constants/categories";
 import { listTransactions } from "@/lib/services/transactions";
 
 export const metadata: Metadata = { title: "Счёт" };
@@ -25,11 +27,13 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
     if (e instanceof NotFoundError) notFound();
     throw e;
   });
-  const [transactions, allAccounts, cbuRates] = await Promise.all([
+  const [transactions, allAccounts, cbuRates, incomeCategories] = await Promise.all([
     listTransactions(user.id, { page: 1, account: account.id }),
     listAccounts(user.id),
     latestCentralBankRates(),
+    listCategories(user.id, { type: "INCOME" }),
   ]);
+  const incomeCategoryId = incomeCategories.find((c) => c.name === TRANSFERS_IN_CATEGORY_NAME && !c.isArchived)?.id;
   const otherAccounts = allAccounts.filter((a) => a.id !== account.id).map(({ id, name, currency, currentBalance }) => ({ id, name, currency, currentBalance }));
 
   return (
@@ -68,6 +72,7 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
           today={todayIn(user.timezone)}
           otherAccounts={otherAccounts}
           fxRates={Object.fromEntries(cbuRates.map((r) => [r.currency, r.rate]))}
+          incomeCategoryId={incomeCategoryId}
         />
       </header>
 

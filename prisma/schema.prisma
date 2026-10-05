@@ -188,6 +188,9 @@ model User {
   name          String
   email         String   @unique
   emailVerified Boolean  @default(false)
+  /// E.164, e.g. +998901234567; verified through the Telegram bot (phone sign-in).
+  phoneNumber         String?  @unique
+  phoneNumberVerified Boolean? @default(false)
   image         String?
   baseCurrency  Currency @default(UZS)
   timezone      String   @default("Asia/Tashkent")
@@ -639,6 +642,17 @@ model NotificationPreference {
   updatedAt         DateTime @updatedAt @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// A phone number Telegram confirmed by a shared contact (contact.user_id = sender),
+/// and the private chat its sign-in codes are sent to.
+model TelegramPhone {
+  id             String   @id @default(cuid())
+  phoneNumber    String   @unique
+  chatId         String   @unique
+  telegramUserId String
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
 }
 
 model TelegramConnection {

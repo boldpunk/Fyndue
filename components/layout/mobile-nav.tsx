@@ -26,7 +26,7 @@ function Tab({ item, pathname }: { item: NavItem; pathname: string }) {
   );
 }
 
-export function MobileNav({ user }: { user: { name: string; email: string } }) {
+export function MobileNav({ user }: { user: { name: string; contact: string } }) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
   const quickAdd = useQuickAdd();
@@ -86,7 +86,7 @@ export function MobileNav({ user }: { user: { name: string; email: string } }) {
             ))}
           </div>
           <div className="grid gap-0.5 border-t pt-3">
-            <UserBadge name={user.name} email={user.email} />
+            <UserBadge name={user.name} email={user.contact} />
             <ThemeToggle withLabel />
             <SignOutButton />
           </div>

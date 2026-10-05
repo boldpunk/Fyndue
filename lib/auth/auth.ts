@@ -2,9 +2,13 @@ import "server-only";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
+import { phoneNumber } from "better-auth/plugins";
+import { isNormalizedPhone, phoneAccountEmail } from "@/lib/auth/phone";
 import { prisma } from "@/lib/db";
-import { env, googleAuthEnabled } from "@/lib/env";
+import { env, googleAuthEnabled, phoneAuthEnabled } from "@/lib/env";
 import { bootstrapUser } from "@/lib/services/bootstrap";
+import { connectTelegramForPhone, deliverPhoneOtp } from "@/lib/services/phone-auth";
+import { getTelegramClient } from "@/lib/telegram/server";
 
 /**
  * Better Auth owns password hashing, session tokens and cookies — Fyndue
@@ -38,6 +42,8 @@ export const auth = betterAuth({
     customRules: {
       "/sign-in/email": { window: 60, max: 5 },
       "/sign-up/email": { window: 60, max: 3 },
+      "/phone-number/send-otp": { window: 60, max: 3 },
+      "/phone-number/verify": { window: 60, max: 10 },
     },
   },
   advanced: {
@@ -53,8 +59,29 @@ export const auth = betterAuth({
       },
     },
   },
-  // Must be last: lets server actions set auth cookies.
-  plugins: [nextCookies()],
+  plugins: [
+    ...(phoneAuthEnabled
+      ? [
+          phoneNumber({
+            otpLength: 6,
+            expiresIn: 300,
+            allowedAttempts: 5,
+            phoneNumberValidator: (value) => isNormalizedPhone(value),
+            // Delivered in the Telegram chat that confirmed the number; if none yet,
+            // the bot sends the waiting code as soon as the user shares their contact.
+            sendOTP: async ({ phoneNumber: phone, code }) => {
+              await deliverPhoneOtp(phone, code, getTelegramClient());
+            },
+            signUpOnVerification: env.ALLOW_PHONE_SIGNUP ? { getTempEmail: phoneAccountEmail, getTempName: (phone) => phone } : undefined,
+            callbackOnVerification: async ({ phoneNumber: phone, user }) => {
+              await connectTelegramForPhone(user.id, phone);
+            },
+          }),
+        ]
+      : []),
+    // Must be last: lets server actions set auth cookies.
+    nextCookies(),
+  ],
 });
 
 export type AuthSession = typeof auth.$Infer.Session;

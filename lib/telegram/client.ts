@@ -23,8 +23,15 @@ export class TelegramApiError extends Error {
 export type SendResult = { messageId: string };
 
 /** What the dispatcher and commands need; tests inject a fake. */
+/** Reply keyboard asking for the user's own contact, or one that removes it. */
+export type ReplyMarkup =
+  | { keyboard: { text: string; request_contact?: boolean }[][]; resize_keyboard?: boolean; one_time_keyboard?: boolean }
+  | { remove_keyboard: true };
+
+export type SendOptions = { replyMarkup?: ReplyMarkup };
+
 export type TelegramSender = {
-  sendMessage(chatId: string, html: string): Promise<SendResult>;
+  sendMessage(chatId: string, html: string, options?: SendOptions): Promise<SendResult>;
 };
 
 export type TelegramUpdate = {
@@ -32,6 +39,8 @@ export type TelegramUpdate = {
   message?: {
     message_id: number;
     text?: string;
+    /** A shared contact; user_id is set when it is a Telegram user's own card. */
+    contact?: { phone_number: string; user_id?: number; first_name?: string };
     chat: { id: number; type: string };
     from?: { id: number; username?: string; is_bot?: boolean };
   };
@@ -65,12 +74,13 @@ export function createTelegramClient(token: string, fetchImpl: typeof fetch = fe
   }
 
   return {
-    async sendMessage(chatId: string, html: string): Promise<SendResult> {
+    async sendMessage(chatId: string, html: string, options?: SendOptions): Promise<SendResult> {
       const result = await call<{ message_id: number }>("sendMessage", {
         chat_id: chatId,
         text: html,
         parse_mode: "HTML",
         link_preview_options: { is_disabled: true },
+        ...(options?.replyMarkup ? { reply_markup: options.replyMarkup } : {}),
       });
       return { messageId: String(result.message_id) };
     },

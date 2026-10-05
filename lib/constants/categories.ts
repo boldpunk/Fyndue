@@ -26,6 +26,7 @@ export const CATEGORY_ICONS = [
   "laptop",
   "trophy",
   "banknote",
+  "hand-coins",
   "undo-2",
   "wallet",
   "piggy-bank",
@@ -87,9 +88,13 @@ export const DEFAULT_EXPENSE_CATEGORIES: readonly DefaultCategory[] = [
   { name: "Другое", icon: "circle-dashed", color: "slate" },
 ];
 
+/** Money other people sent to me; the account page's «Пополнить» preselects it. */
+export const TRANSFERS_IN_CATEGORY_NAME = "Переводы от людей";
+
 /** SPEC §28 income sources. */
 export const DEFAULT_INCOME_CATEGORIES: readonly DefaultCategory[] = [
   { name: "Зарплата", icon: "briefcase", color: "green" },
+  { name: TRANSFERS_IN_CATEGORY_NAME, icon: "hand-coins", color: "teal" },
   { name: "Фриланс", icon: "laptop", color: "teal" },
   { name: "Премия", icon: "trophy", color: "amber" },
   { name: "Наличные", icon: "banknote", color: "lime" },

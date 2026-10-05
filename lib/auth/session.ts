@@ -4,11 +4,15 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { prisma } from "@/lib/db";
 import { auth } from "./auth";
+import { formatPhone, isPhoneAccountEmail } from "./phone";
 
 export type CurrentUser = {
   id: string;
   name: string;
   email: string;
+  /** What to show for the user: the email, or the phone number for phone-only accounts. */
+  contact: string;
+  phoneNumber: string | null;
   image: string | null;
   baseCurrency: "UZS" | "USD" | "EUR" | "RUB";
   timezone: string;
@@ -20,10 +24,13 @@ export const getSession = cache(async () => auth.api.getSession({ headers: await
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const session = await getSession();
   if (!session) return null;
-  return prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, name: true, email: true, image: true, baseCurrency: true, timezone: true },
+    select: { id: true, name: true, email: true, phoneNumber: true, image: true, baseCurrency: true, timezone: true },
   });
+  if (!user) return null;
+  const contact = isPhoneAccountEmail(user.email) && user.phoneNumber ? formatPhone(user.phoneNumber) : user.email;
+  return { ...user, contact };
 });
 
 /**

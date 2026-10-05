@@ -166,6 +166,11 @@ Phase 6 notes:
 - Operations dated before an account's tracking start are refused everywhere (create, edit, transfers, conversions, corrections, debt payments): that money is already in the opening balance.
 - © line with the Bold Studio credit on the sign-in pages and in Settings; public `/about` page (О разработчике) in brand colours.
 
+## Top-ups, phone sign-in ✅
+
+- **Пополнить** on the account page opens income with the «Переводы от людей» category (new default income category, added for existing users); for income the payee field reads «От кого».
+- Registration is open by phone number: the code comes from the Telegram bot after the user shares their contact (docs/telegram.md §9). Email sign-up stays behind `ALLOW_REGISTRATION`; email sign-in still works.
+
 ## Phase 7 — PWA & polish (next)
 
 Manifest, icons, standalone mode, safe areas, command palette (⌘K), onboarding flow, skeletons/empty/error states audit, accessibility audit, performance (lazy charts, pagination review), rate limiting on actions, email verification & password reset, Playwright E2E for critical flows.

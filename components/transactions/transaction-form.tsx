@@ -332,8 +332,8 @@ export function TransactionForm({
           <Input id="date" type="date" {...register("date")} />
         </Field>
       ) : (
-        <Field label="Где / у кого" htmlFor="merchant" error={errors.merchant?.message}>
-          <Input id="merchant" placeholder="Необязательно" autoComplete="off" {...register("merchant")} />
+        <Field label={kind === "INCOME" ? "От кого" : "Где / у кого"} htmlFor="merchant" error={errors.merchant?.message}>
+          <Input id="merchant" placeholder={kind === "INCOME" ? "Необязательно — например, Азиз или работодатель" : "Необязательно"} autoComplete="off" {...register("merchant")} />
         </Field>
       )}
 

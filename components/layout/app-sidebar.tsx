@@ -8,7 +8,7 @@ import { SignOutButton } from "./sign-out-button";
 import { ThemeToggle } from "./theme-toggle";
 import { UserBadge } from "./user-badge";
 
-export function AppSidebar({ user }: { user: { name: string; email: string } }) {
+export function AppSidebar({ user }: { user: { name: string; contact: string } }) {
   const pathname = usePathname();
   return (
     <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r bg-sidebar px-3 py-4 lg:flex">
@@ -35,7 +35,7 @@ export function AppSidebar({ user }: { user: { name: string; email: string } }) 
         })}
       </nav>
       <div className="mt-auto grid gap-0.5 border-t pt-3">
-        <UserBadge name={user.name} email={user.email} />
+        <UserBadge name={user.name} email={user.contact} />
         <ThemeToggle withLabel />
         <SignOutButton />
       </div>

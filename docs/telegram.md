@@ -72,7 +72,7 @@ Formatting follows SPEC §34, amounts via `formatMoney` (`3,500,000 UZS`), dates
 
 ## 6. Commands
 
-`/start CODE`, `/today` (due today + overdue), `/upcoming` (next 14 days), `/debts` (remaining principal + progress), `/month` (income, expenses, debt payments this month), `/subs` (subscriptions: monthly total and charges in the next 30 days), `/help`, `/stop` (disconnect). Every command resolves the user by `chatId → TelegramConnection(CONNECTED) → userId` and calls the same `lib/services` queries as the web app. Future `/expense`, `/income`, `/paid` reuse the same server actions' services and validation.
+`/start CODE`, `/today` (due today + overdue), `/upcoming` (next 14 days), `/debts` (remaining principal + progress), `/month` (income, expenses, debt payments this month), `/subs` (subscriptions: monthly total and charges in the next 30 days), `/phone` (share the number to sign in by phone), `/help`, `/stop` (disconnect). Every command resolves the user by `chatId → TelegramConnection(CONNECTED) → userId` and calls the same `lib/services` queries as the web app. Future `/expense`, `/income`, `/paid` reuse the same server actions' services and validation.
 
 ## 7. Tests (SPEC §59)
 
@@ -86,3 +86,15 @@ Implemented in `tests/unit/notifications.test.ts` (planner windows, overdue roun
 2. Put the token and the username (without `@`) in `.env` as `TELEGRAM_BOT_TOKEN` and `TELEGRAM_BOT_USERNAME`, then restart the app.
 3. **Local:** run `pnpm telegram:dev` next to `pnpm dev`. **Deployed:** set `TELEGRAM_WEBHOOK_SECRET` and `CRON_SECRET`, call `setWebhook` with `https://<host>/api/telegram/webhook` and the secret, and schedule `/api/cron/notifications`.
 4. Open Settings → Notifications → **Connect Telegram**.
+
+## 9. Phone sign-in
+
+Sign-in and sign-up by phone number use Better Auth's `phoneNumber` plugin (6-digit code, 5 minutes, 5 attempts; send-otp 3/min, verify 10/min). There is no SMS: the code is delivered by this bot. It is on whenever the bot is configured; `ALLOW_PHONE_SIGNUP=false` keeps sign-in but stops new accounts.
+
+A bot cannot write to a phone number, so the number is confirmed in the bot first:
+
+1. The site asks for a code (`/phone-number/send-otp`). If the number is in `TelegramPhone`, the code goes to that chat (`lib/services/phone-auth.ts → deliverPhoneOtp`).
+2. Otherwise the user opens `t.me/<bot>?start=login` (or sends `/phone`) and taps **📱 Поделиться номером** (`request_contact`). Only their own contact counts (`contact.user_id === from.id`). The number is saved for the chat, and the waiting code is read from `Verification` and sent right away.
+3. Verifying the code signs in to the account with that number, or creates one (placeholder email, categories bootstrapped). The chat is connected for reminders if neither is connected yet.
+
+An email account already connected to the bot gets the number when its owner shares the contact, so they can sign in by phone too. Tests: `tests/integration/phone-auth.test.ts`.

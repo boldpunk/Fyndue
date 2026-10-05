@@ -73,6 +73,8 @@ model User {
   id            String   @id
   email         String   @unique
   emailVerified Boolean  @default(false)
+  phoneNumber         String?  @unique          // E.164, set by phone sign-in or linked in the bot
+  phoneNumberVerified Boolean? @default(false)
   name          String
   image         String?
   baseCurrency  Currency @default(UZS)
@@ -96,6 +98,8 @@ model UserSettings {
 ```
 
 Better Auth tables (`Session`, `AuthAccount` → mapped to `account`, `Verification`) are generated to Better Auth's shape. The auth "account" model is renamed `AuthAccount` so it does not clash with the financial `Account`. Password hashes live in `AuthAccount.password` and are written only by Better Auth.
+
+Phone sign-in (docs/telegram.md §9): accounts created by phone get a placeholder email `<digits>@phone.fyndue.uz` (Better Auth requires one); the UI shows the formatted number instead. Codes live in `Verification` (`identifier` = phone, `value` = `code:attempts`).
 
 ## 5. Accounts, categories, transactions (Phase 1)
 
@@ -372,6 +376,10 @@ model TelegramConnection {
   telegramChatId String? @unique, telegramUsername String?,
   connectionCodeHash String? @unique, connectionCodeExpiresAt DateTime?,
   connectedAt DateTime?, status TelegramConnectionStatus, createdAt, updatedAt
+}
+
+model TelegramPhone {            // a number confirmed in the bot by sharing the contact
+  id, phoneNumber String @unique, chatId String @unique, telegramUserId String, createdAt, updatedAt
 }
 
 model NotificationLog {

@@ -17,7 +17,7 @@ describe("categories", () => {
     const income = await listCategories(user.id, { type: "INCOME" });
     expect(expense.map((c) => c.name)).toEqual(expect.arrayContaining(["Топливо", "eSIM и роуминг"]));
     expect(expense).toHaveLength(19);
-    expect(income.map((c) => c.name)).toEqual(["Зарплата", "Фриланс", "Премия", "Наличные", "Возврат", "Другое"]);
+    expect(income.map((c) => c.name)).toEqual(["Зарплата", "Переводы от людей", "Фриланс", "Премия", "Наличные", "Возврат", "Другое"]);
     expect(expense.find((c) => c.name === "Платежи по долгам")?.isSystem).toBe(true);
   });
 

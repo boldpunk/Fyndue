@@ -1,5 +1,5 @@
 "use client";
-import { Archive, ArchiveRestore, Pencil, RotateCcw, Scale } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowDownLeft, Pencil, RotateCcw, Scale } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { adjustBalanceAction, archiveAccountAction, restartTrackingAction } from "@/app/(app)/accounts/actions";
 import { Money } from "@/components/finance/money";
 import { MoneyInput } from "@/components/finance/money-input";
+import { useQuickAdd } from "@/components/layout/quick-add";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -150,7 +151,14 @@ function AdjustBalanceForm({ account, today, onDone, otherAccounts, fxRates }: {
   );
 }
 
-export function AccountActions({ account, today, otherAccounts = [], fxRates = {} }: { account: AccountDTO; today: string } & Partial<AdjustExtras>) {
+export function AccountActions({
+  account,
+  today,
+  otherAccounts = [],
+  fxRates = {},
+  incomeCategoryId,
+}: { account: AccountDTO; today: string; incomeCategoryId?: string } & Partial<AdjustExtras>) {
+  const quickAdd = useQuickAdd();
   const router = useRouter();
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [restartOpen, setRestartOpen] = useState(false);
@@ -168,6 +176,9 @@ export function AccountActions({ account, today, otherAccounts = [], fxRates = {
     <div className="flex flex-wrap gap-2">
       {!account.isArchived ? (
         <>
+          <Button onClick={() => quickAdd.open("INCOME", { accountId: account.id, categoryId: incomeCategoryId })}>
+            <ArrowDownLeft /> Пополнить
+          </Button>
           <Button variant="outline" onClick={() => setAdjustOpen(true)}>
             <Scale /> Скорректировать баланс
           </Button>

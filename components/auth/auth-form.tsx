@@ -18,7 +18,7 @@ function safeNext(next: string | null) {
   return next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
 }
 
-export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: boolean }) {
+export function AuthForm({ mode, googleEnabled, phoneHref }: { mode: Mode; googleEnabled: boolean; phoneHref?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -130,6 +130,11 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
           </>
         )}
       </p>
+      {phoneHref ? (
+        <Link href={phoneHref} className="-mt-3 text-center text-sm text-muted-foreground hover:text-foreground hover:underline">
+          Войти по номеру телефона
+        </Link>
+      ) : null}
     </Card>
   );
 }

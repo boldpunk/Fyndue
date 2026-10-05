@@ -20,7 +20,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto grid w-full max-w-2xl gap-6">
-      <PageHeader title="Настройки" description={user.email} />
+      <PageHeader title="Настройки" description={user.contact} />
 
       <Card>
         <CardHeader>

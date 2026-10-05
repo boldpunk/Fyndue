@@ -149,7 +149,7 @@ Open **https://fyndue.uz** — the login page should load with a padlock.
 ## 6. Your account
 
 1. Register at https://fyndue.uz/register (and family members, if any).
-2. Close registration: set `ALLOW_REGISTRATION=false` in `.env`, then `docker compose up -d` (recreates `web` only).
+2. Close email registration: set `ALLOW_REGISTRATION=false` in `.env`, then `docker compose up -d` (recreates `web` only). Sign-up by phone (code from the Telegram bot) stays open while `ALLOW_PHONE_SIGNUP` is `true`, the default.
 
 Production starts empty; the demo seed never runs there. To move data from your PC instead, ask — it is a `pg_dump` / `pg_restore` of the local database plus a copy of `.local/storage`.
 
