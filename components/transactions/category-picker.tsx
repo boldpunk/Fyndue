@@ -1,5 +1,6 @@
 "use client";
 import { Plus } from "lucide-react";
+import { orderTree } from "@/lib/categories/tree";
 import { CategoryIcon } from "@/components/finance/category-icon";
 import { cn } from "@/lib/utils/cn";
 import type { CategoryOption } from "./types";
@@ -29,8 +30,9 @@ export function CategoryPicker({
       aria-describedby={describedBy}
       className="grid max-h-56 grid-cols-3 gap-1.5 overflow-y-auto sm:grid-cols-4"
     >
-      {categories.map((category) => {
+      {orderTree(categories.map((c) => ({ ...c, parentId: c.parentId ?? null }))).map((category) => {
         const selected = category.id === value;
+        const parent = category.parentId ? categories.find((c) => c.id === category.parentId) : undefined;
         return (
           <button
             key={category.id}
@@ -38,6 +40,7 @@ export function CategoryPicker({
             role="radio"
             aria-checked={selected}
             onClick={() => onChange(category.id)}
+            title={parent ? `${parent.name} → ${category.name}` : category.name}
             className={cn(
               "flex flex-col items-center gap-1.5 rounded-lg border px-1 py-2 text-xs font-medium transition-colors duration-150",
               selected ? "border-primary bg-primary-subtle text-foreground" : "border-transparent bg-muted/60 text-muted-foreground hover:text-foreground",
@@ -45,6 +48,7 @@ export function CategoryPicker({
           >
             <CategoryIcon icon={category.icon} color={category.color} size="sm" />
             <span className="w-full truncate">{category.name}</span>
+            {parent ? <span className="-mt-1 w-full truncate text-[10px] font-normal text-muted-foreground">{parent.name}</span> : null}
           </button>
         );
       })}

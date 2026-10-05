@@ -98,18 +98,16 @@ async function attachCounterparts(userId: string, rows: TransactionWithRelations
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
-export async function listTransactions(
-  userId: string,
-  filters: TransactionFilters,
-): Promise<{ items: TransactionDTO[]; total: number; page: number; pageCount: number }> {
+function transactionWhere(userId: string, filters: Omit<TransactionFilters, "page">): Prisma.TransactionWhereInput {
   const month = parseYearMonth(filters.month);
   const bounds = month ? monthBounds(month) : null;
 
-  const where: Prisma.TransactionWhereInput = {
+  return {
     userId,
     voidedAt: null,
     ...(filters.type ? { type: filters.type } : {}),
-    ...(filters.category ? { categoryId: filters.category } : {}),
+    // A parent category also finds its subcategories' operations.
+    ...(filters.category ? { AND: [{ OR: [{ categoryId: filters.category }, { category: { parentId: filters.category } }] }] } : {}),
     ...(filters.account
       ? { accountId: filters.account }
       : // Without an account filter a transfer is shown once (its outgoing leg).
@@ -127,6 +125,13 @@ export async function listTransactions(
         }
       : {}),
   };
+}
+
+export async function listTransactions(
+  userId: string,
+  filters: TransactionFilters,
+): Promise<{ items: TransactionDTO[]; total: number; page: number; pageCount: number }> {
+  const where = transactionWhere(userId, filters);
 
   const [total, rows] = await prisma.$transaction([
     prisma.transaction.count({ where }),
@@ -643,4 +648,25 @@ export async function listMerchantMemory(userId: string, limit = 300): Promise<M
     ) latest
     ORDER BY "transactionDate" DESC, "createdAt" DESC
     LIMIT ${limit}`;
+}
+
+export const MAX_EXPORT_ROWS = 20_000;
+
+/** Every operation matching the list filters (no paging), oldest first, for the CSV export. */
+export async function exportTransactions(userId: string, filters: Omit<TransactionFilters, "page">): Promise<(TransactionDTO & { parentCategory: string | null })[]> {
+  const [rows, categories] = await Promise.all([
+    prisma.transaction.findMany({
+      where: transactionWhere(userId, filters),
+      include: transactionInclude,
+      orderBy: [{ transactionDate: "asc" }, { createdAt: "asc" }],
+      take: MAX_EXPORT_ROWS,
+    }),
+    prisma.category.findMany({ where: { userId }, select: { id: true, name: true, parentId: true } }),
+  ]);
+  const byId = new Map(categories.map((c) => [c.id, c]));
+  const items = await attachCounterparts(userId, rows);
+  return items.map((t) => {
+    const parentId = t.category ? byId.get(t.category.id)?.parentId : null;
+    return { ...t, parentCategory: parentId ? (byId.get(parentId)?.name ?? null) : null };
+  });
 }

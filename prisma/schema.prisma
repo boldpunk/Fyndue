@@ -215,6 +215,10 @@ model User {
   telegramConnection     TelegramConnection?
   notificationLogs       NotificationLog[]
   documents              Document[]
+  transactionTemplates   TransactionTemplate[]
+  savingsGoals           SavingsGoal[]
+  accountSharesOwned     AccountShare[]         @relation("AccountShareOwner")
+  accountSharesJoined    AccountShare[]         @relation("AccountShareMember")
 }
 
 model Session {
@@ -311,6 +315,9 @@ model Account {
   debtPayments          DebtPayment[]
   disbursedDebts        Debt[]
   recurringTransactions RecurringTransaction[]
+  transactionTemplates  TransactionTemplate[]
+  savingsGoals          SavingsGoal[]
+  shares                AccountShare[]
 
   @@index([userId, isArchived])
 }
@@ -328,16 +335,22 @@ model Category {
   isSystem   Boolean      @default(false)
   isArchived Boolean      @default(false)
   sortOrder  Int          @default(0)
+  /// One level of nesting: «Автомобиль → Парковка». Totals roll up to the parent.
+  parentId   String?
   createdAt  DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
 
   user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent                Category?              @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children              Category[]             @relation("CategoryTree")
   transactions          Transaction[]
   recurringTransactions RecurringTransaction[]
   budgets               Budget[]
+  transactionTemplates  TransactionTemplate[]
 
   @@unique([userId, type, name])
   @@index([userId, type, isArchived, sortOrder])
+  @@index([parentId])
 }
 
 model Transaction {
@@ -371,9 +384,12 @@ model Transaction {
   clientRequestId String?
   voidedAt        DateTime?         @db.Timestamptz(3)
   voidReason      String?
+  /// Who typed it, when not the owner: a member of a shared account (AccountShare).
+  createdById     String?
   createdAt       DateTime          @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime          @updatedAt @db.Timestamptz(3)
 
+  documents   Document[]
   user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   account     Account               @relation(fields: [accountId], references: [id], onDelete: Restrict)
   category    Category?             @relation(fields: [categoryId], references: [id], onDelete: Restrict)
@@ -728,6 +744,8 @@ model Document {
   debtId        String?
   /// A receipt can point at the payment it proves.
   debtPaymentId String?
+  /// A receipt photo attached to an operation.
+  transactionId String?
   type          DocumentType
   /// Display name (sanitised); never used in the storage path.
   name          String
@@ -742,9 +760,78 @@ model Document {
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   debt        Debt?        @relation(fields: [debtId], references: [id], onDelete: Cascade)
   debtPayment DebtPayment? @relation(fields: [debtPaymentId], references: [id], onDelete: SetNull)
+  transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
 
   @@index([userId, debtId])
   @@index([debtPaymentId])
+  @@index([transactionId])
+}
+
+// ─── Templates, goals, shared accounts ───────────────────────────────────────
+
+/// A saved operation for one-tap entry («Кофе 25 000 · Uzcard»).
+model TransactionTemplate {
+  id         String          @id @default(cuid())
+  userId     String
+  name       String
+  type       TransactionType
+  accountId  String?
+  categoryId String
+  /// Optional: without it the form opens with the amount empty.
+  amount     Decimal?        @db.Decimal(20, 2)
+  merchant   String?
+  note       String?
+  sortOrder  Int             @default(0)
+  createdAt  DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime        @updatedAt @db.Timestamptz(3)
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account  Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([userId, sortOrder])
+}
+
+/// Saving towards a sum. Progress is the linked account's balance, or the
+/// amount put aside by hand when no account is linked.
+model SavingsGoal {
+  id           String    @id @default(cuid())
+  userId       String
+  name         String
+  icon         String    @default("piggy-bank")
+  color        String?
+  targetAmount Decimal   @db.Decimal(20, 2)
+  currency     Currency
+  savedAmount  Decimal   @default(0) @db.Decimal(20, 2)
+  accountId    String?
+  targetDate   DateTime? @db.Date
+  achievedAt   DateTime? @db.Timestamptz(3)
+  isArchived   Boolean   @default(false)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(3)
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isArchived])
+}
+
+/// Another Fyndue user who can see an account and add expenses and income to
+/// it (a family card). Rows stay the owner's; the member acts through
+/// lib/services/shared-accounts.ts, which checks this table first.
+model AccountShare {
+  id        String   @id @default(cuid())
+  accountId String
+  ownerId   String
+  memberId  String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  owner   User    @relation("AccountShareOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  member  User    @relation("AccountShareMember", fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, memberId])
+  @@index([memberId])
 }
 
 // ─── Central Bank rates (official, shared by all users) ──────────────────────

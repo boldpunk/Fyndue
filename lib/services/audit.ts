@@ -44,12 +44,20 @@ export type AuditAction =
   | "NOTIFICATION_PREFERENCES_UPDATED"
   | "DOCUMENT_UPLOADED"
   | "DOCUMENT_UPDATED"
-  | "DOCUMENT_DELETED";
+  | "DOCUMENT_DELETED"
+  | "TEMPLATE_CREATED"
+  | "TEMPLATE_DELETED"
+  | "GOAL_CREATED"
+  | "GOAL_UPDATED"
+  | "GOAL_CONTRIBUTED"
+  | "GOAL_ARCHIVED"
+  | "ACCOUNT_SHARED"
+  | "ACCOUNT_UNSHARED";
 
 export type AuditEntry = {
   userId: string;
   action: AuditAction;
-  entityType: "Account" | "Category" | "Transaction" | "User" | "Debt" | "DebtPayment" | "RecurringTransaction" | "Budget" | "ExchangeRate" | "TelegramConnection" | "NotificationPreference" | "Document";
+  entityType: "Account" | "Category" | "Transaction" | "User" | "Debt" | "DebtPayment" | "RecurringTransaction" | "Budget" | "ExchangeRate" | "TelegramConnection" | "NotificationPreference" | "Document" | "TransactionTemplate" | "SavingsGoal" | "AccountShare";
   entityId: string;
   /** Changed-field snapshots only. Never secrets, tokens or free-text notes. */
   metadata?: Prisma.InputJsonValue;

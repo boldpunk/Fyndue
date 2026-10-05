@@ -9,6 +9,7 @@ import {
   Receipt,
   Repeat,
   Settings,
+  Target,
   ShieldCheck,
   Wallet,
   type LucideIcon,
@@ -26,6 +27,7 @@ export const MAIN_NAV: NavItem[] = [
   { href: "/calendar", label: "Календарь", icon: CalendarDays },
   { href: "/accounts", label: "Счета", icon: Wallet },
   { href: "/budgets", label: "Бюджеты", icon: PiggyBank },
+  { href: "/goals", label: "Цели", icon: Target },
   { href: "/analytics", label: "Аналитика", icon: BarChart3 },
   { href: "/settings", label: "Настройки", icon: Settings },
 ];

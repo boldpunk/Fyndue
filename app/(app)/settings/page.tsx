@@ -1,4 +1,4 @@
-import { ArrowRightLeft, Bell, ChevronRight, Repeat, Shapes, Info } from "lucide-react";
+import { ArrowRightLeft, Bell, ChevronRight, Repeat, Shapes, Info, Star } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/page-header";
@@ -44,6 +44,11 @@ export default async function SettingsPage() {
         <Link href="/settings/categories" className="flex items-center gap-3 p-4 hover:bg-muted/60">
           <Shapes className="size-5 text-muted-foreground" aria-hidden />
           <span className="flex-1 text-sm font-medium">Категории</span>
+          <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+        </Link>
+        <Link href="/settings/templates" className="flex items-center gap-3 p-4 hover:bg-muted/60">
+          <Star className="size-5 text-muted-foreground" aria-hidden />
+          <span className="flex-1 text-sm font-medium">Шаблоны операций</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
         <Link href="/settings/exchange-rates" className="flex items-center gap-3 p-4 hover:bg-muted/60">

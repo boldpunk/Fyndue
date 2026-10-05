@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { TransactionForm, type TransactionKind } from "@/components/transactions/transaction-form";
 import type { AccountOption, CategoryOption } from "@/components/transactions/types";
+import type { TemplateDTO } from "@/lib/services/templates";
 import type { MerchantMemory } from "@/lib/services/transactions";
 import { Button } from "@/components/ui/button";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
@@ -25,6 +26,7 @@ export function QuickAddProvider({
   today,
   fxRates,
   merchants,
+  templates,
   children,
 }: {
   accounts: AccountOption[];
@@ -32,6 +34,7 @@ export function QuickAddProvider({
   today: string;
   fxRates: Record<string, string>;
   merchants: MerchantMemory[];
+  templates: TemplateDTO[];
   children: ReactNode;
 }) {
   const [state, setState] = useState<{ open: boolean; kind: TransactionKind; key: number; preset?: QuickAddPreset }>({
@@ -60,6 +63,7 @@ export function QuickAddProvider({
           today={today}
           fxRates={fxRates}
           merchants={merchants}
+          templates={templates}
           defaultKind={state.kind}
           defaultAccountId={state.preset?.accountId}
           defaultCategoryId={state.preset?.categoryId}

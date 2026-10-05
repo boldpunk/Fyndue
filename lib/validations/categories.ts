@@ -8,6 +8,8 @@ const categoryFields = {
   name: z.string().trim().min(1, "Введите название").max(40),
   icon: z.enum(CATEGORY_ICONS),
   color: colorSchema.optional(),
+  /** Subcategory of this one (one level). Empty = top level. */
+  parentId: z.preprocess((v) => (v === "" ? null : v), idSchema.nullable().optional()),
 };
 
 export const categoryCreateSchema = z.object({ ...categoryFields, type: categoryTypeSchema });

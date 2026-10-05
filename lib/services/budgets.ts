@@ -1,4 +1,5 @@
 import "server-only";
+import { rollUpToParents } from "@/lib/categories/tree";
 import { prisma } from "@/lib/db";
 import { DomainError, NotFoundError } from "@/lib/errors";
 import { budgetStatus, type BudgetState } from "@/lib/finance/budget";
@@ -71,7 +72,12 @@ export async function getBudgetMonth(userId: string, month: YearMonth, currency?
     prisma.budget.count({ where: { userId, year: previous.year, month: previous.month } }),
   ]);
 
-  const spentBy = new Map(spending.map((s) => [s.categoryId, toMoneyString(s._sum.amount ?? 0)]));
+  // A parent's line includes its subcategories; a subcategory with its own budget is also shown on its own.
+  const own = new Map(spending.map((s) => [s.categoryId, money(s._sum.amount ?? 0)]));
+  const rolled = rollUpToParents(spending.map((s) => ({ categoryId: s.categoryId, amount: s._sum.amount ?? 0 })), categories);
+  const parentOf = new Map(categories.map((c) => [c.id, c.parentId]));
+  const spentFor = (id: string) => toMoneyString(parentOf.get(id) ? (own.get(id) ?? 0) : (rolled.get(id) ?? own.get(id) ?? 0));
+  const spentBy = new Map(categories.map((c) => [c.id, spentFor(c.id)]));
   const totalSpent = sumMoney(spending.map((s) => s._sum.amount ?? 0));
   const overall = budgets.find((b) => b.categoryId === null);
   const catInfo = (c: (typeof categories)[number]) => ({ id: c.id, name: c.name, icon: c.icon, color: c.color });
@@ -85,9 +91,13 @@ export async function getBudgetMonth(userId: string, month: YearMonth, currency?
     .filter((l): l is BudgetLineDTO => l !== null)
     .sort((a, b) => Number(b.percent) - Number(a.percent));
 
+  const isBudgeted = (id: string | null | undefined) => Boolean(id) && budgeted.some((b) => b.categoryId === id);
+  // Unbudgeted spending is listed once: by top-level category, unless a subcategory has its own budget.
+  const loose = (c: (typeof categories)[number]) =>
+    toMoneyString(sumMoney([own.get(c.id) ?? 0, ...categories.filter((k) => k.parentId === c.id && !isBudgeted(k.id)).map((k) => own.get(k.id) ?? 0)]));
   const unbudgeted = categories
-    .filter((c) => !budgeted.some((b) => b.categoryId === c.id) && money(spentBy.get(c.id) ?? 0).gt(0))
-    .map((c) => line(null, catInfo(c), null, spentBy.get(c.id)!))
+    .filter((c) => !isBudgeted(c.id) && !(c.parentId && parentOf.has(c.parentId)) && money(loose(c)).gt(0))
+    .map((c) => line(null, catInfo(c), null, loose(c)))
     .sort((a, b) => money(b.spent).cmp(money(a.spent)));
 
   return {

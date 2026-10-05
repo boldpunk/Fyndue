@@ -1,4 +1,5 @@
 import "server-only";
+import { rollUpToParents } from "@/lib/categories/tree";
 import { prisma } from "@/lib/db";
 import { debtToIncomeRatio } from "@/lib/finance/cash-flow";
 import { debtCost } from "@/lib/finance/debt-cost";
@@ -116,7 +117,7 @@ export async function getAnalytics(userId: string, input: { from: LocalDate; to:
       where: { userId, currency, type: "EXPENSE", status: "ACTUAL", voidedAt: null, transactionDate: range },
       _sum: { amount: true },
     }),
-    prisma.category.findMany({ where: { userId, type: "EXPENSE" }, select: { id: true, name: true, icon: true, color: true } }),
+    prisma.category.findMany({ where: { userId, type: "EXPENSE" }, select: { id: true, name: true, icon: true, color: true, parentId: true } }),
     listDebts(userId, "active").then(async (active) => [...active, ...(await listDebts(userId, "paid"))]),
     prisma.debtPayment.findMany({
       where: { userId, reversedAt: null, debt: { currency, status: { not: "ARCHIVED" } } },
@@ -152,12 +153,16 @@ export async function getAnalytics(userId: string, input: { from: LocalDate; to:
   const debtPayments = sumMoney(monthly.map((m) => m.debtPayments));
 
   const totalCat = sumMoney(categoryRows.map((r) => r._sum.amount ?? 0));
-  const byCategory = categoryRows
-    .map((r) => {
-      const c = categories.find((x) => x.id === r.categoryId);
-      const amount = money(r._sum.amount ?? 0);
+  // Subcategories count towards their parent («Парковка» → «Автомобиль»).
+  const rolled = rollUpToParents(
+    categoryRows.map((r) => ({ categoryId: r.categoryId, amount: r._sum.amount ?? 0 })),
+    categories,
+  );
+  const byCategory = [...rolled]
+    .map(([categoryId, amount]) => {
+      const c = categories.find((x) => x.id === categoryId);
       return {
-        id: r.categoryId,
+        id: categoryId,
         name: c?.name ?? "Uncategorised",
         icon: c?.icon ?? null,
         color: c?.color ?? null,

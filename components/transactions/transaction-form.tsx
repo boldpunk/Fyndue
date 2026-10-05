@@ -29,6 +29,11 @@ import { CategoryPicker } from "./category-picker";
 import type { AccountOption, CategoryOption } from "./types";
 import { formatMoney, parseMoneyInput, toMoneyString } from "@/lib/finance/money";
 import { convertViaUzs } from "@/lib/finance/fx";
+import { parseQuickEntry } from "@/lib/finance/quick-entry";
+import { Sparkles, Star } from "lucide-react";
+import { createTemplateAction } from "@/app/(app)/transactions/template-actions";
+import { CategoryIcon } from "@/components/finance/category-icon";
+import type { TemplateDTO } from "@/lib/services/templates";
 
 export type TransactionKind = "EXPENSE" | "INCOME" | "TRANSFER";
 
@@ -65,6 +70,9 @@ export function TransactionForm({
   onDone,
   fxRates = {},
   merchants = [],
+  templates,
+  createAction = createTransactionAction,
+  kinds = ["EXPENSE", "INCOME", "TRANSFER"],
 }: {
   accounts: AccountOption[];
   categories: CategoryOption[];
@@ -78,10 +86,17 @@ export function TransactionForm({
   fxRates?: Record<string, string>;
   /** Places/people typed before, with their last category: suggested and auto-categorised. */
   merchants?: MerchantMemory[];
+  /** Saved operations shown as one-tap chips; also enables «Запомнить как шаблон». */
+  templates?: TemplateDTO[];
+  /** Shared accounts write through their own action (lib/services/shared-accounts.ts). */
+  createAction?: (input: unknown) => Promise<ActionResult<unknown>>;
+  kinds?: TransactionKind[];
 }) {
   const router = useRouter();
   const merchantListId = useId();
   const [creatingCategory, setCreatingCategory] = useState(false);
+  const [quickText, setQuickText] = useState("");
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   // The category the merchant filled in; replaced on the next match, never a hand-picked one.
   const [autoCategory, setAutoCategory] = useState<string | null>(null);
   const editing = Boolean(initial);
@@ -144,6 +159,32 @@ export function TransactionForm({
     form.setValue("categoryId", match.categoryId, { shouldValidate: Boolean(errors.categoryId) });
   };
 
+  /** «кофе 25к starbucks» → fills amount, category, place and account. */
+  const applyQuickEntry = (text: string) => {
+    setQuickText(text);
+    const parsed = parseQuickEntry(text, { categories, accounts, merchants });
+    if (parsed.kind && parsed.kind !== kind) setKind(parsed.kind);
+    form.setValue("amount", parsed.amount ? formatMoney(parsed.amount, "", { hideCurrency: true }) : "");
+    form.setValue("categoryId", parsed.categoryId ?? "");
+    form.setValue("merchant", parsed.merchant ?? "");
+    if (parsed.accountId) form.setValue("accountId", parsed.accountId);
+    setAutoCategory(null);
+    clearErrors();
+  };
+
+  const applyTemplate = (t: TemplateDTO) => {
+    setQuickText("");
+    if (t.kind !== kind) setKind(t.kind);
+    if (t.accountId && accounts.some((a) => a.id === t.accountId)) form.setValue("accountId", t.accountId);
+    form.setValue("categoryId", t.categoryId);
+    form.setValue("amount", t.amount ? formatMoney(t.amount, "", { hideCurrency: true }) : "");
+    form.setValue("merchant", t.merchant ?? "");
+    form.setValue("note", t.note ?? "");
+    setAutoCategory(null);
+    clearErrors();
+    if (!t.amount) document.getElementById("amount")?.focus();
+  };
+
   const applyErrors = (fieldErrors: Record<string, string> | undefined) => {
     for (const [key, message] of Object.entries(fieldErrors ?? {})) {
       const field = key === "fromAccountId" ? "accountId" : key;
@@ -179,7 +220,7 @@ export function TransactionForm({
       }
     } else {
       schema = transactionCreateSchema;
-      action = createTransactionAction;
+      action = createAction;
       payload =
         kind === "TRANSFER"
           ? {
@@ -218,9 +259,29 @@ export function TransactionForm({
         applyErrors(result.fieldErrors);
         return;
       }
-      toast.success(editing ? "Операция обновлена" : kind === "TRANSFER" ? "Перевод записан" : kind === "INCOME" ? "Доход записан" : "Расход записан");
+      const createdId = !editing && createAction === createTransactionAction ? (result.data as { id?: string } | null)?.id : undefined;
+      toast.success(
+        editing ? "Операция обновлена" : kind === "TRANSFER" ? "Перевод записан" : kind === "INCOME" ? "Доход записан" : "Расход записан",
+        createdId && kind !== "TRANSFER" ? { action: { label: "Прикрепить чек", onClick: () => router.push(`/transactions/${createdId}`) } } : undefined,
+      );
+      if (!editing && saveAsTemplate && kind !== "TRANSFER") {
+        const name = values.merchant.trim() || categories.find((c) => c.id === values.categoryId)?.name || "Шаблон";
+        const saved = await createTemplateAction({
+          name: name.slice(0, 40),
+          kind,
+          accountId: values.accountId,
+          categoryId: values.categoryId,
+          amount: values.amount,
+          merchant: values.merchant,
+          note: values.note,
+        });
+        if (saved.ok) toast.success(`Шаблон «${name.slice(0, 40)}» сохранён`);
+        else toast.error(saved.error);
+        setSaveAsTemplate(false);
+      }
       if (!editing) {
         reset({ ...values, amount: "", toAmount: "", merchant: "", note: "", categoryId: "" });
+        setQuickText("");
         setRequestId(crypto.randomUUID());
       }
       router.refresh();
@@ -248,8 +309,46 @@ export function TransactionForm({
             form.setValue("categoryId", "");
             clearErrors();
           }}
-          options={KIND_OPTIONS}
+          options={KIND_OPTIONS.filter((o) => kinds.includes(o.value))}
         />
+      ) : null}
+
+      {!editing && templates && templates.length > 0 ? (
+        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" role="group" aria-label="Шаблоны">
+          {templates.map((t) => {
+            const category = categories.find((c) => c.id === t.categoryId);
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => applyTemplate(t)}
+                className="flex shrink-0 items-center gap-1.5 rounded-full border bg-card py-1 pr-3 pl-1 text-xs font-medium hover:border-primary hover:text-primary"
+              >
+                {category ? <CategoryIcon icon={category.icon} color={category.color} size="sm" /> : null}
+                <span className="max-w-32 truncate">{t.name}</span>
+                {t.amount ? <span className="tabular text-muted-foreground">{formatMoney(t.amount, "", { hideCurrency: true })}</span> : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {!editing && kind !== "TRANSFER" ? (
+        <div className="grid gap-1.5">
+          <label htmlFor="quick-entry" className="flex items-center gap-1.5 text-sm font-medium">
+            <Sparkles className="size-3.5 text-primary" aria-hidden /> Быстрый ввод
+          </label>
+          <Input
+            id="quick-entry"
+            value={quickText}
+            onChange={(e) => applyQuickEntry(e.target.value)}
+            placeholder="кофе 25к starbucks · +3 млн зарплата"
+            autoComplete="off"
+            enterKeyHint="done"
+            autoFocus
+          />
+          <p className="text-xs text-muted-foreground">Одной строкой — сумма, категория и место заполнятся сами. Или заполните поля ниже.</p>
+        </div>
       ) : null}
 
       <Field label="Сумма" htmlFor="amount" error={errors.amount?.message}>
@@ -260,7 +359,7 @@ export function TransactionForm({
             <MoneyInput
               id="amount"
               size="lg"
-              autoFocus={!editing}
+              autoFocus={!editing && kind === "TRANSFER"}
               placeholder="0"
               currency={fromAccount?.currency}
               aria-invalid={Boolean(errors.amount) || undefined}
@@ -406,6 +505,13 @@ export function TransactionForm({
         </p>
       ) : null}
 
+      {!editing && templates && kind !== "TRANSFER" ? (
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+          <input type="checkbox" className="size-4 accent-[var(--color-primary)]" checked={saveAsTemplate} onChange={(e) => setSaveAsTemplate(e.target.checked)} />
+          <Star className="size-3.5" aria-hidden /> Запомнить как шаблон — потом одним нажатием
+        </label>
+      ) : null}
+
       <Button type="submit" size="lg" disabled={pending}>
         {pending ? "Сохраняем…" : editing ? "Сохранить изменения" : "Сохранить"}
       </Button>
@@ -415,6 +521,7 @@ export function TransactionForm({
             <CategoryEditor
               draft={{ name: "", icon: "circle-dashed", color: "indigo" }}
               type={kind}
+              parents={kindCategories.filter((c) => !c.parentId).map(({ id, name }) => ({ id, name }))}
               onDone={(id) => {
                 setCreatingCategory(false);
                 if (id) {

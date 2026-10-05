@@ -1,5 +1,5 @@
 import "server-only";
-import { prisma } from "@/lib/db";
+import { prisma, type Tx } from "@/lib/db";
 import { DomainError, NotFoundError } from "@/lib/errors";
 import type { Category, CategoryType } from "@/lib/generated/prisma/client";
 import type {
@@ -19,6 +19,7 @@ export type CategoryDTO = {
   isSystem: boolean;
   isArchived: boolean;
   sortOrder: number;
+  parentId: string | null;
 };
 
 function toCategoryDTO(c: Category): CategoryDTO {
@@ -31,6 +32,7 @@ function toCategoryDTO(c: Category): CategoryDTO {
     isSystem: c.isSystem,
     isArchived: c.isArchived,
     sortOrder: c.sortOrder,
+    parentId: c.parentId,
   };
 }
 
@@ -38,6 +40,24 @@ const duplicateName = () =>
   new DomainError("Категория с таким названием уже есть.", "DUPLICATE", {
     name: "Такое название уже есть",
   });
+
+/**
+ * A parent must be the user's own top-level, non-system category of the same
+ * type; a category that already has subcategories can't become one itself.
+ */
+async function assertValidParent(tx: Tx, userId: string, type: CategoryType, parentId: string | null | undefined, selfId?: string) {
+  if (!parentId) return;
+  const invalid = (message: string) => new DomainError(message, "VALIDATION", { parentId: message });
+  if (parentId === selfId) throw invalid("Категория не может быть внутри самой себя.");
+  const parent = await tx.category.findFirst({ where: { id: parentId, userId } });
+  if (!parent) throw new NotFoundError("Category");
+  if (parent.type !== type) throw invalid("Выберите категорию того же типа.");
+  if (parent.parentId) throw invalid("Подкатегории — только на один уровень.");
+  if (parent.isSystem) throw invalid("Внутрь системной категории добавлять нельзя.");
+  if (selfId && (await tx.category.count({ where: { parentId: selfId, userId } })) > 0) {
+    throw invalid("У этой категории есть свои подкатегории.");
+  }
+}
 
 export async function listCategories(
   userId: string,
@@ -58,6 +78,7 @@ export async function listCategories(
 export async function createCategory(userId: string, input: CategoryCreateInput): Promise<CategoryDTO> {
   try {
     return await prisma.$transaction(async (tx) => {
+      await assertValidParent(tx, userId, input.type, input.parentId);
       const last = await tx.category.aggregate({
         where: { userId, type: input.type },
         _max: { sortOrder: true },
@@ -69,6 +90,7 @@ export async function createCategory(userId: string, input: CategoryCreateInput)
           type: input.type,
           icon: input.icon,
           color: input.color ?? null,
+          parentId: input.parentId ?? null,
           sortOrder: (last._max.sortOrder ?? -1) + 1,
         },
       });
@@ -92,9 +114,13 @@ export async function updateCategory(userId: string, input: CategoryUpdateInput)
     return await prisma.$transaction(async (tx) => {
       const before = await tx.category.findFirst({ where: { id: input.id, userId } });
       if (!before) throw new NotFoundError("Category");
+      if (input.parentId !== undefined) {
+        if (input.parentId && before.isSystem) throw new DomainError("Системную категорию нельзя сделать подкатегорией.");
+        await assertValidParent(tx, userId, before.type, input.parentId, before.id);
+      }
       const category = await tx.category.update({
         where: { id: before.id },
-        data: { name: input.name, icon: input.icon, color: input.color ?? null },
+        data: { name: input.name, icon: input.icon, color: input.color ?? null, ...(input.parentId !== undefined ? { parentId: input.parentId } : {}) },
       });
       await writeAudit(tx, {
         userId,

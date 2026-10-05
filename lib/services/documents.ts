@@ -60,12 +60,59 @@ export async function listDebtDocuments(userId: string, debtId: string): Promise
 
 export type UploadInput = DocumentUploadInput & { fileName: string; bytes: Uint8Array };
 
+export async function uploadDocument(userId: string, input: UploadInput, storage: StorageAdapter = getStorage()): Promise<{ id: string }> {
+  await assertOwnedDebt(userId, input.debtId);
+  if (input.debtPaymentId) await assertPaymentOfDebt(userId, input.debtId, input.debtPaymentId);
+  return storeDocument(
+    userId,
+    { debtId: input.debtId, debtPaymentId: input.debtPaymentId ?? null, type: input.type, name: input.name, fileName: input.fileName, bytes: input.bytes },
+    storage,
+  );
+}
+
+/** A receipt photo or PDF attached to one of the user's operations. */
+export async function uploadTransactionReceipt(
+  userId: string,
+  input: { transactionId: string; fileName: string; bytes: Uint8Array },
+  storage: StorageAdapter = getStorage(),
+): Promise<{ id: string }> {
+  await assertOwnedTransaction(userId, input.transactionId);
+  if ((await prisma.document.count({ where: { userId, transactionId: input.transactionId } })) >= MAX_RECEIPTS_PER_TRANSACTION) {
+    throw new DomainError(`К операции можно прикрепить до ${MAX_RECEIPTS_PER_TRANSACTION} файлов.`);
+  }
+  return storeDocument(userId, { transactionId: input.transactionId, type: "PAYMENT_RECEIPT", fileName: input.fileName, bytes: input.bytes }, storage);
+}
+
+export const MAX_RECEIPTS_PER_TRANSACTION = 5;
+
+async function assertOwnedTransaction(userId: string, transactionId: string) {
+  const t = await prisma.transaction.findFirst({ where: { id: transactionId, userId }, select: { id: true } });
+  if (!t) throw new NotFoundError("Transaction");
+}
+
+export async function listTransactionReceipts(userId: string, transactionId: string): Promise<Pick<DocumentDTO, "id" | "name" | "mimeType" | "size" | "createdAt">[]> {
+  await assertOwnedTransaction(userId, transactionId);
+  const rows = await prisma.document.findMany({ where: { userId, transactionId }, orderBy: { createdAt: "asc" } });
+  return rows.map((d) => ({ id: d.id, name: d.name, mimeType: d.mimeType, size: d.size, createdAt: d.createdAt.toISOString() }));
+}
+
+type StoreInput = {
+  debtId?: string;
+  debtPaymentId?: string | null;
+  transactionId?: string;
+  type: Document["type"];
+  name?: string;
+  fileName: string;
+  bytes: Uint8Array;
+};
+
 /**
  * Stores the bytes first, then the row (with its audit entry) in one
  * transaction. If the row can't be written the file is removed again, so a
- * failed upload never leaves an orphan behind.
+ * failed upload never leaves an orphan behind. Callers check ownership of
+ * the debt or operation first.
  */
-export async function uploadDocument(userId: string, input: UploadInput, storage: StorageAdapter = getStorage()): Promise<{ id: string }> {
+async function storeDocument(userId: string, input: StoreInput, storage: StorageAdapter): Promise<{ id: string }> {
   const { bytes } = input;
   if (bytes.byteLength === 0) throw new DomainError("Файл пустой.", "VALIDATION", { file: "Файл пустой." });
   if (bytes.byteLength > MAX_DOCUMENT_BYTES) {
@@ -75,14 +122,12 @@ export async function uploadDocument(userId: string, input: UploadInput, storage
   if (!mimeType) {
     throw new DomainError("Поддерживаются только PDF, JPG и PNG.", "VALIDATION", { file: "Поддерживаются только PDF, JPG и PNG." });
   }
-
-  await assertOwnedDebt(userId, input.debtId);
-  if (input.debtPaymentId) await assertPaymentOfDebt(userId, input.debtId, input.debtPaymentId);
   if ((await prisma.document.count({ where: { userId } })) >= MAX_DOCUMENTS_PER_USER) {
     throw new DomainError(`Можно хранить до ${MAX_DOCUMENTS_PER_USER} документов. Удалите лишние, чтобы загрузить новые.`);
   }
   const sha256 = createHash("sha256").update(bytes).digest("hex");
-  const duplicate = await prisma.document.findFirst({ where: { userId, debtId: input.debtId, sha256 }, select: { name: true } });
+  const scope = input.transactionId ? { transactionId: input.transactionId } : { debtId: input.debtId };
+  const duplicate = await prisma.document.findFirst({ where: { userId, ...scope, sha256 }, select: { name: true } });
   if (duplicate) throw new DomainError(`Этот файл уже загружен как «${duplicate.name}».`, "DUPLICATE", { file: "Уже загружен" });
 
   const storageKey = `users/${userId}/${randomBytes(18).toString("base64url")}`;
@@ -92,8 +137,9 @@ export async function uploadDocument(userId: string, input: UploadInput, storage
       const doc = await tx.document.create({
         data: {
           userId,
-          debtId: input.debtId,
+          debtId: input.debtId ?? null,
           debtPaymentId: input.debtPaymentId ?? null,
+          transactionId: input.transactionId ?? null,
           type: input.type,
           name: input.name ? displayName(input.name) : displayName(input.fileName),
           storageKey,
@@ -107,7 +153,7 @@ export async function uploadDocument(userId: string, input: UploadInput, storage
         action: "DOCUMENT_UPLOADED",
         entityType: "Document",
         entityId: doc.id,
-        metadata: { debtId: input.debtId, type: input.type, mimeType, size: bytes.byteLength, sha256 },
+        metadata: { ...scope, type: input.type, mimeType, size: bytes.byteLength, sha256 },
       });
       return { id: doc.id };
     });

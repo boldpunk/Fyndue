@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Repeat } from "lucide-react";
+import { ArrowLeftRight, Download, Repeat } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/finance/empty-state";
@@ -36,6 +36,11 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
     params.set("page", String(page));
     return `/transactions?${params}`;
   };
+  const exportParams = new URLSearchParams(
+    Object.entries(filters)
+      .filter(([k, v]) => k !== "page" && v !== undefined && v !== "")
+      .map(([k, v]) => [k, String(v)]),
+  );
   const filtered = Boolean(filters.type || filters.account || filters.month || filters.q || filters.category);
 
   return (
@@ -45,6 +50,14 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
         description={`${result.total} ${pluralRu(result.total, ["операция", "операции", "операций"])}${filtered ? " по выбранным фильтрам" : ""}`}
         actions={
           <div className="flex flex-wrap gap-2">
+            {result.total > 0 ? (
+              <Button variant="outline" asChild>
+                {/* A plain link: the route answers with a file download. */}
+                <a href={`/api/export/transactions?${exportParams}`} download title="Скачать операции для Excel (CSV) — с текущими фильтрами">
+                  <Download /> Excel
+                </a>
+              </Button>
+            ) : null}
             <Button variant="outline" asChild>
               <Link href="/transactions/recurring">
                 <Repeat /> Регулярные

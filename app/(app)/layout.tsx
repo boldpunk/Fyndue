@@ -6,17 +6,19 @@ import { requireUser } from "@/lib/auth/session";
 import { todayIn } from "@/lib/finance/dates";
 import { listAccounts } from "@/lib/services/accounts";
 import { listCategories } from "@/lib/services/categories";
+import { listTemplates } from "@/lib/services/templates";
 import { listMerchantMemory } from "@/lib/services/transactions";
 import { latestCentralBankRates, refreshCentralBankRates } from "@/lib/services/central-bank-rates";
 import { after } from "next/server";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
-  const [accounts, categories, cbuRates, merchants] = await Promise.all([
+  const [accounts, categories, cbuRates, merchants, templates] = await Promise.all([
     listAccounts(user.id),
     listCategories(user.id, { includeSystem: false }),
     latestCentralBankRates(),
     listMerchantMemory(user.id),
+    listTemplates(user.id),
   ]);
   // Today's official rates are fetched after the page is sent; a no-op once stored.
   after(() => refreshCentralBankRates());
@@ -24,10 +26,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <QuickAddProvider
       accounts={accounts.map(({ id, name, currency, currentBalance }) => ({ id, name, currency, currentBalance }))}
-      categories={categories.map(({ id, name, type, icon, color }) => ({ id, name, type, icon, color }))}
+      categories={categories.map(({ id, name, type, icon, color, parentId }) => ({ id, name, type, icon, color, parentId }))}
       today={todayIn(user.timezone)}
       fxRates={Object.fromEntries(cbuRates.map((r) => [r.currency, r.rate]))}
       merchants={merchants}
+      templates={templates}
     >
       <div className="flex min-h-dvh">
         <AppSidebar user={user} />

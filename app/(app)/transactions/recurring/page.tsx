@@ -48,7 +48,7 @@ export default async function RecurringPage() {
       <RecurringList
         items={items}
         accounts={accounts.map(({ id, name, currency, currentBalance }) => ({ id, name, currency, currentBalance }))}
-        categories={categories.map(({ id, name, type, icon, color }) => ({ id, name, type, icon, color }))}
+        categories={categories.map(({ id, name, type, icon, color, parentId }) => ({ id, name, type, icon, color, parentId }))}
         today={todayIn(user.timezone)}
       />
     </div>

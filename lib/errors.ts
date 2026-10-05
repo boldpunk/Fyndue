@@ -25,6 +25,10 @@ const NOT_FOUND: Record<string, string> = {
   Payment: "Платёж не найден.",
   "Recurring item": "Регулярный платёж не найден.",
   Transaction: "Операция не найдена.",
+  Template: "Шаблон не найден.",
+  Goal: "Цель не найдена.",
+  Share: "Доступ не найден.",
+  User: "Пользователь не найден.",
 };
 
 /** Also used for resources owned by another user — never reveal existence. */

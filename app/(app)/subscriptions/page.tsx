@@ -24,7 +24,7 @@ export default async function SubscriptionsPage() {
       <SubscriptionsView
         data={data}
         accounts={accounts.map(({ id, name, currency, currentBalance }) => ({ id, name, currency, currentBalance }))}
-        categories={categories.map(({ id, name, type, icon, color }) => ({ id, name, type, icon, color }))}
+        categories={categories.map(({ id, name, type, icon, color, parentId }) => ({ id, name, type, icon, color, parentId }))}
         defaultCategoryId={defaultCategoryId}
         fxRates={Object.fromEntries(cbuRates.map((r) => [r.currency, r.rate]))}
       />
