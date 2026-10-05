@@ -463,3 +463,16 @@ Optional link to the page where a subscription is managed or cancelled. Saved on
 ### Account.trackingStartDate
 
 First day an account is tracked in Fyndue (set by «Начать учёт заново»). Money before it is in `openingBalance`, so operations dated earlier are refused by the services.
+
+### Templates, goals, shared accounts, receipts
+
+```prisma
+model TransactionTemplate { id, userId, name, type (EXPENSE|INCOME), accountId?, categoryId, amount? Decimal(20,2), merchant?, note?, sortOrder }
+model SavingsGoal { id, userId, name, icon, color?, targetAmount Decimal(20,2), currency, savedAmount Decimal(20,2) @default(0), accountId?, targetDate? Date, achievedAt?, isArchived }
+model AccountShare { id, accountId, ownerId, memberId, createdAt  @@unique([accountId, memberId]) }
+Category.parentId String?      // one level of subcategories, SetNull on delete
+Transaction.createdById String? // a shared-account member who typed it
+Document.transactionId String?  // receipt photo on an operation (cascade)
+```
+
+CHECKs: `savings_goal_amounts_valid` (target > 0, saved ≥ 0), `transaction_template_valid` (amount > 0, EXPENSE/INCOME only), `account_share_not_self`, `category_not_own_parent`. A goal linked to an account must share its currency; its progress is the account balance.

@@ -1,4 +1,4 @@
-import { Plus, Wallet } from "lucide-react";
+import { ChevronRight, Plus, Users, Wallet } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AccountCard } from "@/components/accounts/account-card";
@@ -11,6 +11,7 @@ import { totalsByCurrency } from "@/lib/finance/balance";
 import { toMoneyString } from "@/lib/finance/money";
 import { listAccounts } from "@/lib/services/accounts";
 import { ratesForUser } from "@/lib/services/central-bank-rates";
+import { listSharedWithMe } from "@/lib/services/shared-accounts";
 import { formatLocalDate, todayIn } from "@/lib/finance/dates";
 import { combineInBase, convert, findRate } from "@/lib/finance/fx";
 
@@ -19,7 +20,7 @@ export const metadata: Metadata = { title: "Счета" };
 export default async function AccountsPage({ searchParams }: { searchParams: Promise<{ archived?: string }> }) {
   const user = await requireUser();
   const showArchived = (await searchParams).archived === "1";
-  const [accounts, rates] = await Promise.all([listAccounts(user.id, { includeArchived: true }), ratesForUser(user.id)]);
+  const [accounts, rates, sharedWithMe] = await Promise.all([listAccounts(user.id, { includeArchived: true }), ratesForUser(user.id), listSharedWithMe(user.id)]);
   const today = todayIn(user.timezone);
   const base = user.baseCurrency;
   /** Amount in the primary currency at the latest rate, or null without a rate. */
@@ -117,6 +118,29 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
           );
         })
       )}
+
+      {sharedWithMe.length > 0 ? (
+        <section className="grid gap-3" aria-labelledby="shared-with-me">
+          <h2 id="shared-with-me" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+            <Users className="size-4" aria-hidden /> Общие со мной
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {sharedWithMe.map((s) => (
+              <Link key={s.shareId} href={`/shared/${s.account.id}`} className="flex items-center gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-primary/40">
+                <span className="grid size-10 place-items-center rounded-full bg-primary-subtle text-primary">
+                  <Users className="size-5" aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{s.account.name}</span>
+                  <span className="block truncate text-xs text-muted-foreground">владелец {s.owner.name}</span>
+                  <Money amount={s.account.currentBalance} currency={s.account.currency} className="text-base font-semibold" />
+                </span>
+                <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {archived.length > 0 ? (
         <section className="grid gap-3">

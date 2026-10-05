@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AccountActions } from "@/components/accounts/account-actions";
 import { AccountIcon } from "@/components/accounts/account-card";
+import { AccountSharing } from "@/components/accounts/account-sharing";
 import { Money } from "@/components/finance/money";
 import { TransactionRow } from "@/components/transactions/transaction-row";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,7 @@ import { getAccount, listAccounts } from "@/lib/services/accounts";
 import { latestCentralBankRates } from "@/lib/services/central-bank-rates";
 import { listCategories } from "@/lib/services/categories";
 import { TRANSFERS_IN_CATEGORY_NAME } from "@/lib/constants/categories";
+import { listAccountMembers, MAX_MEMBERS_PER_ACCOUNT } from "@/lib/services/shared-accounts";
 import { listTransactions } from "@/lib/services/transactions";
 
 export const metadata: Metadata = { title: "Счёт" };
@@ -27,11 +29,12 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
     if (e instanceof NotFoundError) notFound();
     throw e;
   });
-  const [transactions, allAccounts, cbuRates, incomeCategories] = await Promise.all([
+  const [transactions, allAccounts, cbuRates, incomeCategories, members] = await Promise.all([
     listTransactions(user.id, { page: 1, account: account.id }),
     listAccounts(user.id),
     latestCentralBankRates(),
     listCategories(user.id, { type: "INCOME" }),
+    listAccountMembers(user.id, account.id),
   ]);
   const incomeCategoryId = incomeCategories.find((c) => c.name === TRANSFERS_IN_CATEGORY_NAME && !c.isArchived)?.id;
   const otherAccounts = allAccounts.filter((a) => a.id !== account.id).map(({ id, name, currency, currentBalance }) => ({ id, name, currency, currentBalance }));
@@ -93,6 +96,17 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
           )}
         </CardContent>
       </Card>
+
+      {!account.isArchived ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Совместный доступ</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AccountSharing accountId={account.id} members={members} max={MAX_MEMBERS_PER_ACCOUNT} />
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

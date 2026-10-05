@@ -178,6 +178,16 @@ Phase 6 notes:
 - «+ Новая» tile in the operation form's category grid creates a category without leaving the form and selects it. The icon follows the name («Парковка» → parking sign) until one is picked. 29 more icons (parking, bus, pharmacy, barber, pets, charity, taxes, rent…).
 - Merchant memory: the «Где / у кого» field suggests places typed before, and an exact match picks the category last used there (never overriding a category chosen by hand). `listMerchantMemory`.
 
+## Everyday entry, goals, family card ✅
+
+- **Быстрый ввод** (`lib/finance/quick-entry.ts`): «кофе 25к starbucks», «+3 млн зарплата», «$12 подписка claude visa» fill amount (к/тыс/млн, «40 500»), category (name, synonyms, icon hints), place (merchant memory) and account (by name or currency). Enter saves.
+- **Шаблоны** (`TransactionTemplate`): «Запомнить как шаблон» when saving; chips at the top of the quick-add form; Settings → Шаблоны to delete.
+- **Подкатегории** (`Category.parentId`, one level): «Внутри категории» in the editor; picker and settings group children under the parent; analytics, budgets and the category filter roll children up to the parent (`lib/categories/tree.ts`).
+- **Цели** (`SavingsGoal`, /goals): on an account (its balance is the progress) or put aside by hand; monthly amount to reach the date (`lib/finance/goals.ts`).
+- **Чеки**: photos/PDFs on an operation (`Document.transactionId`, up to 5), «Прикрепить чек» right after saving.
+- **Экспорт в Excel**: `/api/export/transactions` — CSV with BOM, «;», decimal comma, current filters, formula-safe text.
+- **Общий счёт** (`AccountShare`, docs/security.md §2b): the owner invites an existing user by phone or email; the member sees that account only and adds expenses/income to it (owner gets a Telegram note), can cancel only their own entries, and can leave.
+
 ## Phase 7 — PWA & polish (next)
 
 Manifest, icons, standalone mode, safe areas, command palette (⌘K), onboarding flow, skeletons/empty/error states audit, accessibility audit, performance (lazy charts, pagination review), rate limiting on actions, email verification & password reset, Playwright E2E for critical flows.

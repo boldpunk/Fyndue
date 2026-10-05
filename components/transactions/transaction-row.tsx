@@ -38,10 +38,16 @@ export function TransactionRow({
   transaction: t,
   perspectiveAccountId,
   showDate = true,
+  href = `/transactions/${t.id}`,
+  action,
 }: {
   transaction: TransactionDTO;
   perspectiveAccountId?: string;
   showDate?: boolean;
+  /** null: not a link (a shared account's member can't open the owner's operation). */
+  href?: string | null;
+  /** Extra control at the end of the row (e.g. «Отменить» on a shared account). */
+  action?: React.ReactNode;
 }) {
   const isTransferView = t.type === "TRANSFER" && !perspectiveAccountId;
   const sign = isTransferView ? undefined : t.direction === "INFLOW" ? "+" : "-";
@@ -49,13 +55,12 @@ export function TransactionRow({
     t.type === "EXPENSE" || t.type === "INCOME" ? (t.merchant ? t.category?.name : null) : t.debt ? TRANSACTION_TYPE_LABELS[t.type] : null,
     t.account.name,
     showDate ? formatLocalDate(t.date, undefined, { day: "numeric", month: "short" }) : null,
+    t.createdBy ? `добавил(а) ${t.createdBy}` : null,
   ].filter(Boolean);
 
-  return (
-    <Link
-      href={`/transactions/${t.id}`}
-      className={cn("flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/70", t.isVoided && "opacity-60")}
-    >
+  const className = cn("flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors", href && "hover:bg-muted/70", t.isVoided && "opacity-60");
+  const body = (
+    <>
       <RowIcon t={t} />
       <div className="grid min-w-0 flex-1 gap-0.5">
         <p className="truncate text-sm font-medium">{describe(t, perspectiveAccountId)}</p>
@@ -72,6 +77,14 @@ export function TransactionRow({
         {t.status === "EXPECTED" ? <Badge tone="info">Ожидается</Badge> : null}
         {t.isVoided ? <Badge>Аннулирована</Badge> : null}
       </div>
+      {action}
+    </>
+  );
+  return href ? (
+    <Link href={href} className={className}>
+      {body}
     </Link>
+  ) : (
+    <div className={className}>{body}</div>
   );
 }

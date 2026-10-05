@@ -39,6 +39,8 @@ export type TransactionDTO = {
   isVoided: boolean;
   voidReason: string | null;
   editable: boolean;
+  /** Name of the shared-account member who added it; null when the owner did. */
+  createdBy: string | null;
 };
 
 const transactionInclude = {
@@ -51,7 +53,7 @@ type TransactionWithRelations = Prisma.TransactionGetPayload<{ include: typeof t
 
 const EDITABLE_TYPES = new Set<Transaction["type"]>(["EXPENSE", "INCOME", "TRANSFER"]);
 
-function toTransactionDTO(t: TransactionWithRelations, counterpart: TransactionWithRelations | undefined): TransactionDTO {
+function toTransactionDTO(t: TransactionWithRelations, counterpart: TransactionWithRelations | undefined, createdBy: string | null = null): TransactionDTO {
   return {
     id: t.id,
     type: t.type,
@@ -77,6 +79,7 @@ function toTransactionDTO(t: TransactionWithRelations, counterpart: TransactionW
     isVoided: t.voidedAt !== null,
     voidReason: t.voidReason,
     editable: t.voidedAt === null && EDITABLE_TYPES.has(t.type),
+    createdBy,
   };
 }
 
@@ -88,10 +91,13 @@ async function attachCounterparts(userId: string, rows: TransactionWithRelations
         include: transactionInclude,
       })
     : [];
+  const authorIds = [...new Set(rows.map((r) => r.createdById).filter((id): id is string => id !== null && id !== userId))];
+  const authors = authorIds.length ? await prisma.user.findMany({ where: { id: { in: authorIds } }, select: { id: true, name: true } }) : [];
   return rows.map((row) =>
     toTransactionDTO(
       row,
       partners.find((p) => p.transferGroupId === row.transferGroupId && p.id !== row.id),
+      authors.find((a) => a.id === row.createdById)?.name ?? null,
     ),
   );
 }
@@ -212,13 +218,15 @@ export async function createTransaction(
   userId: string,
   input: TransactionCreateInput,
   recurring?: RecurringLink,
+  /** A shared-account member typing on the owner's account (lib/services/shared-accounts.ts). */
+  createdById?: string,
 ): Promise<{ id: string }> {
   const existing = await findByRequestId(userId, input.clientRequestId);
   if (existing) return existing;
   try {
     return input.kind === "TRANSFER"
       ? await createTransfer(userId, input, input.clientRequestId)
-      : await createCashFlow(userId, input, input.clientRequestId, recurring);
+      : await createCashFlow(userId, input, input.clientRequestId, recurring, createdById);
   } catch (error) {
     if (isUniqueViolation(error, "clientRequestId")) {
       const winner = await findByRequestId(userId, input.clientRequestId);
@@ -233,6 +241,7 @@ async function createCashFlow(
   input: ExpenseInput | IncomeInput,
   clientRequestId: string,
   recurring?: RecurringLink,
+  createdById?: string,
 ): Promise<{ id: string }> {
   return prisma.$transaction(async (tx) => {
     const account = await ownedUsableAccount(tx, userId, input.accountId);
@@ -257,6 +266,7 @@ async function createCashFlow(
         clientRequestId,
         recurringId: recurring?.recurringId ?? null,
         occurrenceDate: recurring ? localDateToDb(recurring.occurrenceDate) : null,
+        createdById: createdById ?? null,
       },
     });
     await applyBalanceDelta(tx, account.id, balanceEffect({ direction, amount: input.amount, status }));
@@ -265,7 +275,7 @@ async function createCashFlow(
       action: "TRANSACTION_CREATED",
       entityType: "Transaction",
       entityId: created.id,
-      metadata: { type: input.kind, status, amount: input.amount, accountId: account.id },
+      metadata: { type: input.kind, status, amount: input.amount, accountId: account.id, ...(createdById ? { createdById } : {}) },
     });
     return { id: created.id };
   });

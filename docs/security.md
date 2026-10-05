@@ -37,6 +37,10 @@ How it's enforced:
 
 `/admin` lists every user (name, phone or email, sign-up method, sign-up and last sign-in time, Telegram, and counts of accounts, debts and operations). It is the one cross-user read: `lib/services/admin.ts` re-checks that the caller's email is in `ADMIN_EMAILS` and returns counts only, never amounts, account names or debt details. Everyone else gets a 404, and the menu item is hidden. Phone accounts have placeholder emails, so they can never match.
 
+### 2b. Shared accounts (family card)
+
+An owner can let another Fyndue user use **one account** (`AccountShare`). Rows on it stay the owner's (`userId` = owner), so every service keeps its single rule: scope by `userId`. A member never passes their own id to the owner's data; they go through `lib/services/shared-accounts.ts`, which first looks up the share for *(member, account in the input)* and only then calls the regular service as the owner — so a member can write only to that account, with the owner's categories, and cancel only rows with `createdById` = themselves. The member's view hides the owner's other accounts (transfer counterparts read «другой счёт владельца») and debts. No share → `NotFound`, as everywhere. Members can't create categories, templates or receipts there.
+
 ## 3. Input validation
 
 - Zod schemas (`lib/validations/*`) validate every action input on the server, even when the client already validated.

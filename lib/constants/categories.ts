@@ -150,7 +150,7 @@ const ICON_HINTS: [RegExp, CategoryIconKey][] = [
   [/игр|game|steam|playstation/i, "gamepad-2"],
   [/музык|концерт|spotify/i, "music"],
   [/кино|театр|билет|ticket/i, "ticket"],
-  [/вода|вод[аы]/i, "droplet"],
+  [/вода|вод[аы]|мойк|автомойк/i, "droplet"],
   [/сигарет|табак|кальян|вейп/i, "cigarette"],
   [/пиво|бар\b|алкогол/i, "beer"],
   [/пицц|доставк|фастфуд|бургер/i, "pizza"],

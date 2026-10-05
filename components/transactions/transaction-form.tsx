@@ -385,7 +385,8 @@ export function TransactionForm({
                 }}
                 invalid={Boolean(errors.categoryId)}
                 describedBy={errors.categoryId ? "categoryId-error" : undefined}
-                onCreate={() => setCreatingCategory(true)}
+                // Categories are the owner's on a shared account: no creating from there.
+                onCreate={createAction === createTransactionAction ? () => setCreatingCategory(true) : undefined}
               />
             )}
           />
