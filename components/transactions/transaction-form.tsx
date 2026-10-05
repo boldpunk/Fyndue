@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useId, useMemo, useState, useTransition } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import {
@@ -8,14 +8,16 @@ import {
   updateCashFlowTransactionAction,
   updateTransferAction,
 } from "@/app/(app)/transactions/actions";
+import { CategoryEditor } from "@/components/categories/category-manager";
 import { MoneyInput } from "@/components/finance/money-input";
 import { Money } from "@/components/finance/money";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input, NativeSelect, Textarea } from "@/components/ui/input";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { Segmented } from "@/components/ui/segmented";
 import { Switch } from "@/components/ui/switch";
-import type { TransactionDTO } from "@/lib/services/transactions";
+import type { MerchantMemory, TransactionDTO } from "@/lib/services/transactions";
 import type { ActionResult } from "@/lib/utils/action-result";
 import {
   cashFlowUpdateSchema,
@@ -62,6 +64,7 @@ export function TransactionForm({
   initial,
   onDone,
   fxRates = {},
+  merchants = [],
 }: {
   accounts: AccountOption[];
   categories: CategoryOption[];
@@ -73,8 +76,14 @@ export function TransactionForm({
   onDone?: () => void;
   /** Latest Central Bank rates, UZS per 1 unit, to suggest the amount received in a transfer. */
   fxRates?: Record<string, string>;
+  /** Places/people typed before, with their last category: suggested and auto-categorised. */
+  merchants?: MerchantMemory[];
 }) {
   const router = useRouter();
+  const merchantListId = useId();
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  // The category the merchant filled in; replaced on the next match, never a hand-picked one.
+  const [autoCategory, setAutoCategory] = useState<string | null>(null);
   const editing = Boolean(initial);
   const [kind, setKind] = useState<TransactionKind>((initial?.type as TransactionKind | undefined) ?? defaultKind);
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
@@ -123,6 +132,17 @@ export function TransactionForm({
     () => categories.filter((c) => c.type === (kind === "INCOME" ? "INCOME" : "EXPENSE")),
     [categories, kind],
   );
+
+  const kindMerchants = useMemo(() => (kind === "TRANSFER" ? [] : merchants.filter((m) => m.type === kind)), [merchants, kind]);
+  const fillCategoryFromMerchant = (typed: string) => {
+    const key = typed.trim().toLowerCase();
+    const match = key ? kindMerchants.find((m) => m.merchant.trim().toLowerCase() === key) : undefined;
+    if (!match || !kindCategories.some((c) => c.id === match.categoryId)) return;
+    const current = form.getValues("categoryId");
+    if (current && current !== autoCategory) return;
+    setAutoCategory(match.categoryId);
+    form.setValue("categoryId", match.categoryId, { shouldValidate: Boolean(errors.categoryId) });
+  };
 
   const applyErrors = (fieldErrors: Record<string, string> | undefined) => {
     for (const [key, message] of Object.entries(fieldErrors ?? {})) {
@@ -260,9 +280,13 @@ export function TransactionForm({
               <CategoryPicker
                 categories={kindCategories}
                 value={field.value}
-                onChange={field.onChange}
+                onChange={(id) => {
+                  setAutoCategory(null);
+                  field.onChange(id);
+                }}
                 invalid={Boolean(errors.categoryId)}
                 describedBy={errors.categoryId ? "categoryId-error" : undefined}
+                onCreate={() => setCreatingCategory(true)}
               />
             )}
           />
@@ -333,7 +357,20 @@ export function TransactionForm({
         </Field>
       ) : (
         <Field label={kind === "INCOME" ? "От кого" : "Где / у кого"} htmlFor="merchant" error={errors.merchant?.message}>
-          <Input id="merchant" placeholder={kind === "INCOME" ? "Необязательно — например, Азиз или работодатель" : "Необязательно"} autoComplete="off" {...register("merchant")} />
+          <Input
+            id="merchant"
+            placeholder={kind === "INCOME" ? "Необязательно — например, Азиз или работодатель" : "Необязательно"}
+            autoComplete="off"
+            list={kindMerchants.length > 0 ? merchantListId : undefined}
+            {...register("merchant", { onChange: (e) => fillCategoryFromMerchant(e.target.value) })}
+          />
+          {kindMerchants.length > 0 ? (
+            <datalist id={merchantListId}>
+              {kindMerchants.map((m) => (
+                <option key={m.merchant} value={m.merchant} />
+              ))}
+            </datalist>
+          ) : null}
         </Field>
       )}
 
@@ -372,6 +409,23 @@ export function TransactionForm({
       <Button type="submit" size="lg" disabled={pending}>
         {pending ? "Сохраняем…" : editing ? "Сохранить изменения" : "Сохранить"}
       </Button>
+      {kind !== "TRANSFER" ? (
+        <ResponsiveDialog open={creatingCategory} onOpenChange={setCreatingCategory} title={kind === "INCOME" ? "Новая категория дохода" : "Новая категория расхода"}>
+          {creatingCategory ? (
+            <CategoryEditor
+              draft={{ name: "", icon: "circle-dashed", color: "indigo" }}
+              type={kind}
+              onDone={(id) => {
+                setCreatingCategory(false);
+                if (id) {
+                  setAutoCategory(null);
+                  form.setValue("categoryId", id, { shouldValidate: true });
+                }
+              }}
+            />
+          ) : null}
+        </ResponsiveDialog>
+      ) : null}
     </form>
   );
 }

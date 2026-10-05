@@ -18,15 +18,19 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { Segmented } from "@/components/ui/segmented";
-import { CATEGORY_ICONS, type CategoryColor, type CategoryIconKey } from "@/lib/constants/categories";
+import { CATEGORY_ICONS, suggestCategoryIcon, type CategoryColor, type CategoryIconKey } from "@/lib/constants/categories";
 import type { CategoryDTO } from "@/lib/services/categories";
 import { cn } from "@/lib/utils/cn";
 
+export type CategoryDraft = Draft;
 type Draft = { id?: string; name: string; icon: CategoryIconKey; color: CategoryColor | undefined };
 
-function CategoryEditor({ draft, type, onDone }: { draft: Draft; type: "EXPENSE" | "INCOME"; onDone: () => void }) {
+/** Create or edit a category; also opened from the operation form («+ Новая»). */
+export function CategoryEditor({ draft, type, onDone }: { draft: Draft; type: "EXPENSE" | "INCOME"; onDone: (createdId?: string) => void }) {
   const router = useRouter();
   const [value, setValue] = useState(draft);
+  // A new category's icon follows its name until the user picks one.
+  const [iconPicked, setIconPicked] = useState(Boolean(draft.id));
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -38,13 +42,15 @@ function CategoryEditor({ draft, type, onDone }: { draft: Draft; type: "EXPENSE"
       if (!result.ok) return setError(result.fieldErrors?.name ?? result.error);
       toast.success(value.id ? "Категория обновлена" : "Категория создана");
       router.refresh();
-      onDone();
+      onDone(value.id ? undefined : (result.data as { id: string }).id);
     });
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
+        // Opened from the operation form: the dialog is portalled, but React still bubbles submit to that form.
+        e.stopPropagation();
         save();
       }}
       className="grid gap-5"
@@ -52,11 +58,16 @@ function CategoryEditor({ draft, type, onDone }: { draft: Draft; type: "EXPENSE"
       <div className="flex items-center gap-3">
         <CategoryIcon icon={value.icon} color={value.color} size="lg" />
         <Field label="Название" htmlFor="category-name" error={error ?? undefined} className="flex-1">
-          <Input id="category-name" value={value.name} maxLength={40} autoFocus onChange={(e) => setValue({ ...value, name: e.target.value })} />
+          <Input id="category-name" value={value.name} maxLength={40} autoFocus onChange={(e) => {
+              const name = e.target.value;
+              const hinted = iconPicked ? null : suggestCategoryIcon(name);
+              setValue({ ...value, name, icon: hinted ?? value.icon });
+            }}
+          />
         </Field>
       </div>
       <Field label="Иконка" htmlFor="category-icon">
-        <div id="category-icon" role="radiogroup" aria-label="Иконка" className="grid grid-cols-6 gap-1.5 sm:grid-cols-10">
+        <div id="category-icon" role="radiogroup" aria-label="Иконка" className="grid max-h-44 grid-cols-7 gap-1.5 overflow-y-auto sm:grid-cols-10">
           {CATEGORY_ICONS.map((key) => {
             const Icon = CATEGORY_ICON_COMPONENTS[key];
             return (
@@ -66,7 +77,10 @@ function CategoryEditor({ draft, type, onDone }: { draft: Draft; type: "EXPENSE"
                 role="radio"
                 aria-checked={value.icon === key}
                 aria-label={key}
-                onClick={() => setValue({ ...value, icon: key })}
+                onClick={() => {
+                  setIconPicked(true);
+                  setValue({ ...value, icon: key });
+                }}
                 className={cn("grid aspect-square place-items-center rounded-md border", value.icon === key ? "border-primary bg-primary-subtle text-primary" : "border-transparent bg-muted/60 text-muted-foreground")}
               >
                 <Icon className="size-4" aria-hidden />

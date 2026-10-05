@@ -623,3 +623,24 @@ export async function confirmExpectedIncome(userId: string, id: string): Promise
     });
   });
 }
+
+export type MerchantMemory = { merchant: string; type: "EXPENSE" | "INCOME"; categoryId: string };
+
+/**
+ * Places and people the user already typed, newest first, each with the
+ * category it was last used with — the quick-add form suggests them and
+ * picks that category again (like «Starbucks» → «Кафе и рестораны»).
+ */
+export async function listMerchantMemory(userId: string, limit = 300): Promise<MerchantMemory[]> {
+  return prisma.$queryRaw<MerchantMemory[]>`
+    SELECT "merchant", "type"::text AS "type", "categoryId" FROM (
+      SELECT DISTINCT ON (lower(btrim(t."merchant")), t."type") btrim(t."merchant") AS "merchant", t."type", t."categoryId", t."transactionDate", t."createdAt"
+      FROM "Transaction" t
+      JOIN "Category" c ON c."id" = t."categoryId" AND c."userId" = ${userId} AND c."isArchived" = false
+      WHERE t."userId" = ${userId} AND t."voidedAt" IS NULL AND t."type" IN ('EXPENSE', 'INCOME')
+        AND t."merchant" IS NOT NULL AND btrim(t."merchant") <> ''
+      ORDER BY lower(btrim(t."merchant")), t."type", t."transactionDate" DESC, t."createdAt" DESC
+    ) latest
+    ORDER BY "transactionDate" DESC, "createdAt" DESC
+    LIMIT ${limit}`;
+}

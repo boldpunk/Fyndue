@@ -173,6 +173,11 @@ Phase 6 notes:
 
 - **Админ** tab for emails in `ADMIN_EMAILS`: who signed up, how, when they last signed in, and how much they use the app (docs/security.md §2a).
 
+## Own categories in the form, merchant memory ✅
+
+- «+ Новая» tile in the operation form's category grid creates a category without leaving the form and selects it. The icon follows the name («Парковка» → parking sign) until one is picked. 29 more icons (parking, bus, pharmacy, barber, pets, charity, taxes, rent…).
+- Merchant memory: the «Где / у кого» field suggests places typed before, and an exact match picks the category last used there (never overriding a category chosen by hand). `listMerchantMemory`.
+
 ## Phase 7 — PWA & polish (next)
 
 Manifest, icons, standalone mode, safe areas, command palette (⌘K), onboarding flow, skeletons/empty/error states audit, accessibility audit, performance (lazy charts, pagination review), rate limiting on actions, email verification & password reset, Playwright E2E for critical flows.
