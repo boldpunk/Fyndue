@@ -25,6 +25,10 @@ const envSchema = z.object({
     (v) => (typeof v === "string" ? v : ""),
     z.string().transform((v) => v.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)),
   ),
+  /** Shown on /pro: how to pay for Pro by hand (card number, recipient). Lines separated by "|". */
+  PRO_PAYMENT_DETAILS: optional(z.string().max(500)),
+  /** Where to write about Pro (e.g. https://t.me/boldpunk). */
+  PRO_CONTACT_URL: optional(z.string().regex(/^https:\/\//, "PRO_CONTACT_URL must start with https://")),
   // Telegram (Phase 5). All optional: without a token the feature is off.
   TELEGRAM_BOT_TOKEN: optional(z.string()),
   TELEGRAM_BOT_USERNAME: optional(z.string().regex(/^[A-Za-z0-9_]{5,32}$/, "TELEGRAM_BOT_USERNAME is the bot's @username without the @")),

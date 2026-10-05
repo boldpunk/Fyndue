@@ -5,6 +5,7 @@ import { useRef, useTransition } from "react";
 import { toast } from "sonner";
 import { deleteReceiptAction, uploadReceiptAction } from "@/app/(app)/transactions/receipt-actions";
 import { Button } from "@/components/ui/button";
+import { toastActionError } from "@/lib/utils/action-toast";
 
 type Receipt = { id: string; name: string; mimeType: string };
 
@@ -28,7 +29,7 @@ export function TransactionReceipts({ transactionId, receipts, max }: { transact
   const remove = (receipt: Receipt) =>
     startTransition(async () => {
       const result = await deleteReceiptAction({ id: receipt.id, transactionId });
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success("Чек удалён");
       router.refresh();
     });

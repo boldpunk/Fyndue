@@ -1,4 +1,4 @@
-import { AlertTriangle, BellRing, CalendarClock, Check, CircleSlash, Clock, Repeat, Send } from "lucide-react";
+import { AlertTriangle, BellRing, CalendarClock, Check, CircleSlash, Clock, Repeat, Send, Crown } from "lucide-react";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 import { formatLocalDate } from "@/lib/finance/dates";
 import type { NotificationLogDTO } from "@/lib/services/notifications";
@@ -9,6 +9,7 @@ const TYPE_LABEL: Record<NotificationLogDTO["type"], { label: string; icon: type
   OVERDUE: { label: "Просрочка", icon: AlertTriangle },
   TEST: { label: "Тестовое сообщение", icon: Send },
   SUBSCRIPTION_CHARGE: { label: "Списание подписки", icon: Repeat },
+  PRO_EXPIRY: { label: "Окончание Pro", icon: Crown },
 };
 
 const STATUS: Record<NotificationLogDTO["status"], { label: string; tone: BadgeTone; icon: typeof Check }> = {

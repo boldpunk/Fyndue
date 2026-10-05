@@ -1,4 +1,5 @@
 import { env } from "@/lib/env";
+import { sendProExpiryNotices } from "@/lib/services/billing";
 import { runReminders } from "@/lib/services/notifications";
 import { getTelegramClient, secretMatches } from "@/lib/telegram/server";
 
@@ -15,7 +16,8 @@ async function handle(request: Request) {
   // Nothing to send through yet; not an error for the scheduler.
   if (!client) return Response.json({ ok: true, skipped: "Telegram is not configured" });
   const summary = await runReminders({ sender: client });
-  return Response.json({ ok: true, ...summary });
+  const proNotices = await sendProExpiryNotices(client);
+  return Response.json({ ok: true, ...summary, proNotices });
 }
 
 export const GET = handle;

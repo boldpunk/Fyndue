@@ -6,6 +6,7 @@ import { money, toMoneyString } from "@/lib/finance/money";
 import { monthlyEquivalent, nextOccurrence, occurrencesBetween } from "@/lib/finance/recurrence";
 import type { RecurringTransaction } from "@/lib/generated/prisma/client";
 import type { RecordOccurrenceInput, RecurringInput } from "@/lib/validations/planning";
+import { assertWithinLimit } from "./billing";
 import { writeAudit } from "./audit";
 import { isUniqueViolation } from "./prisma-errors";
 import { createTransaction } from "./transactions";
@@ -117,6 +118,7 @@ function ruleData(input: RecurringInput, currency: RecurringTransaction["currenc
 
 export async function createRecurring(userId: string, input: RecurringInput): Promise<{ id: string }> {
   return prisma.$transaction(async (tx) => {
+    if (input.kind === "EXPENSE" && input.isSubscription) await assertWithinLimit(userId, "subscriptions", tx);
     const account = await validateRefs(tx, userId, input);
     const rule = await tx.recurringTransaction.create({ data: { userId, ...ruleData(input, account.currency) } });
     await writeAudit(tx, { userId, action: "RECURRING_CREATED", entityType: "RecurringTransaction", entityId: rule.id, metadata: { kind: input.kind, amount: input.amount } });

@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { AccountActions } from "@/components/accounts/account-actions";
 import { AccountIcon } from "@/components/accounts/account-card";
 import { AccountSharing } from "@/components/accounts/account-sharing";
+import { ProUpsell } from "@/components/billing/pro-upsell";
 import { Money } from "@/components/finance/money";
 import { TransactionRow } from "@/components/transactions/transaction-row";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,7 @@ import { getAccount, listAccounts } from "@/lib/services/accounts";
 import { latestCentralBankRates } from "@/lib/services/central-bank-rates";
 import { listCategories } from "@/lib/services/categories";
 import { TRANSFERS_IN_CATEGORY_NAME } from "@/lib/constants/categories";
+import { getPlan } from "@/lib/services/billing";
 import { listAccountMembers, MAX_MEMBERS_PER_ACCOUNT } from "@/lib/services/shared-accounts";
 import { listTransactions } from "@/lib/services/transactions";
 
@@ -29,12 +31,13 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
     if (e instanceof NotFoundError) notFound();
     throw e;
   });
-  const [transactions, allAccounts, cbuRates, incomeCategories, members] = await Promise.all([
+  const [transactions, allAccounts, cbuRates, incomeCategories, members, plan] = await Promise.all([
     listTransactions(user.id, { page: 1, account: account.id }),
     listAccounts(user.id),
     latestCentralBankRates(),
     listCategories(user.id, { type: "INCOME" }),
     listAccountMembers(user.id, account.id),
+    getPlan(user.id),
   ]);
   const incomeCategoryId = incomeCategories.find((c) => c.name === TRANSFERS_IN_CATEGORY_NAME && !c.isArchived)?.id;
   const otherAccounts = allAccounts.filter((a) => a.id !== account.id).map(({ id, name, currency, currentBalance }) => ({ id, name, currency, currentBalance }));
@@ -103,7 +106,11 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
             <CardTitle>Совместный доступ</CardTitle>
           </CardHeader>
           <CardContent>
-            <AccountSharing accountId={account.id} members={members} max={MAX_MEMBERS_PER_ACCOUNT} />
+            {plan.tier === "pro" || members.length > 0 ? (
+              <AccountSharing accountId={account.id} members={members} max={plan.tier === "pro" ? MAX_MEMBERS_PER_ACCOUNT : members.length} />
+            ) : (
+              <ProUpsell text="Общий счёт с семьёй: близкие видят этот счёт и добавляют расходы — в Fyndue Pro." />
+            )}
           </CardContent>
         </Card>
       ) : null}

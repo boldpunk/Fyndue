@@ -476,3 +476,14 @@ Document.transactionId String?  // receipt photo on an operation (cascade)
 ```
 
 CHECKs: `savings_goal_amounts_valid` (target > 0, saved ≥ 0), `transaction_template_valid` (amount > 0, EXPENSE/INCOME only), `account_share_not_self`, `category_not_own_parent`. A goal linked to an account must share its currency; its progress is the account balance.
+
+### Fyndue Pro (docs/billing.md)
+
+```prisma
+User.proUntil DateTime?     // paid/granted Pro until
+User.trialEndsAt DateTime?  // null = createdAt + 14 days
+enum ProPaymentStatus { PENDING CONFIRMED REJECTED CANCELLED }
+model ProPayment { id, userId, period ("MONTH"|"YEAR"|"DAYS"), days, amount Decimal(20,2)?, currency, status, method ("MANUAL"), decidedById?, decidedAt?, note? }
+```
+
+CHECK `pro_payment_valid`: 1–3660 days, amount ≥ 0, known period. `NotificationType.PRO_EXPIRY` for the renewal notice.

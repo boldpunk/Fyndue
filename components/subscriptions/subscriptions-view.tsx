@@ -24,6 +24,7 @@ import type { SubscriptionDTO, SubscriptionsPage } from "@/lib/services/subscrip
 import { cn } from "@/lib/utils/cn";
 import { SubscriptionAvatar } from "./subscription-avatar";
 import { PresetPicker, SubscriptionForm } from "./subscription-form";
+import { toastActionError } from "@/lib/utils/action-toast";
 
 type Editing = { mode: "pick" } | { mode: "new"; preset: SubscriptionPreset | null } | { mode: "edit"; item: SubscriptionDTO };
 
@@ -54,7 +55,7 @@ export function SubscriptionsView({
   const toggle = (item: SubscriptionDTO) =>
     startTransition(async () => {
       const result = await setRecurringActiveAction({ id: item.id, archived: item.isActive });
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success(item.isActive ? `«${item.name}» на паузе — больше не учитывается в планах` : `«${item.name}» снова активна`);
       router.refresh();
     });
@@ -63,7 +64,7 @@ export function SubscriptionsView({
     startTransition(async () => {
       if (!deleting) return;
       const result = await deleteRecurringAction(deleting.id);
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success("Подписка удалена, записанные платежи сохранены");
       setDeleting(null);
       router.refresh();

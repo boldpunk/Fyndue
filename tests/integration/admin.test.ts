@@ -1,8 +1,11 @@
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/db";
 import { createTestAccount, createUser, resetDatabase } from "../support/factories";
 
-process.env.ADMIN_EMAILS = " Admin@Fyndue.test , other@fyndue.test";
+// Hoisted: the factories' imports already read the environment.
+vi.hoisted(() => {
+  process.env.ADMIN_EMAILS = " Admin@Fyndue.test , other@fyndue.test";
+});
 
 let admin: typeof import("@/lib/services/admin");
 beforeAll(async () => {

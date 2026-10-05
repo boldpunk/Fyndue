@@ -10,6 +10,7 @@ import { displayPaymentStatus, type DisplayPaymentStatus } from "@/lib/finance/p
 import type { Debt, DebtPayment, DebtScheduleItem } from "@/lib/generated/prisma/client";
 import type { DebtCreateInput } from "@/lib/validations/debts";
 import { applyBalanceDelta, lockOwnedAccount } from "./accounts";
+import { assertWithinLimit } from "./billing";
 import { writeAudit } from "./audit";
 import { lockOwnedDebt } from "./debt-payments";
 import { lineToItemData, setWeekendShift } from "./debt-schedule";
@@ -372,6 +373,7 @@ export async function listRecentDebtPayments(userId: string, limit = 50) {
 export async function createDebt(userId: string, input: DebtCreateInput): Promise<{ id: string }> {
   const existing = await prisma.debt.findFirst({ where: { userId, clientRequestId: input.clientRequestId }, select: { id: true } });
   if (existing) return existing;
+  await assertWithinLimit(userId, "debts");
 
   const result = buildDebtPlan(input);
   if (!result.ok) {

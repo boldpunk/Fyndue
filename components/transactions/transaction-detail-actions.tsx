@@ -9,6 +9,7 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import type { TransactionDTO } from "@/lib/services/transactions";
+import { toastActionError } from "@/lib/utils/action-toast";
 
 export function TransactionDetailActions({ transaction }: { transaction: TransactionDTO }) {
   const router = useRouter();
@@ -25,7 +26,7 @@ export function TransactionDetailActions({ transaction }: { transaction: Transac
   const confirmIncome = () =>
     startTransition(async () => {
       const result = await confirmIncomeAction(transaction.id);
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success("Доход подтверждён, баланс обновлён");
       router.refresh();
     });
@@ -33,7 +34,7 @@ export function TransactionDetailActions({ transaction }: { transaction: Transac
   const doVoid = () =>
     startTransition(async () => {
       const result = await voidTransactionAction({ id: transaction.id, reason });
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success("Операция аннулирована");
       setVoidOpen(false);
       router.push("/transactions");

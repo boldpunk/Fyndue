@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { CURRENCY_LABELS, type CurrencyCode } from "@/lib/constants/finance";
 import { formatLocalDate } from "@/lib/finance/dates";
 import type { CentralBankRateDTO } from "@/lib/services/central-bank-rates";
+import { toastActionError } from "@/lib/utils/action-toast";
 
 /** Today's official rates (cbu.uz), refreshed automatically every day. */
 export function CentralBankRates({ rates }: { rates: CentralBankRateDTO[] }) {
@@ -18,7 +19,7 @@ export function CentralBankRates({ rates }: { rates: CentralBankRateDTO[] }) {
   const refresh = () =>
     startTransition(async () => {
       const result = await refreshCentralBankRatesAction();
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success("Курс ЦБ обновлён");
       router.refresh();
     });

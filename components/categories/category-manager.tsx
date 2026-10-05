@@ -38,6 +38,7 @@ import {
 import type { CategoryDTO } from "@/lib/services/categories";
 import { cn } from "@/lib/utils/cn";
 import { orderTree } from "@/lib/categories/tree";
+import { toastActionError } from "@/lib/utils/action-toast";
 
 export type CategoryDraft = Draft;
 type Draft = {
@@ -224,7 +225,7 @@ export function CategoryManager({ categories }: { categories: CategoryDTO[] }) {
     [ids[index], ids[target]] = [ids[target]!, ids[index]!];
     startTransition(async () => {
       const result = await reorderCategoriesAction({ type, orderedIds: ids });
-      if (!result.ok) toast.error(result.error);
+      if (!result.ok) toastActionError(result);
       router.refresh();
     });
   };
@@ -235,7 +236,7 @@ export function CategoryManager({ categories }: { categories: CategoryDTO[] }) {
         id: category.id,
         archived: archivedValue,
       });
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success(
         archivedValue
           ? `«${category.name}» в архиве`

@@ -11,6 +11,7 @@ import { Input, NativeSelect } from "@/components/ui/input";
 import { CURRENCIES } from "@/lib/constants/finance";
 import { formatLocalDate } from "@/lib/finance/dates";
 import type { ExchangeRateDTO } from "@/lib/services/exchange-rates";
+import { toastActionError } from "@/lib/utils/action-toast";
 
 export function ExchangeRates({ rates, baseCurrency, today }: { rates: ExchangeRateDTO[]; baseCurrency: string; today: string }) {
   const router = useRouter();
@@ -31,7 +32,7 @@ export function ExchangeRates({ rates, baseCurrency, today }: { rates: ExchangeR
   const remove = (id: string) =>
     startTransition(async () => {
       const result = await deleteExchangeRateAction(id);
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       router.refresh();
     });
 

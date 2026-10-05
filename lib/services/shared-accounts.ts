@@ -1,12 +1,13 @@
 import "server-only";
 import { isPhoneAccountEmail, formatPhone, normalizePhone } from "@/lib/auth/phone";
 import { prisma } from "@/lib/db";
-import { DomainError, NotFoundError } from "@/lib/errors";
+import { DomainError, NotFoundError, ProRequiredError } from "@/lib/errors";
 import { formatMoney, toMoneyString } from "@/lib/finance/money";
 import type { Currency } from "@/lib/generated/prisma/client";
 import type { TelegramSender } from "@/lib/telegram/client";
 import { escapeHtml } from "@/lib/telegram/messages";
 import type { ExpenseInput, IncomeInput } from "@/lib/validations/transactions";
+import { assertProFeature, getPlan } from "./billing";
 import { writeAudit } from "./audit";
 import { createTransaction, listTransactions, voidTransaction, type TransactionDTO } from "./transactions";
 
@@ -74,6 +75,7 @@ export async function shareAccount(
 ): Promise<{ shareId: string }> {
   const account = await prisma.account.findFirst({ where: { id: input.accountId, userId: ownerId, isArchived: false } });
   if (!account) throw new NotFoundError("Account");
+  await assertProFeature(ownerId, "sharedAccounts");
   const member = await findUserByContact(input.contact);
   if (!member) {
     throw new DomainError("Такого пользователя в Fyndue нет — пусть сначала зарегистрируется (по номеру телефона на fyndue.uz).", "NOT_FOUND", {
@@ -174,6 +176,10 @@ export async function createSharedTransaction(
 ): Promise<{ id: string }> {
   // The share is looked up by the account in the input: a member can only ever write to that one account.
   const share = await requireShare(memberId, input.accountId);
+  // The family card is the owner's Pro feature: members add while it lasts.
+  if ((await getPlan(share.ownerId)).tier !== "pro") {
+    throw new ProRequiredError(`У владельца счёта закончился Fyndue Pro — добавлять операции сейчас может только ${share.owner.name}.`);
+  }
   const result = await createTransaction(share.ownerId, input, undefined, memberId);
 
   const [member, category] = await Promise.all([

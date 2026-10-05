@@ -17,6 +17,7 @@ import { formatLocalDate } from "@/lib/finance/dates";
 import { formatMoney } from "@/lib/finance/money";
 import type { DocumentDTO } from "@/lib/services/documents";
 import { cn } from "@/lib/utils/cn";
+import { toastActionError } from "@/lib/utils/action-toast";
 
 type DocType = keyof typeof DOCUMENT_TYPE_LABELS;
 export type PaymentOption = { id: string; paymentDate: string; amount: string; isReversed: boolean };
@@ -308,7 +309,7 @@ export function DebtDocuments({
     startTransition(async () => {
       if (!deleting) return;
       const result = await deleteDocumentAction(deleting.id);
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success("Документ удалён");
       setDeleting(null);
       router.refresh();

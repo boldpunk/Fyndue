@@ -2,13 +2,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
+import { PlanChip, type PlanChipData } from "@/components/billing/plan-chip";
 import { Logo } from "./logo";
 import { ADMIN_NAV, MAIN_NAV, isActive } from "./nav-items";
 import { SignOutButton } from "./sign-out-button";
 import { ThemeToggle } from "./theme-toggle";
 import { UserBadge } from "./user-badge";
 
-export function AppSidebar({ user }: { user: { name: string; contact: string; isAdmin: boolean } }) {
+export function AppSidebar({ user, plan }: { user: { name: string; contact: string; isAdmin: boolean }; plan: PlanChipData }) {
   const pathname = usePathname();
   return (
     <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r bg-sidebar px-3 py-4 lg:flex">
@@ -35,6 +36,7 @@ export function AppSidebar({ user }: { user: { name: string; contact: string; is
         })}
       </nav>
       <div className="mt-auto grid gap-0.5 border-t pt-3">
+        <PlanChip plan={plan} />
         <UserBadge name={user.name} email={user.contact} />
         <ThemeToggle withLabel />
         <SignOutButton />

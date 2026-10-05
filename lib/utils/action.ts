@@ -27,7 +27,7 @@ export async function runAction<T>(fn: () => Promise<T>): Promise<ActionResult<T
       return { ok: false, error: "Проверьте выделенные поля.", fieldErrors: zodFieldErrors(error) };
     }
     if (error instanceof DomainError) {
-      return { ok: false, error: error.message, fieldErrors: error.fieldErrors };
+      return { ok: false, error: error.message, fieldErrors: error.fieldErrors, ...(error.code === "PRO_REQUIRED" ? { code: error.code } : {}) };
     }
     const reference = crypto.randomUUID().slice(0, 8);
     console.error(`[action-error ${reference}]`, error instanceof Error ? error.name : "UnknownError", error instanceof Error ? error.message.split("\n")[0] : "");

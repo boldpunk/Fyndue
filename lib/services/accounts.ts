@@ -10,6 +10,7 @@ import type {
   AccountUpdateInput,
   BalanceAdjustmentInput,
 } from "@/lib/validations/accounts";
+import { assertWithinLimit } from "./billing";
 import { writeAudit } from "./audit";
 
 export type AccountDTO = {
@@ -96,6 +97,7 @@ export async function applyBalanceDelta(tx: Tx, accountId: string, delta: FinDec
 
 export async function createAccount(userId: string, input: AccountCreateInput): Promise<AccountDTO> {
   return prisma.$transaction(async (tx) => {
+    await assertWithinLimit(userId, "accounts", tx);
     const last = await tx.account.aggregate({ where: { userId }, _max: { sortOrder: true } });
     const account = await tx.account.create({
       data: {

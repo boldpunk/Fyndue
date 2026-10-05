@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import type { SharedAccountDetail } from "@/lib/services/shared-accounts";
+import { toastActionError } from "@/lib/utils/action-toast";
 
 export function SharedAccountView({ shared, today }: { shared: SharedAccountDetail; today: string }) {
   const router = useRouter();
@@ -23,7 +24,7 @@ export function SharedAccountView({ shared, today }: { shared: SharedAccountDeta
   const cancel = (id: string) =>
     startTransition(async () => {
       const result = await voidSharedTransactionAction(id);
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success("Операция отменена");
       router.refresh();
     });
@@ -32,7 +33,7 @@ export function SharedAccountView({ shared, today }: { shared: SharedAccountDeta
     startTransition(async () => {
       if (!window.confirm(`Выйти из счёта «${account.name}»? Снова открыть доступ сможет только ${owner.name}.`)) return;
       const result = await removeShareAction(shared.shareId);
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success("Вы вышли из общего счёта");
       router.push("/accounts");
       router.refresh();

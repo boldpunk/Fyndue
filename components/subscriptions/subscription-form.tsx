@@ -15,6 +15,7 @@ import { formatMoney, parseMoneyInput, toMoneyString } from "@/lib/finance/money
 import { describeRule, type RecurrenceFrequency } from "@/lib/finance/recurrence";
 import type { RecurringDTO } from "@/lib/services/recurring";
 import { SubscriptionAvatar } from "./subscription-avatar";
+import { offerPro } from "@/lib/utils/action-toast";
 
 /** The billing periods offered first; any other saved period is added to the list. */
 const PERIODS: { frequency: RecurrenceFrequency; interval: number }[] = [
@@ -120,7 +121,10 @@ export function SubscriptionForm({
         url: v.url,
         note: v.note,
       });
-      if (!result.ok) return setErrors({ ...(result.fieldErrors ?? {}), form: result.error });
+      if (!result.ok) {
+        offerPro(result);
+        return setErrors({ ...(result.fieldErrors ?? {}), form: result.error });
+      }
       toast.success(item ? "Подписка обновлена" : `«${v.name}» добавлена`);
       router.refresh();
       onDone();

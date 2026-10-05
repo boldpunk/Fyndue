@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils/cn";
 import { ADMIN_NAV, MOBILE_NAV, MORE_NAV, isActive, type NavItem } from "./nav-items";
+import { PlanChip, type PlanChipData } from "@/components/billing/plan-chip";
 import { useQuickAdd } from "./quick-add";
 import { SignOutButton } from "./sign-out-button";
 import { ThemeToggle } from "./theme-toggle";
@@ -26,7 +27,7 @@ function Tab({ item, pathname }: { item: NavItem; pathname: string }) {
   );
 }
 
-export function MobileNav({ user }: { user: { name: string; contact: string; isAdmin: boolean } }) {
+export function MobileNav({ user, plan }: { user: { name: string; contact: string; isAdmin: boolean }; plan: PlanChipData }) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
   const quickAdd = useQuickAdd();
@@ -87,6 +88,7 @@ export function MobileNav({ user }: { user: { name: string; contact: string; isA
             ))}
           </div>
           <div className="grid gap-0.5 border-t pt-3">
+            <PlanChip plan={plan} onNavigate={() => setMoreOpen(false)} />
             <UserBadge name={user.name} email={user.contact} />
             <ThemeToggle withLabel />
             <SignOutButton />

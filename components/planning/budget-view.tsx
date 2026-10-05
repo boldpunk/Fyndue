@@ -16,6 +16,7 @@ import { NativeSelect } from "@/components/ui/input";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { formatMoney, formatPercent } from "@/lib/finance/money";
 import type { BudgetLineDTO, BudgetMonthDTO } from "@/lib/services/budgets";
+import { toastActionError } from "@/lib/utils/action-toast";
 
 const STATE_META = {
   UNDER: { label: "В норме", tone: "success", icon: CheckCircle2, bar: "success" },
@@ -68,7 +69,7 @@ export function BudgetView({ data, expenseCategories }: { data: BudgetMonthDTO; 
   const copy = () =>
     startTransition(async () => {
       const result = await copyBudgetsAction(data.month);
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success(result.data.copied ? `Скопировано из прошлого месяца: ${result.data.copied}` : "Нечего копировать");
       router.refresh();
     });

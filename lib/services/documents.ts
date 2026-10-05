@@ -8,6 +8,7 @@ import { toMoneyString } from "@/lib/finance/money";
 import type { Document } from "@/lib/generated/prisma/client";
 import { getStorage, type StorageAdapter } from "@/lib/storage";
 import type { DocumentUpdateInput, DocumentUploadInput } from "@/lib/validations/documents";
+import { assertProFeature } from "./billing";
 import { writeAudit } from "./audit";
 
 /** Per-user cap; a guard against runaway uploads, far above normal use. */
@@ -77,6 +78,7 @@ export async function uploadTransactionReceipt(
   storage: StorageAdapter = getStorage(),
 ): Promise<{ id: string }> {
   await assertOwnedTransaction(userId, input.transactionId);
+  await assertProFeature(userId, "receipts");
   if ((await prisma.document.count({ where: { userId, transactionId: input.transactionId } })) >= MAX_RECEIPTS_PER_TRANSACTION) {
     throw new DomainError(`К операции можно прикрепить до ${MAX_RECEIPTS_PER_TRANSACTION} файлов.`);
   }

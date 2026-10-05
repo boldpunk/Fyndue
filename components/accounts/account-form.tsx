@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { ACCOUNT_TYPES, ACCOUNT_TYPE_LABELS, CURRENCIES, CURRENCY_LABELS } from "@/lib/constants/finance";
 import type { AccountDTO } from "@/lib/services/accounts";
 import { accountCreateSchema, accountUpdateSchema } from "@/lib/validations/accounts";
+import { offerPro } from "@/lib/utils/action-toast";
 
 type Values = {
   name: string;
@@ -55,6 +56,7 @@ export function AccountForm({ account, defaultCurrency }: { account?: AccountDTO
     startTransition(async () => {
       const result = account ? await updateAccountAction(payload) : await createAccountAction(payload);
       if (!result.ok) {
+        offerPro(result);
         setFormError(result.error);
         for (const [key, message] of Object.entries(result.fieldErrors ?? {})) setError(key as keyof Values, { message });
         return;

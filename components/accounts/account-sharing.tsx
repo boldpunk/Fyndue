@@ -7,6 +7,7 @@ import { removeShareAction, shareAccountAction } from "@/app/(app)/accounts/shar
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AccountMemberDTO } from "@/lib/services/shared-accounts";
+import { offerPro, toastActionError } from "@/lib/utils/action-toast";
 
 /** Owner's card on the account page: who else can use this account, invite, remove. */
 export function AccountSharing({ accountId, members, max }: { accountId: string; members: AccountMemberDTO[]; max: number }) {
@@ -19,7 +20,10 @@ export function AccountSharing({ accountId, members, max }: { accountId: string;
     startTransition(async () => {
       setError(null);
       const result = await shareAccountAction({ accountId, contact });
-      if (!result.ok) return setError(result.error);
+      if (!result.ok) {
+        offerPro(result);
+        return setError(result.error);
+      }
       toast.success("Доступ открыт");
       setContact("");
       router.refresh();
@@ -28,7 +32,7 @@ export function AccountSharing({ accountId, members, max }: { accountId: string;
   const remove = (m: AccountMemberDTO) =>
     startTransition(async () => {
       const result = await removeShareAction(m.shareId);
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success(`${m.name} больше не видит этот счёт`);
       router.refresh();
     });

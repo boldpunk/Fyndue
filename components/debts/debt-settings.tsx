@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input, Textarea } from "@/components/ui/input";
+import { toastActionError } from "@/lib/utils/action-toast";
 
 export function DebtSettings({
   debt,
@@ -33,7 +34,7 @@ export function DebtSettings({
   const toggleWeekendShift = (on: boolean) =>
     startTransition(async () => {
       const result = await setDebtWeekendShiftAction({ id: debt.id, shiftWeekends: on });
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       const moved = result.data.moved;
       toast.success(
         on
@@ -51,7 +52,7 @@ export function DebtSettings({
     startTransition(async () => {
       const archived = debt.status !== "ARCHIVED";
       const result = await archiveDebtAction({ id: debt.id, archived });
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success(archived ? "Долг перенесён в архив" : "Долг восстановлен");
       router.refresh();
     });

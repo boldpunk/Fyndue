@@ -27,6 +27,7 @@ export function QuickAddProvider({
   fxRates,
   merchants,
   templates,
+  isPro,
   children,
 }: {
   accounts: AccountOption[];
@@ -35,6 +36,7 @@ export function QuickAddProvider({
   fxRates: Record<string, string>;
   merchants: MerchantMemory[];
   templates: TemplateDTO[];
+  isPro: boolean;
   children: ReactNode;
 }) {
   const [state, setState] = useState<{ open: boolean; kind: TransactionKind; key: number; preset?: QuickAddPreset }>({
@@ -64,6 +66,7 @@ export function QuickAddProvider({
           fxRates={fxRates}
           merchants={merchants}
           templates={templates}
+          canSaveTemplates={isPro}
           defaultKind={state.kind}
           defaultAccountId={state.preset?.accountId}
           defaultCategoryId={state.preset?.categoryId}

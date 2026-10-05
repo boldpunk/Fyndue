@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatMoney } from "@/lib/finance/money";
 import type { TemplateDTO } from "@/lib/services/templates";
+import { toastActionError } from "@/lib/utils/action-toast";
 
 export function TemplateList({
   templates,
@@ -33,7 +34,7 @@ export function TemplateList({
   const remove = (t: TemplateDTO) =>
     startTransition(async () => {
       const result = await deleteTemplateAction(t.id);
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success(`Шаблон «${t.name}» удалён`);
       router.refresh();
     });

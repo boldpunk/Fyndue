@@ -7,6 +7,7 @@ import { Money } from "@/components/finance/money";
 import { ConvertAdjustment } from "@/components/transactions/convert-adjustment";
 import { TransactionDetailActions } from "@/components/transactions/transaction-detail-actions";
 import { TransactionForm } from "@/components/transactions/transaction-form";
+import { ProUpsell } from "@/components/billing/pro-upsell";
 import { TransactionReceipts } from "@/components/transactions/transaction-receipts";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,7 @@ import { formatLocalDate, todayIn } from "@/lib/finance/dates";
 import { listAccounts } from "@/lib/services/accounts";
 import { listCategories } from "@/lib/services/categories";
 import { latestCentralBankRates } from "@/lib/services/central-bank-rates";
+import { getPlan } from "@/lib/services/billing";
 import { listTransactionReceipts, MAX_RECEIPTS_PER_TRANSACTION } from "@/lib/services/documents";
 import { getTransaction } from "@/lib/services/transactions";
 import { money, toMoneyString } from "@/lib/finance/money";
@@ -42,7 +44,7 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
   const [accounts, categories] = t.editable
     ? await Promise.all([listAccounts(user.id), listCategories(user.id, { includeSystem: false })])
     : [[], []];
-  const receipts = await listTransactionReceipts(user.id, t.id);
+  const [receipts, plan] = await Promise.all([listTransactionReceipts(user.id, t.id), getPlan(user.id)]);
   const signed = t.type !== "TRANSFER";
   const convertible = t.type === "BALANCE_ADJUSTMENT" && !t.isVoided;
   const [allAccounts, cbuRates] = convertible ? await Promise.all([listAccounts(user.id), latestCentralBankRates()]) : [[], []];
@@ -124,7 +126,11 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
           <CardTitle>Чек</CardTitle>
         </CardHeader>
         <CardContent>
-          <TransactionReceipts transactionId={t.id} receipts={receipts} max={MAX_RECEIPTS_PER_TRANSACTION} />
+          {plan.tier === "pro" || receipts.length > 0 ? (
+            <TransactionReceipts transactionId={t.id} receipts={receipts} max={plan.tier === "pro" ? MAX_RECEIPTS_PER_TRANSACTION : receipts.length} />
+          ) : (
+            <ProUpsell text="Фото и PDF чеков к операциям — в Fyndue Pro." />
+          )}
         </CardContent>
       </Card>
 

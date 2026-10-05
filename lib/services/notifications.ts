@@ -240,7 +240,8 @@ export async function runReminders({ sender, now = new Date(), sleep = realSleep
       where: {
         userId,
         channel: "TELEGRAM",
-        type: { not: "TEST" },
+        // Test messages and Pro notices are not part of the reminder plan.
+        type: { notIn: ["TEST", "PRO_EXPIRY"] },
         status: { in: ["PENDING", "FAILED"] },
         deduplicationKey: { notIn: intents.map((i) => i.deduplicationKey) },
       },
@@ -323,7 +324,7 @@ export async function sendTestNotification(userId: string, sender: TelegramSende
 
 export type NotificationLogDTO = {
   id: string;
-  type: "DUE_IN_DAYS" | "DUE_TODAY" | "OVERDUE" | "TEST" | "SUBSCRIPTION_CHARGE";
+  type: "DUE_IN_DAYS" | "DUE_TODAY" | "OVERDUE" | "TEST" | "SUBSCRIPTION_CHARGE" | "PRO_EXPIRY";
   status: "PENDING" | "SENT" | "FAILED" | "CANCELLED";
   createdAt: string;
   sentAt: string | null;

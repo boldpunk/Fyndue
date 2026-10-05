@@ -52,12 +52,18 @@ export type AuditAction =
   | "GOAL_CONTRIBUTED"
   | "GOAL_ARCHIVED"
   | "ACCOUNT_SHARED"
-  | "ACCOUNT_UNSHARED";
+  | "ACCOUNT_UNSHARED"
+  | "PRO_REQUESTED"
+  | "PRO_REQUEST_CANCELLED"
+  | "PRO_CONFIRMED"
+  | "PRO_REJECTED"
+  | "PRO_GRANTED"
+  | "PRO_REVOKED";
 
 export type AuditEntry = {
   userId: string;
   action: AuditAction;
-  entityType: "Account" | "Category" | "Transaction" | "User" | "Debt" | "DebtPayment" | "RecurringTransaction" | "Budget" | "ExchangeRate" | "TelegramConnection" | "NotificationPreference" | "Document" | "TransactionTemplate" | "SavingsGoal" | "AccountShare";
+  entityType: "Account" | "Category" | "Transaction" | "User" | "Debt" | "DebtPayment" | "RecurringTransaction" | "Budget" | "ExchangeRate" | "TelegramConnection" | "NotificationPreference" | "Document" | "TransactionTemplate" | "SavingsGoal" | "AccountShare" | "ProPayment";
   entityId: string;
   /** Changed-field snapshots only. Never secrets, tokens or free-text notes. */
   metadata?: Prisma.InputJsonValue;

@@ -9,6 +9,7 @@ import { Field } from "@/components/ui/field";
 import { Input, NativeSelect } from "@/components/ui/input";
 import { CURRENCIES, CURRENCY_LABELS, TIMEZONES } from "@/lib/constants/finance";
 import { profileSchema, type ProfileInput } from "@/lib/validations/settings";
+import { toastActionError } from "@/lib/utils/action-toast";
 
 export function ProfileForm({ defaults }: { defaults: ProfileInput }) {
   const router = useRouter();
@@ -23,7 +24,7 @@ export function ProfileForm({ defaults }: { defaults: ProfileInput }) {
     }
     startTransition(async () => {
       const result = await updateProfileAction(values);
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success("Профиль сохранён");
       router.refresh();
     });

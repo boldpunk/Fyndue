@@ -19,6 +19,7 @@ import type { CalendarEvent, CalendarEventKind } from "@/lib/services/calendar";
 import { cn } from "@/lib/utils/cn";
 import { RecordOccurrenceDialog, type OccurrenceTarget } from "./record-occurrence-dialog";
 import { pluralRu } from "@/lib/finance/recurrence";
+import { toastActionError } from "@/lib/utils/action-toast";
 
 const KIND_META: Record<CalendarEventKind, { label: string; dot: string; icon: typeof Landmark }> = {
   DEBT_PAYMENT: { label: "Платёж по долгу", dot: "bg-primary", icon: Landmark },
@@ -143,7 +144,7 @@ export function CalendarView({
     startTransition(async () => {
       if (!e.transactionId) return;
       const result = await confirmIncomeAction(e.transactionId);
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success("Доход получен, баланс обновлён");
       router.refresh();
     });

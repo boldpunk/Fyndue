@@ -7,6 +7,7 @@ import { todayIn } from "@/lib/finance/dates";
 import { listAccounts } from "@/lib/services/accounts";
 import { listCategories } from "@/lib/services/categories";
 import { latestCentralBankRates } from "@/lib/services/central-bank-rates";
+import { getPlan } from "@/lib/services/billing";
 import { listTemplates } from "@/lib/services/templates";
 import { listMerchantMemory } from "@/lib/services/transactions";
 
@@ -18,12 +19,13 @@ export default async function NewTransactionPage({ searchParams }: { searchParam
   const user = await requireUser();
   const { type, account } = await searchParams;
   const kind = KINDS.find((k) => k === type?.toUpperCase()) ?? "EXPENSE";
-  const [accounts, categories, cbuRates, merchants, templates] = await Promise.all([
+  const [accounts, categories, cbuRates, merchants, templates, plan] = await Promise.all([
     listAccounts(user.id),
     listCategories(user.id, { includeSystem: false }),
     latestCentralBankRates(),
     listMerchantMemory(user.id),
     listTemplates(user.id),
+    getPlan(user.id),
   ]);
 
   return (
@@ -37,6 +39,7 @@ export default async function NewTransactionPage({ searchParams }: { searchParam
           defaultKind={kind}
           merchants={merchants}
           templates={templates}
+          canSaveTemplates={plan.tier === "pro"}
           fxRates={Object.fromEntries(cbuRates.map((r) => [r.currency, r.rate]))}
           defaultAccountId={accounts.some((a) => a.id === account) ? account : undefined}
         />

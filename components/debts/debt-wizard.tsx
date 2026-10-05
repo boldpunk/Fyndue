@@ -34,6 +34,7 @@ import { scheduleTotals } from "@/lib/finance/schedule";
 import { cn } from "@/lib/utils/cn";
 import { debtCreateSchema } from "@/lib/validations/debts";
 import { DEBT_TYPE_ICONS } from "./debt-card";
+import { offerPro } from "@/lib/utils/action-toast";
 
 type ManualRow = { dueDate: string; principal: string; interest: string; fees: string };
 type TotalRow = { dueDate: string; total: string };
@@ -236,6 +237,7 @@ export function DebtWizard({ accounts, today, defaultCurrency }: { accounts: Acc
       setFormError(null);
       const result = await createDebtAction(payload);
       if (!result.ok) {
+        offerPro(result);
         setFormError(result.error);
         setErrors(result.fieldErrors ?? {});
         return;

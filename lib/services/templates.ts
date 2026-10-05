@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { DomainError, NotFoundError } from "@/lib/errors";
 import { toMoneyString } from "@/lib/finance/money";
 import type { TemplateCreateInput } from "@/lib/validations/templates";
+import { assertProFeature } from "./billing";
 import { writeAudit } from "./audit";
 
 /** Saved operations for one-tap entry in the quick-add form. */
@@ -38,6 +39,7 @@ export async function listTemplates(userId: string): Promise<TemplateDTO[]> {
 }
 
 export async function createTemplate(userId: string, input: TemplateCreateInput): Promise<{ id: string }> {
+  await assertProFeature(userId, "templates");
   const category = await prisma.category.findFirst({ where: { id: input.categoryId, userId, isArchived: false, isSystem: false } });
   if (!category) throw new NotFoundError("Category");
   if (category.type !== input.kind) throw new DomainError("Категория не подходит к типу операции.", "VALIDATION", { categoryId: "Выберите другую категорию" });

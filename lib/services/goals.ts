@@ -6,6 +6,7 @@ import { goalProgress, type GoalProgress } from "@/lib/finance/goals";
 import { money, toMoneyString } from "@/lib/finance/money";
 import type { Currency } from "@/lib/generated/prisma/client";
 import type { GoalContributionInput, GoalCreateInput, GoalUpdateInput } from "@/lib/validations/goals";
+import { assertWithinLimit } from "./billing";
 import { writeAudit } from "./audit";
 
 /**
@@ -69,6 +70,7 @@ async function checkedAccountId(tx: Tx, userId: string, accountId: string | unde
 }
 
 export async function createGoal(userId: string, input: GoalCreateInput): Promise<{ id: string }> {
+  await assertWithinLimit(userId, "goals");
   if ((await prisma.savingsGoal.count({ where: { userId, isArchived: false } })) >= MAX_GOALS) {
     throw new DomainError(`Можно вести до ${MAX_GOALS} целей.`);
   }

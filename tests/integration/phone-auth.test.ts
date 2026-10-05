@@ -1,11 +1,14 @@
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/db";
 import type { TelegramSender, TelegramUpdate } from "@/lib/telegram/client";
 import { createUser, resetDatabase } from "../support/factories";
 
 // The phone plugin is on only when the bot is configured; never reached over the network here.
-process.env.TELEGRAM_BOT_TOKEN = "123:test-token";
-process.env.TELEGRAM_BOT_USERNAME = "fyndue_test_bot";
+// Hoisted: the factories' imports already read the environment.
+vi.hoisted(() => {
+  process.env.TELEGRAM_BOT_TOKEN = "123:test-token";
+  process.env.TELEGRAM_BOT_USERNAME = "fyndue_test_bot";
+});
 
 function fakeSender() {
   const sent: { chatId: string; html: string; options?: unknown }[] = [];

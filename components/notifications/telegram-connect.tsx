@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import type { TelegramConnectionDTO } from "@/lib/services/telegram-connection";
+import { toastActionError } from "@/lib/utils/action-toast";
 
 type Issued = { code: string; expiresAt: string; deepLink: string; bot: string };
 
@@ -47,21 +48,21 @@ export function TelegramConnect({ connection, bot }: { connection: TelegramConne
   const createCode = () =>
     startTransition(async () => {
       const result = await createTelegramCodeAction();
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       setIssued(result.data);
       setCopied(false);
     });
   const sendTest = () =>
     startTransition(async () => {
       const result = await sendTestNotificationAction();
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success("Тестовое сообщение отправлено");
       router.refresh();
     });
   const disconnect = () =>
     startTransition(async () => {
       const result = await disconnectTelegramAction();
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       setConfirming(false);
       setIssued(null);
       toast.success("Telegram отключён");

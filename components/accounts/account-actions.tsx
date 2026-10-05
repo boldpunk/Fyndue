@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { money, parseMoneyInput, toMoneyString } from "@/lib/finance/money";
 import type { AccountDTO } from "@/lib/services/accounts";
 import { balanceAdjustmentSchema } from "@/lib/validations/accounts";
+import { toastActionError } from "@/lib/utils/action-toast";
 
 function RestartTrackingForm({ account, today, onDone }: { account: AccountDTO; today: string; onDone: () => void }) {
   const router = useRouter();
@@ -167,7 +168,7 @@ export function AccountActions({
   const toggleArchive = () =>
     startTransition(async () => {
       const result = await archiveAccountAction({ id: account.id, archived: !account.isArchived });
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success(account.isArchived ? "Счёт восстановлен" : "Счёт перенесён в архив");
       router.refresh();
     });

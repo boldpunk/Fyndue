@@ -17,6 +17,7 @@ import { formatLocalDate } from "@/lib/finance/dates";
 import { describeRule } from "@/lib/finance/recurrence";
 import type { RecurringDTO } from "@/lib/services/recurring";
 import { RecurringForm } from "./recurring-form";
+import { toastActionError } from "@/lib/utils/action-toast";
 
 export function RecurringList({
   items,
@@ -37,7 +38,7 @@ export function RecurringList({
   const toggle = (item: RecurringDTO) =>
     startTransition(async () => {
       const result = await setRecurringActiveAction({ id: item.id, archived: item.isActive });
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success(item.isActive ? `«${item.name}» приостановлен` : `«${item.name}» возобновлён`);
       router.refresh();
     });
@@ -46,7 +47,7 @@ export function RecurringList({
     startTransition(async () => {
       if (!deleting) return;
       const result = await deleteRecurringAction(deleting.id);
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success("Регулярный платёж удалён, записанные операции сохранены");
       setDeleting(null);
       router.refresh();

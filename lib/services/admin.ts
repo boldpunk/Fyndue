@@ -1,6 +1,7 @@
 import "server-only";
 import { isAdminEmail } from "@/lib/auth/admin";
 import { formatPhone, isPhoneAccountEmail } from "@/lib/auth/phone";
+import { planFor, type Plan } from "@/lib/billing/plans";
 import { prisma } from "@/lib/db";
 
 /**
@@ -31,11 +32,12 @@ export type AdminUserRow = {
   accounts: number;
   debts: number;
   transactions: number;
+  plan: Plan;
 };
 
 export type AdminOverview = {
   users: AdminUserRow[];
-  totals: { users: number; newLast7Days: number; activeLast7Days: number; phone: number; telegram: number };
+  totals: { users: number; newLast7Days: number; activeLast7Days: number; phone: number; telegram: number; paid: number; trial: number };
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -56,6 +58,8 @@ export async function getAdminOverview(adminUserId: string, now: Date = new Date
         email: true,
         phoneNumber: true,
         createdAt: true,
+        proUntil: true,
+        trialEndsAt: true,
         authAccounts: { select: { providerId: true } },
         telegramConnection: { select: { status: true } },
         _count: { select: { accounts: { where: { isArchived: false } }, debts: true, transactions: { where: { voidedAt: null } } } },
@@ -79,6 +83,7 @@ export async function getAdminOverview(adminUserId: string, now: Date = new Date
       accounts: u._count.accounts,
       debts: u._count.debts,
       transactions: u._count.transactions,
+      plan: planFor({ createdAt: u.createdAt, proUntil: u.proUntil, trialEndsAt: u.trialEndsAt, isAdmin: isAdminEmail(u.email) }, now),
     };
   });
 
@@ -91,6 +96,8 @@ export async function getAdminOverview(adminUserId: string, now: Date = new Date
       activeLast7Days: users.filter((u) => u.lastActiveAt && u.lastActiveAt.getTime() >= weekAgo).length,
       phone: users.filter((u) => u.method === "phone").length,
       telegram: users.filter((u) => u.telegram).length,
+      paid: users.filter((u) => u.plan.reason === "paid").length,
+      trial: users.filter((u) => u.plan.reason === "trial").length,
     },
   };
 }

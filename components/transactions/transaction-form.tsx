@@ -34,6 +34,7 @@ import { Sparkles, Star } from "lucide-react";
 import { createTemplateAction } from "@/app/(app)/transactions/template-actions";
 import { CategoryIcon } from "@/components/finance/category-icon";
 import type { TemplateDTO } from "@/lib/services/templates";
+import { offerPro, toastActionError } from "@/lib/utils/action-toast";
 
 export type TransactionKind = "EXPENSE" | "INCOME" | "TRANSFER";
 
@@ -73,6 +74,7 @@ export function TransactionForm({
   templates,
   createAction = createTransactionAction,
   kinds = ["EXPENSE", "INCOME", "TRANSFER"],
+  canSaveTemplates = true,
 }: {
   accounts: AccountOption[];
   categories: CategoryOption[];
@@ -91,6 +93,8 @@ export function TransactionForm({
   /** Shared accounts write through their own action (lib/services/shared-accounts.ts). */
   createAction?: (input: unknown) => Promise<ActionResult<unknown>>;
   kinds?: TransactionKind[];
+  /** Saving new templates is a Pro feature. */
+  canSaveTemplates?: boolean;
 }) {
   const router = useRouter();
   const merchantListId = useId();
@@ -255,6 +259,7 @@ export function TransactionForm({
     startTransition(async () => {
       const result = await action(payload);
       if (!result.ok) {
+        offerPro(result);
         setFormError(result.error);
         applyErrors(result.fieldErrors);
         return;
@@ -276,7 +281,7 @@ export function TransactionForm({
           note: values.note,
         });
         if (saved.ok) toast.success(`Шаблон «${name.slice(0, 40)}» сохранён`);
-        else toast.error(saved.error);
+        else toastActionError(saved);
         setSaveAsTemplate(false);
       }
       if (!editing) {
@@ -506,7 +511,7 @@ export function TransactionForm({
         </p>
       ) : null}
 
-      {!editing && templates && kind !== "TRANSFER" ? (
+      {!editing && templates && canSaveTemplates && kind !== "TRANSFER" ? (
         <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
           <input type="checkbox" className="size-4 accent-[var(--color-primary)]" checked={saveAsTemplate} onChange={(e) => setSaveAsTemplate(e.target.checked)} />
           <Star className="size-3.5" aria-hidden /> Запомнить как шаблон — потом одним нажатием

@@ -154,6 +154,8 @@ enum NotificationType {
   TEST
   /// A subscription will be charged soon.
   SUBSCRIPTION_CHARGE
+  /// Fyndue Pro (or its trial) ends in a few days.
+  PRO_EXPIRY
 }
 
 enum NotificationChannel {
@@ -194,6 +196,10 @@ model User {
   image         String?
   baseCurrency  Currency @default(UZS)
   timezone      String   @default("Asia/Tashkent")
+  /// Fyndue Pro paid (or granted) until this moment (lib/billing/plans.ts).
+  proUntil      DateTime? @db.Timestamptz(3)
+  /// End of the free Pro trial; null = 14 days from createdAt.
+  trialEndsAt   DateTime? @db.Timestamptz(3)
   createdAt     DateTime @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime @updatedAt @db.Timestamptz(3)
 
@@ -219,6 +225,7 @@ model User {
   savingsGoals           SavingsGoal[]
   accountSharesOwned     AccountShare[]         @relation("AccountShareOwner")
   accountSharesJoined    AccountShare[]         @relation("AccountShareMember")
+  proPayments            ProPayment[]
 }
 
 model Session {
@@ -847,4 +854,39 @@ model CentralBankRate {
 
   @@unique([currency, rateDate])
   @@index([currency, rateDate(sort: Desc)])
+}
+
+// ─── Fyndue Pro (docs/billing.md) ────────────────────────────────────────────
+
+enum ProPaymentStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  CANCELLED
+}
+
+/// A Pro period: a user's «Я оплатил» request that an admin confirms, or a
+/// grant made by an admin directly. Confirming extends User.proUntil.
+model ProPayment {
+  id          String           @id @default(cuid())
+  userId      String
+  /// "MONTH" | "YEAR" | "DAYS" (admin grant of any length).
+  period      String
+  days        Int
+  amount      Decimal?         @db.Decimal(20, 2)
+  currency    Currency         @default(UZS)
+  status      ProPaymentStatus @default(PENDING)
+  /// "MANUAL" now; a payment provider later.
+  method      String           @default("MANUAL")
+  /// Admin who confirmed, rejected or granted it.
+  decidedById String?
+  decidedAt   DateTime?        @db.Timestamptz(3)
+  note        String?
+  createdAt   DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime         @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
 }

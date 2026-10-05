@@ -188,6 +188,10 @@ Phase 6 notes:
 - **Экспорт в Excel**: `/api/export/transactions` — CSV with BOM, «;», decimal comma, current filters, formula-safe text.
 - **Общий счёт** (`AccountShare`, docs/security.md §2b): the owner invites an existing user by phone or email; the member sees that account only and adds expenses/income to it (owner gets a Telegram note), can cancel only their own entries, and can leave.
 
+## Fyndue Pro ✅
+
+Free / Pro plans with soft limits, a 14-day trial, manual payment («Я оплатил» → admin confirms), admin grants, expiry notices — docs/billing.md.
+
 ## Phase 7 — PWA & polish (next)
 
 Manifest, icons, standalone mode, safe areas, command palette (⌘K), onboarding flow, skeletons/empty/error states audit, accessibility audit, performance (lazy charts, pagination review), rate limiting on actions, email verification & password reset, Playwright E2E for critical flows.

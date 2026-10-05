@@ -23,6 +23,7 @@ import { formatLocalDate } from "@/lib/finance/dates";
 import { pluralRu } from "@/lib/finance/recurrence";
 import type { GoalDTO } from "@/lib/services/goals";
 import { cn } from "@/lib/utils/cn";
+import { offerPro, toastActionError } from "@/lib/utils/action-toast";
 
 type AccountOption = { id: string; name: string; currency: string };
 const GOAL_ICONS: CategoryIconKey[] = ["piggy-bank", "plane", "car", "house", "laptop", "smartphone", "gift", "graduation-cap", "heart-pulse", "baby", "sofa", "building-2", "trending-up", "shield"];
@@ -48,7 +49,10 @@ function GoalForm({ goal, accounts, baseCurrency, onDone }: { goal: GoalDTO | nu
       setError(null);
       const payload = { ...v, currency: linked?.currency ?? v.currency };
       const result = goal ? await updateGoalAction({ id: goal.id, ...payload }) : await createGoalAction(payload);
-      if (!result.ok) return setError(Object.values(result.fieldErrors ?? {})[0] ?? result.error);
+      if (!result.ok) {
+        offerPro(result);
+        return setError(Object.values(result.fieldErrors ?? {})[0] ?? result.error);
+      }
       toast.success(goal ? "Цель обновлена" : "Цель создана");
       router.refresh();
       onDone();
@@ -253,7 +257,7 @@ export function GoalsView({ goals, accounts, baseCurrency }: { goals: GoalDTO[];
   const archive = (goal: GoalDTO) =>
     startTransition(async () => {
       const result = await archiveGoalAction({ id: goal.id, archived: true });
-      if (!result.ok) return void toast.error(result.error);
+      if (!result.ok) return void toastActionError(result);
       toast.success(`«${goal.name}» в архиве`);
       router.refresh();
     });

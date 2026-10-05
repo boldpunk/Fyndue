@@ -13,6 +13,7 @@ import { Segmented } from "@/components/ui/segmented";
 import { Switch } from "@/components/ui/switch";
 import { formatMoney } from "@/lib/finance/money";
 import type { RecurringDTO } from "@/lib/services/recurring";
+import { offerPro } from "@/lib/utils/action-toast";
 
 type Kind = "EXPENSE" | "INCOME";
 type Frequency = "WEEKLY" | "MONTHLY" | "YEARLY";
@@ -53,7 +54,10 @@ export function RecurringForm({
     startTransition(async () => {
       setErrors({});
       const result = await saveRecurringAction({ ...(item ? { id: item.id } : {}), ...v, interval: v.interval });
-      if (!result.ok) return setErrors({ ...(result.fieldErrors ?? {}), form: result.error });
+      if (!result.ok) {
+        offerPro(result);
+        return setErrors({ ...(result.fieldErrors ?? {}), form: result.error });
+      }
       toast.success(item ? "Регулярный платёж обновлён" : "Регулярный платёж добавлен");
       router.refresh();
       onDone();
