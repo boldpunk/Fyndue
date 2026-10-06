@@ -1,5 +1,5 @@
 "use client";
-import { Check, Copy, Crown, ExternalLink, Hourglass, Minus, Sparkles } from "lucide-react";
+import { Check, Copy, Crown, ExternalLink, Hourglass, Minus, Send, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -33,6 +33,12 @@ const ROWS: { label: string; free: string | boolean; pro: string | boolean }[] =
 
 const USAGE_LABELS: Record<LimitedResource, string> = { accounts: "Счета", debts: "Долги", subscriptions: "Подписки", goals: "Цели" };
 const until = (iso: string) => new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(new Date(iso)).replace(" г.", "");
+
+/** t.me link with the first message filled in (Telegram opens the chat with it typed). */
+function telegramLink(url: string, text: string) {
+  return url.startsWith("https://t.me/") ? `${url}?text=${encodeURIComponent(text)}` : url;
+}
+const contactLabel = (url: string) => (url.startsWith("https://t.me/") ? `@${url.slice("https://t.me/".length).replace(/\/.*/, "")}` : "нам");
 
 function Cell({ value }: { value: string | boolean }) {
   if (value === true) return <Check className="mx-auto size-4 text-success" aria-label="Есть" />;
@@ -139,20 +145,19 @@ export function ProView({
                 <p className="flex items-center gap-2 text-sm font-medium">
                   <Hourglass className="size-4 text-primary" aria-hidden /> Заявка на {pending.period === "YEAR" ? "год" : "месяц"} ждёт проверки
                 </p>
-                <p className="text-[13px] text-muted-foreground">Как только увидим перевод, включим Pro{contactUrl ? "" : " и пришлём сообщение в Telegram"}. Обычно в течение дня.</p>
+                <p className="text-[13px] text-muted-foreground">Как только увидим оплату, включим Pro и пришлём сообщение в Telegram. Обычно в течение дня.</p>
                 <Button variant="outline" size="sm" className="w-fit" disabled={busy} onClick={cancel}>
                   Отменить заявку
                 </Button>
               </div>
             ) : (
               <>
-                <ol className="grid gap-3 text-sm">
-                  <li className="grid gap-2">
-                    <span>
-                      <b>1.</b> Переведите <Money amount={price.amount} currency="UZS" className="font-semibold" />
-                      {paymentDetails.length > 0 ? " по реквизитам:" : ""}
-                    </span>
-                    {paymentDetails.length > 0 ? (
+                {paymentDetails.length > 0 ? (
+                  <ol className="grid gap-3 text-sm">
+                    <li className="grid gap-2">
+                      <span>
+                        <b>1.</b> Переведите <Money amount={price.amount} currency="UZS" className="font-semibold" /> по реквизитам:
+                      </span>
                       <div className="grid gap-1 rounded-lg border bg-card p-3 font-mono text-[13px]">
                         {paymentDetails.map((line) => (
                           <button
@@ -166,23 +171,41 @@ export function ProView({
                           </button>
                         ))}
                       </div>
-                    ) : contactUrl ? (
-                      <a href={contactUrl} target="_blank" rel="noopener" className="inline-flex w-fit items-center gap-1 font-medium text-primary hover:underline">
-                        Узнать реквизиты <ExternalLink className="size-3.5" />
-                      </a>
-                    ) : null}
-                  </li>
-                  <li>
-                    <b>2.</b> В комментарии к переводу укажите код <code className="rounded bg-muted px-1.5 py-0.5 font-semibold">{reference}</code> — так мы найдём ваш платёж.
-                  </li>
-                  <li>
-                    <b>3.</b> Нажмите кнопку ниже — Pro включится после проверки.
-                  </li>
-                </ol>
+                    </li>
+                    <li>
+                      <b>2.</b> В комментарии к переводу укажите код <code className="rounded bg-muted px-1.5 py-0.5 font-semibold">{reference}</code> — так мы найдём ваш платёж.
+                    </li>
+                    <li>
+                      <b>3.</b> Нажмите кнопку ниже — Pro включится после проверки.
+                    </li>
+                  </ol>
+                ) : (
+                  <ol className="grid gap-3 text-sm">
+                    <li className="grid gap-2">
+                      <span>
+                        <b>1.</b> Напишите нам в Telegram — пришлём, как оплатить <Money amount={price.amount} currency="UZS" className="font-semibold" />. Ваш код:{" "}
+                        <code className="rounded bg-muted px-1.5 py-0.5 font-semibold">{reference}</code>
+                      </span>
+                      {contactUrl ? (
+                        <Button asChild variant="outline" className="w-fit">
+                          <a href={telegramLink(contactUrl, `Здравствуйте! Хочу Fyndue Pro на ${period === "YEAR" ? "год" : "месяц"}. Мой код: ${reference}`)} target="_blank" rel="noopener">
+                            <Send /> Написать {contactLabel(contactUrl)} <ExternalLink className="opacity-60" />
+                          </a>
+                        </Button>
+                      ) : null}
+                    </li>
+                    <li>
+                      <b>2.</b> Оплатите, как договоримся.
+                    </li>
+                    <li>
+                      <b>3.</b> Нажмите кнопку ниже — Pro включится после проверки.
+                    </li>
+                  </ol>
+                )}
                 <Button size="lg" disabled={busy} onClick={request}>
                   <Sparkles /> Я оплатил {period === "YEAR" ? "год" : "месяц"}
                 </Button>
-                {contactUrl ? (
+                {contactUrl && paymentDetails.length > 0 ? (
                   <a href={contactUrl} target="_blank" rel="noopener" className="text-center text-[13px] text-muted-foreground hover:text-foreground">
                     Вопросы по оплате — напишите нам
                   </a>

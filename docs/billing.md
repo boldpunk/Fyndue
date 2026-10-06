@@ -24,7 +24,7 @@ In the services, never only in the UI: `assertWithinLimit` in `createAccount`, `
 
 ## 4. Paying (manual for now)
 
-1. `/pro`: the user picks month/year, transfers the sum to `PRO_PAYMENT_DETAILS` with the reference code (last 6 characters of the user id), and presses «Я оплатил» → `ProPayment` (PENDING; a new request cancels the previous one). Admins with the bot connected get a Telegram message.
+1. `/pro`: the user picks month/year and writes to `PRO_CONTACT_URL` (default https://t.me/boldpunk; the button pre-fills «Хочу Fyndue Pro на год. Мой код: …») — or, when `PRO_PAYMENT_DETAILS` is set, transfers to those details with the reference code (last 6 characters of the user id) — then presses «Я оплатил» → `ProPayment` (PENDING; a new request cancels the previous one). Admins with the bot connected get a Telegram message.
 2. `/admin` → «Заявки на Pro»: «Оплата пришла» confirms (proUntil moves forward from the later of now and the current end) or «Нет оплаты» rejects; the user is told in Telegram.
 3. `/admin` user menu: +1 month, +1 year, any number of days (gifts, promo, cash), or take a paid period away.
 

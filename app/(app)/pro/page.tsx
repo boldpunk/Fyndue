@@ -4,6 +4,9 @@ import { requireUser } from "@/lib/auth/session";
 import { env } from "@/lib/env";
 import { getPlan, getUsage, listMyProPayments } from "@/lib/services/billing";
 
+/** Payment is arranged in Telegram with the studio unless .env says otherwise. */
+const DEFAULT_PRO_CONTACT = "https://t.me/boldpunk";
+
 export const metadata: Metadata = { title: "Fyndue Pro" };
 
 export default async function ProPage({ searchParams }: { searchParams: Promise<{ feature?: string }> }) {
@@ -16,7 +19,7 @@ export default async function ProPage({ searchParams }: { searchParams: Promise<
         usage={usage}
         pending={payments.find((p) => p.status === "PENDING") ?? null}
         paymentDetails={env.PRO_PAYMENT_DETAILS?.split("|").map((l) => l.trim()).filter(Boolean) ?? []}
-        contactUrl={env.PRO_CONTACT_URL ?? null}
+        contactUrl={env.PRO_CONTACT_URL ?? DEFAULT_PRO_CONTACT}
         reference={user.id.slice(-6).toUpperCase()}
         highlight={feature === "export" ? "export" : null}
       />
