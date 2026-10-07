@@ -9,7 +9,7 @@ import { money, toMoneyString } from "@/lib/finance/money";
 import { displayPaymentStatus, type DisplayPaymentStatus } from "@/lib/finance/payment-status";
 import type { Debt, DebtPayment, DebtScheduleItem } from "@/lib/generated/prisma/client";
 import type { DebtCreateInput } from "@/lib/validations/debts";
-import { applyBalanceDelta, lockOwnedAccount } from "./accounts";
+import { applyBalanceDelta, assertTrackedDate, lockOwnedAccount } from "./accounts";
 import { assertWithinLimit } from "./billing";
 import { writeAudit } from "./audit";
 import { lockOwnedDebt } from "./debt-payments";
@@ -496,6 +496,45 @@ export async function updateDebtDetails(userId: string, input: { id: string; nam
     });
     if (result.count !== 1) throw new NotFoundError("Debt");
     await writeAudit(tx, { userId, action: "DEBT_UPDATED", entityType: "Debt", entityId: input.id, metadata: { name: input.name } });
+  });
+}
+
+/**
+ * The loan money arrived on an account, recorded after the debt was created
+ * (the wizard's «Деньги поступили на счёт» was left empty). Same row the
+ * wizard writes: LOAN_DISBURSEMENT, not income. Once per debt.
+ */
+export async function recordDebtDisbursement(
+  userId: string,
+  input: { id: string; accountId: string; amount: string; date: LocalDate },
+): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    const debt = await lockOwnedDebt(tx, userId, input.id);
+    const existing = await tx.transaction.findFirst({ where: { userId, debtId: debt.id, type: "LOAN_DISBURSEMENT", voidedAt: null }, select: { id: true } });
+    if (existing || debt.disbursementAccountId) throw new DomainError("Поступление по этому займу уже записано.", "ALREADY_DISBURSED");
+    const account = await lockOwnedAccount(tx, userId, input.accountId);
+    if (account.isArchived) throw new DomainError("Этот счёт в архиве.", "ACCOUNT_ARCHIVED", { accountId: "Счёт в архиве" });
+    if (account.currency !== debt.currency) {
+      throw new DomainError(`Счёт должен быть в ${debt.currency}.`, "CURRENCY_MISMATCH", { accountId: `Выберите счёт в ${debt.currency}` });
+    }
+    assertTrackedDate(account, input.date);
+    await tx.transaction.create({
+      data: {
+        userId,
+        accountId: account.id,
+        debtId: debt.id,
+        type: "LOAN_DISBURSEMENT",
+        direction: "INFLOW",
+        amount: input.amount,
+        currency: debt.currency,
+        transactionDate: localDateToDb(input.date),
+        note: debt.name,
+        source: "SYSTEM",
+      },
+    });
+    await applyBalanceDelta(tx, account.id, money(input.amount));
+    await tx.debt.update({ where: { id: debt.id }, data: { disbursementAccountId: account.id } });
+    await writeAudit(tx, { userId, action: "DEBT_UPDATED", entityType: "Debt", entityId: debt.id, metadata: { disbursement: { accountId: account.id, amount: input.amount, date: input.date } } });
   });
 }
 

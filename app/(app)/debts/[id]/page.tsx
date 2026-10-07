@@ -349,7 +349,14 @@ export default async function DebtPage({
         />
       ) : null}
 
-      {tab === "settings" ? <DebtSettings debt={debt} /> : null}
+      {tab === "settings" ? (
+        <DebtSettings
+          debt={debt}
+          accounts={accounts.filter((a) => a.currency === debt.currency).map(({ id, name, currency }) => ({ id, name, currency }))}
+          disbursed={Boolean(debt.disbursementAccountId)}
+          today={today}
+        />
+      ) : null}
     </div>
   );
 }

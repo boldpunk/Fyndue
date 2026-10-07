@@ -73,6 +73,8 @@ export const debtCreateSchema = z
 export type DebtCreateInput = z.output<typeof debtCreateSchema>;
 export type DebtCreateFormValues = z.input<typeof debtCreateSchema>;
 
+export const debtDisbursementSchema = z.object({ id: idSchema, accountId: idSchema, amount: moneySchema(), date: localDateSchema });
+
 export const debtUpdateSchema = z.object({
   id: idSchema,
   name: z.string().trim().min(1, "Введите название").max(80),

@@ -1,19 +1,108 @@
 "use client";
-import { Archive, ArchiveRestore } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowDownLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { archiveDebtAction, setDebtWeekendShiftAction, updateDebtAction } from "@/app/(app)/debts/actions";
+import { archiveDebtAction, recordDebtDisbursementAction, setDebtWeekendShiftAction, updateDebtAction } from "@/app/(app)/debts/actions";
+import { MoneyInput } from "@/components/finance/money-input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
-import { Input, Textarea } from "@/components/ui/input";
+import { Input, NativeSelect, Textarea } from "@/components/ui/input";
+import { formatMoney } from "@/lib/finance/money";
 import { toastActionError } from "@/lib/utils/action-toast";
+
+type DebtForSettings = {
+  id: string;
+  name: string;
+  lender: string | null;
+  notes: string | null;
+  status: "ACTIVE" | "PAID_OFF" | "ARCHIVED";
+  shiftWeekends: boolean;
+  currency: string;
+  startDate: string;
+  netAmountReceived: string | null;
+  originalPrincipal: string;
+};
+
+/** «Деньги поступили на счёт» after the debt was created: the account balance gets the loan money. */
+function DisbursementCard({ debt, accounts, today }: { debt: DebtForSettings; accounts: { id: string; name: string; currency: string }[]; today: string }) {
+  const router = useRouter();
+  const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
+  const [amount, setAmount] = useState(formatMoney(debt.netAmountReceived ?? debt.originalPrincipal, "", { hideCurrency: true }));
+  const [date, setDate] = useState(debt.startDate > today ? today : debt.startDate);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const save = () =>
+    startTransition(async () => {
+      setError(null);
+      const result = await recordDebtDisbursementAction({ id: debt.id, accountId, amount, date });
+      if (!result.ok) return setError(Object.values(result.fieldErrors ?? {})[0] ?? result.error);
+      toast.success("Поступление записано — баланс счёта обновлён");
+      router.refresh();
+    });
+  return (
+    <form
+      noValidate
+      className="grid max-w-xl gap-4 rounded-xl border p-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save();
+      }}
+    >
+      <div className="grid gap-1">
+        <p className="text-sm font-medium">Деньги по займу поступили на счёт</p>
+        <p className="text-[13px] text-muted-foreground">
+          Если при добавлении долга вы не указали, куда пришли деньги, — запишите это здесь. Это не доход: сумма просто появится на балансе счёта.
+        </p>
+      </div>
+      {accounts.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Нет счёта в {debt.currency}. Сначала создайте его.</p>
+      ) : (
+        <>
+          <Field label="На какой счёт" htmlFor="disb-account">
+            <NativeSelect id="disb-account" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name} · {a.currency}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Сколько пришло" htmlFor="disb-amount" hint="Если банк удержал комиссию — сумма, которая реально пришла.">
+              <MoneyInput id="disb-amount" value={amount} onChange={setAmount} currency={debt.currency} />
+            </Field>
+            <Field label="Когда" htmlFor="disb-date">
+              <Input id="disb-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </Field>
+          </div>
+          {error ? (
+            <p role="alert" className="text-sm text-danger">
+              {error}
+            </p>
+          ) : null}
+          <div>
+            <Button type="submit" disabled={pending || !amount.trim() || !accountId}>
+              <ArrowDownLeft /> Записать поступление
+            </Button>
+          </div>
+        </>
+      )}
+    </form>
+  );
+}
 
 export function DebtSettings({
   debt,
+  accounts = [],
+  disbursed = true,
+  today,
 }: {
-  debt: { id: string; name: string; lender: string | null; notes: string | null; status: "ACTIVE" | "PAID_OFF" | "ARCHIVED"; shiftWeekends: boolean };
+  debt: DebtForSettings;
+  accounts?: { id: string; name: string; currency: string }[];
+  disbursed?: boolean;
+  today: string;
 }) {
   const router = useRouter();
   const [name, setName] = useState(debt.name);
@@ -82,6 +171,8 @@ export function DebtSettings({
           </Button>
         </div>
       </form>
+
+      {!disbursed && debt.status !== "ARCHIVED" ? <DisbursementCard debt={debt} accounts={accounts} today={today} /> : null}
 
       <label className="flex max-w-xl items-start justify-between gap-4 rounded-xl border p-4">
         <span className="grid gap-1">

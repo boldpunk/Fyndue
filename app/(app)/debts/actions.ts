@@ -4,10 +4,11 @@ import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { previewEarlyRepayment, recordDebtPayment, recordEarlyRepayment, reverseDebtPayment, lockOwnedDebt } from "@/lib/services/debt-payments";
 import { replaceOpenSchedule } from "@/lib/services/debt-schedule";
-import { createDebt, setDebtArchived, setDebtWeekendShift, updateDebtDetails } from "@/lib/services/debts";
+import { createDebt, recordDebtDisbursement, setDebtArchived, setDebtWeekendShift, updateDebtDetails } from "@/lib/services/debts";
 import { runAction } from "@/lib/utils/action";
 import { archiveSchema } from "@/lib/validations/accounts";
 import {
+  debtDisbursementSchema,
   debtCreateSchema,
   debtUpdateSchema,
   earlyRepaymentPreviewSchema,
@@ -102,5 +103,15 @@ export async function setDebtWeekendShiftAction(input: unknown) {
     const result = await setDebtWeekendShift(user.id, weekendShiftSchema.parse(input));
     refresh();
     return result;
+  });
+}
+
+/** «Деньги по займу поступили на счёт», recorded after the debt was created. */
+export async function recordDebtDisbursementAction(input: unknown) {
+  return runAction(async () => {
+    const user = await requireUser();
+    await recordDebtDisbursement(user.id, debtDisbursementSchema.parse(input));
+    refresh();
+    return null;
   });
 }
