@@ -55,7 +55,7 @@ An owner can let another Fyndue user use **one account** (`AccountShare`). Rows 
 |---|---|
 | CSRF | Server Actions only accept POST and check `Origin` against `Host` (built into Next.js); Better Auth validates `Origin` against `trustedOrigins`; cookies are `SameSite=Lax`. No state-changing GET routes. |
 | XSS | React escaping; no HTML injection APIs; CSP header; icon/colour allow-lists. |
-| Clickjacking | `X-Frame-Options: DENY` + `frame-ancestors 'none'`. |
+| Clickjacking | `frame-ancestors 'self'` + only Yandex Metrika's Webvisor player (metrika.yandex.*, *.webvisor.com). App pages carry `ym-hide-content`, the body `ym-disable-keys`: recordings never show balances or typed text. |
 | Headers | Set in `next.config.ts`: `Content-Security-Policy`, `Strict-Transport-Security` (prod), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera/mic/geolocation off). |
 | Brute force | Better Auth built-in rate limiter on auth endpoints (Phase 1, in-memory; DB/Redis store for multi-instance deploys). Mutating actions get a per-user limiter in Phase 7. |
 | Double submit | `clientRequestId` idempotency keys with unique indexes; buttons disabled while pending. |
