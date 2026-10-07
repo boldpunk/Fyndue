@@ -1,13 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
-import { YandexMetrika } from "@/components/analytics/yandex-metrika";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
-
-/** Yandex Metrika counter; only in production, never in development or tests. */
-const METRIKA_ID = process.env.NODE_ENV === "production" ? Number(process.env.YANDEX_METRIKA_ID ?? "113536200") || null : null;
 
 const DESCRIPTION = "Ни одного пропущенного платежа. Никакого финансового хаоса. Вся картина денег — в одном месте.";
 
@@ -42,13 +38,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru" suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      {/* ym-disable-keys: Webvisor never records what people type. */}
-      <body className="ym-disable-keys min-h-dvh">
+      <body className="min-h-dvh">
         <ThemeProvider>
           {children}
           <Toaster />
         </ThemeProvider>
-        {METRIKA_ID ? <YandexMetrika id={METRIKA_ID} /> : null}
       </body>
     </html>
   );

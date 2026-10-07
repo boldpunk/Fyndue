@@ -36,17 +36,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       templates={templates}
       isPro={plan.tier === "pro"}
     >
-      {/* ym-hide-content: balances, debts and names never reach Webvisor recordings. */}
-      <div className="ym-hide-content flex min-h-dvh">
+      <div className="flex min-h-dvh">
         <AppSidebar user={user} plan={planChip} />
         <div className="flex min-w-0 flex-1 flex-col">
           <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 sm:px-6 lg:px-10 lg:pt-10">{children}</main>
           <SiteFooter className="mx-auto mt-12 w-full max-w-6xl px-4 pb-28 sm:px-6 lg:px-10 lg:pb-8" />
         </div>
       </div>
-      <div className="ym-hide-content">
-        <MobileNav user={user} plan={planChip} />
-      </div>
+      <MobileNav user={user} plan={planChip} />
     </QuickAddProvider>
   );
 }
