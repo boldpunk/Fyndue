@@ -117,7 +117,14 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
             {t.note ? <Row label="Комментарий">{t.note}</Row> : null}
             {t.isVoided && t.voidReason ? <Row label="Причина аннулирования">{t.voidReason}</Row> : null}
           </dl>
-          <TransactionDetailActions transaction={t} />
+          <TransactionDetailActions
+            transaction={t}
+            accounts={
+              t.type === "LOAN_DISBURSEMENT"
+                ? (await listAccounts(user.id)).filter((a) => a.currency === t.currency && (!a.isArchived || a.id === t.account.id)).map(({ id, name, currency }) => ({ id, name, currency }))
+                : []
+            }
+          />
         </CardContent>
       </Card>
 

@@ -76,6 +76,14 @@ export const convertAdjustmentSchema = z.object({
   counterpartAmount: z.preprocess((v) => (typeof v === "string" && !v.trim() ? undefined : v), moneySchema().optional()),
 });
 
+/** Date (and, for a loan disbursement, amount and account) of an operation the form doesn't edit. */
+export const correctTransactionSchema = z.object({
+  id: idSchema,
+  date: localDateSchema,
+  amount: z.preprocess((v) => (typeof v === "string" && !v.trim() ? undefined : v), moneySchema().optional()),
+  accountId: z.preprocess((v) => (v === "" ? undefined : v), idSchema.optional()),
+});
+
 export const voidTransactionSchema = z.object({ id: idSchema, reason: optionalText(200) });
 
 export const transactionFiltersSchema = z.object({

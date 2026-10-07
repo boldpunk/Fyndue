@@ -502,7 +502,7 @@ function resolveTransferToAmount(
   return toAmount;
 }
 
-async function lockOwnedTransaction(tx: Tx, userId: string, id: string): Promise<Transaction> {
+export async function lockOwnedTransaction(tx: Tx, userId: string, id: string): Promise<Transaction> {
   const rows = await tx.$queryRaw<{ id: string }[]>`
     SELECT "id" FROM "Transaction" WHERE "id" = ${id} AND "userId" = ${userId} FOR UPDATE`;
   if (rows.length === 0) throw new NotFoundError("Transaction");

@@ -9,11 +9,13 @@ import {
   updateTransfer,
   voidTransaction,
 } from "@/lib/services/transactions";
+import { correctTransaction } from "@/lib/services/transaction-corrections";
 import { runAction } from "@/lib/utils/action";
 import { idSchema } from "@/lib/validations/common";
 import {
   cashFlowUpdateSchema,
   convertAdjustmentSchema,
+  correctTransactionSchema,
   transactionCreateSchema,
   transferUpdateSchema,
   voidTransactionSchema,
@@ -74,5 +76,14 @@ export async function convertAdjustmentAction(input: unknown) {
     const result = await convertAdjustmentToTransfer(user.id, convertAdjustmentSchema.parse(input));
     refresh();
     return result;
+  });
+}
+
+export async function correctTransactionAction(input: unknown) {
+  return runAction(async () => {
+    const user = await requireUser();
+    await correctTransaction(user.id, correctTransactionSchema.parse(input));
+    refresh();
+    return null;
   });
 }
