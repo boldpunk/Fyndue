@@ -22,6 +22,7 @@ export type AccountDTO = {
   currentBalance: string;
   includeInTotal: boolean;
   bank: string | null;
+  cardLast4: string | null;
   color: string | null;
   isArchived: boolean;
   /** First day tracked; earlier money is in the opening balance. */
@@ -38,6 +39,7 @@ export function toAccountDTO(account: Account): AccountDTO {
     currentBalance: toMoneyString(account.currentBalance),
     includeInTotal: account.includeInTotal,
     bank: account.bank,
+    cardLast4: account.cardLast4,
     color: account.color,
     isArchived: account.isArchived,
     trackingStartDate: account.trackingStartDate ? dbToLocalDate(account.trackingStartDate) : null,
@@ -109,6 +111,7 @@ export async function createAccount(userId: string, input: AccountCreateInput): 
         currentBalance: input.openingBalance,
         includeInTotal: input.includeInTotal,
         bank: input.bank ?? null,
+        cardLast4: input.cardLast4 ?? null,
         color: input.color ?? null,
         sortOrder: (last._max.sortOrder ?? -1) + 1,
       },
@@ -136,6 +139,7 @@ export async function updateAccount(userId: string, input: AccountUpdateInput): 
         type: input.type,
         includeInTotal: input.includeInTotal,
         bank: input.bank ?? null,
+        cardLast4: input.cardLast4 ?? null,
         color: input.color ?? null,
         openingBalance: input.openingBalance,
         currentBalance: { increment: openingDelta.toFixed(2) },

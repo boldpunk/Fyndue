@@ -98,3 +98,16 @@ A bot cannot write to a phone number, so the number is confirmed in the bot firs
 3. Verifying the code signs in to the account with that number, or creates one (placeholder email, categories bootstrapped). The chat is connected for reminders if neither is connected yet.
 
 An email account already connected to the bot gets the number when its owner shares the contact, so they can sign in by phone too. Tests: `tests/integration/phone-auth.test.ts`.
+
+## 10. Automatic bookkeeping from bank notices
+
+`lib/finance/bank-notice.ts` reads card notices in the CardXabar (Uzcard) layout — title, signed amount, `***1234`, place, `dd.mm.yy hh:mm`, balance after — and `lib/services/bank-import.ts` records them:
+
+- The card's last 4 digits pick the account (`Account.cardLast4`, comma-separated; set in the account form or with `/card 2034 Uzum`).
+- `Transaction.externalId = notice:<op|p2p>:<card>:<date>T<time>:<dir>:<amount>`: the same notice is recorded once. An operation already typed by hand (same account, day, amount, direction) is not doubled; it gets the notice id instead.
+- Card-to-card transfers and currency exchange (P2P, UZCARD2UZCARD, H2U, KONVERSIYA…) whose other half arrives on another own account within 5 minutes become one transfer; a same-currency difference is a separate «Комиссия за перевод» expense.
+- Notices dated before an account's tracking start are skipped. When the notice is the account's latest, its balance is compared with Fyndue's and a difference is reported.
+- Category: merchant memory and quick-entry synonyms (Yandex → Такси), otherwise «Другое»; incoming transfers → «Переводы от людей».
+- Imports per user run one at a time (forwarded batches arrive as parallel webhooks).
+
+Entry points: a message forwarded or pasted into the bot (several notices in one text are split), `/undo` (voids the latest imported operation), and the personal link `POST /api/ingest/<token>` (Settings → Автоучёт; only the token's SHA-256 is stored) for iPhone Shortcuts / Android SMS forwarders — the bot then confirms what was recorded. Tests: `tests/unit/bank-notice.test.ts`, `tests/integration/bank-import.test.ts`.

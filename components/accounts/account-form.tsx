@@ -21,6 +21,7 @@ type Values = {
   currency: (typeof CURRENCIES)[number];
   openingBalance: string;
   bank: string;
+  cardLast4: string;
   includeInTotal: boolean;
   color: string | undefined;
 };
@@ -37,10 +38,11 @@ export function AccountForm({ account, defaultCurrency }: { account?: AccountDTO
           currency: account.currency,
           openingBalance: account.openingBalance.replace(/\.00$/, ""),
           bank: account.bank ?? "",
+          cardLast4: (account.cardLast4 ?? "").split(",").filter(Boolean).join(", "),
           includeInTotal: account.includeInTotal,
           color: account.color ?? undefined,
         }
-      : { name: "", type: "BANK_CARD", currency: defaultCurrency, openingBalance: "0", bank: "", includeInTotal: true, color: "indigo" },
+      : { name: "", type: "BANK_CARD", currency: defaultCurrency, openingBalance: "0", bank: "", cardLast4: "", includeInTotal: true, color: "indigo" },
   });
   const errors = formState.errors;
   const currency = useWatch({ control, name: "currency" });
@@ -114,6 +116,15 @@ export function AccountForm({ account, defaultCurrency }: { account?: AccountDTO
 
       <Field label="Банк" htmlFor="bank" error={errors.bank?.message}>
         <Input id="bank" placeholder="Необязательно" {...register("bank")} />
+      </Field>
+
+      <Field
+        label="Карты: последние 4 цифры"
+        htmlFor="cardLast4"
+        error={errors.cardLast4?.message}
+        hint="Для автоучёта: уведомления банка (CardXabar) с этими цифрами запишутся на этот счёт. Несколько — через запятую."
+      >
+        <Input id="cardLast4" inputMode="numeric" placeholder="Например, 2034" {...register("cardLast4")} />
       </Field>
 
       <Field label="Цвет" htmlFor="color">

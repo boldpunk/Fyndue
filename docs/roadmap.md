@@ -192,6 +192,10 @@ Phase 6 notes:
 
 Free / Pro plans with soft limits, a 14-day trial, manual payment («Я оплатил» → admin confirms), admin grants, expiry notices — docs/billing.md.
 
+## Автоучёт ✅
+
+Bank notices (CardXabar) forwarded to the bot or sent to a personal link are recorded automatically: card → account, dedupe, own transfers joined, balance check, /card, /undo — docs/telegram.md §10.
+
 ## Phase 7 — PWA & polish (next)
 
 Manifest, icons, standalone mode, safe areas, command palette (⌘K), onboarding flow, skeletons/empty/error states audit, accessibility audit, performance (lazy charts, pagination review), rate limiting on actions, email verification & password reset, Playwright E2E for critical flows.

@@ -487,3 +487,7 @@ model ProPayment { id, userId, period ("MONTH"|"YEAR"|"DAYS"), days, amount Deci
 ```
 
 CHECK `pro_payment_valid`: 1–3660 days, amount ≥ 0, known period. `NotificationType.PRO_EXPIRY` for the renewal notice.
+
+### Bank notices
+
+`Account.cardLast4` (comma-separated last 4 digits), `User.ingestTokenHash` (SHA-256 of the personal link token, unique). Imported rows: `Transaction.source = IMPORT`, `externalId = notice:…` (docs/telegram.md §10).

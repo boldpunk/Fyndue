@@ -200,6 +200,8 @@ model User {
   proUntil      DateTime? @db.Timestamptz(3)
   /// End of the free Pro trial; null = 14 days from createdAt.
   trialEndsAt   DateTime? @db.Timestamptz(3)
+  /// SHA-256 of the personal bank-notice link token (/api/ingest/<token>).
+  ingestTokenHash String? @unique
   createdAt     DateTime @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime @updatedAt @db.Timestamptz(3)
 
@@ -310,6 +312,9 @@ model Account {
   trackingStartDate DateTime? @db.Date
   includeInTotal Boolean     @default(true)
   bank           String?
+  /// Last 4 digits of the cards on this account, comma-separated ("2034,9099"):
+  /// bank notices (CardXabar) are matched to the account by them.
+  cardLast4      String?
   icon           String?
   color          String?
   sortOrder      Int         @default(0)

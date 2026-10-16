@@ -7,6 +7,14 @@ const accountFields = {
   type: z.enum(ACCOUNT_TYPES),
   includeInTotal: z.boolean(),
   bank: optionalText(60),
+  /** Last 4 digits of the account's cards, for bank notices: "2034" or "2034, 9099". */
+  cardLast4: z
+    .string()
+    .trim()
+    .max(40)
+    .refine((v) => v === "" || /^\d{4}(\s*,\s*\d{4})*$/.test(v), "Последние 4 цифры, через запятую: 2034, 9099")
+    .transform((v) => (v ? v.split(",").map((c) => c.trim()).join(",") : undefined))
+    .optional(),
   color: colorSchema.optional(),
   openingBalance: moneySchema({ allowZero: true, allowNegative: true }),
 };

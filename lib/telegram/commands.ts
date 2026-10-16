@@ -1,11 +1,14 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { DomainError } from "@/lib/errors";
 import { addDays, daysBetween, formatYearMonthLabel, todayIn, yearMonthOf } from "@/lib/finance/dates";
 import { formatMoney, sumMoney, toMoneyString } from "@/lib/finance/money";
 import { getMonthOverview, type CurrencyTotals } from "@/lib/services/dashboard";
 import { debtTotalsByCurrency, listDebts, listUpcomingPayments, type UpcomingPaymentDTO } from "@/lib/services/debts";
 import { getSubscriptions } from "@/lib/services/subscriptions";
+import { importBankNotices, importReply, linkCard, looksLikeBankNotice, undoLastImport } from "@/lib/services/bank-import";
 import { confirmPhoneFromContact, contactReply } from "@/lib/services/phone-auth";
+import { env } from "@/lib/env";
 import { disconnectChat, linkTelegramChat, userIdForChat } from "@/lib/services/telegram-connection";
 import type { ReplyMarkup, TelegramSender, TelegramUpdate } from "./client";
 import { parseCommand } from "./commands-parse";
@@ -24,6 +27,8 @@ export const BOT_COMMANDS = [
   { command: "debts", description: "Остаток долгов и прогресс" },
   { command: "month", description: "Доходы, расходы и платежи за месяц" },
   { command: "subs", description: "Подписки: сколько в месяц и ближайшие списания" },
+  { command: "card", description: "Привязать карту к счёту: /card 2034 Uzum" },
+  { command: "undo", description: "Отменить последнюю операцию из уведомления" },
   { command: "phone", description: "Привязать номер, чтобы входить по нему" },
   { command: "help", description: "Что умеет бот" },
   { command: "stop", description: "Отключить этот чат от Fyndue" },
@@ -33,6 +38,8 @@ const HELP = [
   "<b>Fyndue</b> напоминает о платежах и отвечает на команды:",
   "",
   ...BOT_COMMANDS.map((c) => `/${c.command} — ${c.description}`),
+  "",
+  "📨 <b>Автоучёт:</b> пересылайте сюда уведомления банка (CardXabar и SMS) — расходы и доходы запишутся сами.",
 ].join("\n");
 
 const NOT_LINKED = "Этот чат не подключён к Fyndue.\n\nОткройте Fyndue → Настройки → Уведомления → <b>Подключить Telegram</b> и отправьте показанный там код.";
@@ -150,6 +157,10 @@ async function reply(command: string, args: string[], chat: { chatId: string; us
       return monthReply(userId);
     case "subs":
       return subscriptionsReply(userId);
+    case "card":
+      return linkCard(userId, args[0] ?? "", args.slice(1).join(" "));
+    case "undo":
+      return undoLastImport(userId);
     case "stop":
       await disconnectChat(chat.chatId);
       return "Отключено. Напоминания сюда больше не придут.\n\nПодключить снова можно в Fyndue → Настройки → Уведомления.";
@@ -180,6 +191,20 @@ export async function handleUpdate(update: TelegramUpdate, sender: TelegramSende
       sender,
     );
     await sender.sendMessage(chat.chatId, contactReply(result), { replyMarkup: result.phoneNumber ? { remove_keyboard: true } : SHARE_PHONE_KEYBOARD });
+    return;
+  }
+
+  // A forwarded or pasted bank notice: record it (docs/telegram.md §10).
+  if (!message.text?.startsWith("/") && looksLikeBankNotice(message.text)) {
+    const userId = await userIdForChat(chat.chatId);
+    if (!userId) return void (await sender.sendMessage(chat.chatId, NOT_LINKED));
+    try {
+      const results = await importBankNotices(userId, message.text!);
+      await sender.sendMessage(chat.chatId, importReply(results, env.BETTER_AUTH_URL));
+    } catch (error) {
+      if (!(error instanceof DomainError)) throw error;
+      await sender.sendMessage(chat.chatId, `Не получилось записать: ${escapeHtml(error.message)}`);
+    }
     return;
   }
 

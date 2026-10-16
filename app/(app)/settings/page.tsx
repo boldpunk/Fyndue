@@ -1,4 +1,4 @@
-import { ArrowRightLeft, Bell, ChevronRight, Crown, Repeat, Shapes, Info, Star } from "lucide-react";
+import { ArrowRightLeft, Bell, ChevronRight, Crown, Repeat, Shapes, Info, Star, Zap } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/page-header";
@@ -44,6 +44,11 @@ export default async function SettingsPage() {
         <Link href="/pro" className="flex items-center gap-3 p-4 hover:bg-muted/60">
           <Crown className="size-5 text-primary" aria-hidden />
           <span className="flex-1 text-sm font-medium">Fyndue Pro</span>
+          <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+        </Link>
+        <Link href="/settings/auto-import" className="flex items-center gap-3 p-4 hover:bg-muted/60">
+          <Zap className="size-5 text-muted-foreground" aria-hidden />
+          <span className="flex-1 text-sm font-medium">Автоучёт из уведомлений банка</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
         <Link href="/settings/categories" className="flex items-center gap-3 p-4 hover:bg-muted/60">
